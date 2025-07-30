@@ -1,6 +1,6 @@
 {
   "name": "MuffinSync",
-  "id": "muffinsync-text-plugin",
+  "id": "1532367827686665905",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
@@ -14,6 +14,7 @@
     "allowedDomains": ["none"]
   },
   "permissions": ["currentuser"],
+  "documentAccess": "dynamic-page",
   "menu": [
     {
       "name": "MuffinSync - Text Extract & Import",
