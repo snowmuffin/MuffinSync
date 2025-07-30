@@ -364,21 +364,79 @@
       };
 
       function parseCSV(csvText) {
-        const lines = csvText.trim().split("\n");
-        const headers = lines[0]
-          .split(",")
-          .map((h) => h.trim().replace(/"/g, ""));
+        const text = csvText.trim();
         const data = [];
+        let headers = [];
+        let currentRow = [];
+        let currentField = "";
+        let inQuotes = false;
+        let i = 0;
 
-        for (let i = 1; i < lines.length; i++) {
-          const values = parseCSVLine(lines[i]);
-          const obj = {};
+        // Parse character by character to handle multi-line fields
+        while (i < text.length) {
+          const char = text[i];
+          const nextChar = text[i + 1];
 
-          headers.forEach((header, index) => {
-            obj[header] = values[index] || "";
-          });
+          if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+              // Escaped quote
+              currentField += '"';
+              i += 2;
+              continue;
+            } else {
+              // Toggle quote state
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            // Field separator
+            currentRow.push(currentField.trim());
+            currentField = "";
+          } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            // End of row
+            if (currentField || currentRow.length > 0) {
+              currentRow.push(currentField.trim());
+              
+              if (headers.length === 0) {
+                // First row is headers
+                headers = currentRow.map(h => h.replace(/"/g, ""));
+              } else {
+                // Data row
+                const obj = {};
+                headers.forEach((header, index) => {
+                  obj[header] = currentRow[index] || "";
+                });
+                data.push(obj);
+              }
+              
+              currentRow = [];
+              currentField = "";
+            }
+            
+            // Skip \r\n sequences
+            if (char === '\r' && nextChar === '\n') {
+              i++;
+            }
+          } else {
+            // Regular character
+            currentField += char;
+          }
+          
+          i++;
+        }
 
-          data.push(obj);
+        // Handle last field/row if no trailing newline
+        if (currentField || currentRow.length > 0) {
+          currentRow.push(currentField.trim());
+          
+          if (headers.length === 0) {
+            headers = currentRow.map(h => h.replace(/"/g, ""));
+          } else {
+            const obj = {};
+            headers.forEach((header, index) => {
+              obj[header] = currentRow[index] || "";
+            });
+            data.push(obj);
+          }
         }
 
         return data;
@@ -399,28 +457,6 @@
         document.getElementById("download-json-btn").onclick = () => {
           downloadFile(data, "json");
         };
-      }
-
-      function parseCSVLine(line) {
-        const values = [];
-        let current = "";
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === "," && !inQuotes) {
-            values.push(current.trim());
-            current = "";
-          } else {
-            current += char;
-          }
-        }
-
-        values.push(current.trim());
-        return values;
       }
 
       function downloadFile(data, format) {
