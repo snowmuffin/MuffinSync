@@ -13,5 +13,11 @@
   "networkAccess": {
     "allowedDomains": ["none"]
   },
-  "permissions": ["currentuser"]
+  "permissions": ["currentuser"],
+  "menu": [
+    {
+      "name": "MuffinSync - Text Extract & Import",
+      "command": "open-plugin"
+    }
+  ]
 }

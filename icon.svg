@@ -1,0 +1,22 @@
+<!-- MuffinSync Plugin Icon - SVG Format -->
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="64" cy="64" r="64" fill="#3B82F6"/>
+  
+  <!-- Muffin Base -->
+  <ellipse cx="64" cy="85" rx="35" ry="15" fill="#8B4513"/>
+  
+  <!-- Muffin Top -->
+  <circle cx="64" cy="55" r="28" fill="#DEB887"/>
+  
+  <!-- Chocolate Chips -->
+  <circle cx="55" cy="48" r="3" fill="#654321"/>
+  <circle cx="73" cy="52" r="3" fill="#654321"/>
+  <circle cx="60" cy="62" r="3" fill="#654321"/>
+  <circle cx="70" cy="45" r="2" fill="#654321"/>
+  
+  <!-- Sync Arrow -->
+  <path d="M40 95 L50 85 L40 75" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M88 75 L78 85 L88 95" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="48" y1="85" x2="80" y2="85" stroke="white" stroke-width="3" stroke-linecap="round"/>
+</svg>
