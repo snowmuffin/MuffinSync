@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MuffinSync</title>
+    <style>
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f8f9fa;
+        color: #2c3e50;
+      }
+
+      .container {
+        max-width: 360px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .logo {
+        font-size: 24px;
+        font-weight: 700;
+        color: #3b82f6;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        color: #64748b;
+      }
+
+      .section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #1e293b;
+      }
+
+      .button {
+        width: 100%;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 12px;
+      }
+
+      .button:last-child {
+        margin-bottom: 0;
+      }
+
+      .button.primary {
+        background: #3b82f6;
+        color: white;
+      }
+
+      .button.primary:hover {
+        background: #2563eb;
+      }
+
+      .button.secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+      }
+
+      .button.secondary:hover {
+        background: #e2e8f0;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .status {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .status.success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+
+      .status.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .status.info {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+
+      .format-selector {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .format-option {
+        flex: 1;
+        padding: 8px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .format-option.selected {
+        border-color: #3b82f6;
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .format-option:hover {
+        border-color: #3b82f6;
+      }
+
+      .instruction {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 16px;
+        line-height: 1.4;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">🧁 MuffinSync</div>
+        <div class="subtitle">Text Layer Extract & Import</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">1️⃣ Extract Text</div>
+        <div class="instruction">
+          Extract all text layers from the currently selected frames or entire
+          page.
+        </div>
+
+        <div class="format-selector">
+          <div class="format-option selected" data-format="csv">CSV</div>
+          <div class="format-option" data-format="json">JSON</div>
+        </div>
+
+        <button class="button primary" id="extract-btn">
+          Extract Text Layers
+        </button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">2️⃣ Import Modified Text</div>
+        <div class="instruction">
+          Upload the edited CSV or JSON file to reflect changes in Figma.
+        </div>
+
+        <input
+          type="file"
+          id="file-input"
+          class="file-input"
+          accept=".csv,.json"
+        />
+        <button class="button secondary" id="import-btn">
+          Select File to Import
+        </button>
+      </div>
+
+      <div id="export-section" class="section hidden">
+        <div class="section-title">📁 Extracted Data</div>
+        <div class="instruction">
+          Text layer extraction completed! Download in your preferred format
+          below.
+        </div>
+
+        <div
+          class="download-buttons"
+          style="display: flex; gap: 8px; margin-bottom: 16px"
+        >
+          <button class="button primary" id="download-csv-btn" style="flex: 1">
+            📄 CSV Download
+          </button>
+          <button class="button primary" id="download-json-btn" style="flex: 1">
+            📋 JSON Download
+          </button>
+          <button
+            class="button secondary"
+            id="force-download-btn"
+            style="flex: 1"
+          >
+            🚀 Force Download
+          </button>
+          <button
+            class="button secondary"
+            id="debug-toggle-btn"
+            style="width: auto; padding: 12px"
+          >
+            🐛 Debug
+          </button>
+        </div>
+      </div>
+
+      <div id="debug-section" class="section hidden">
+        <div class="section-title">🐛 Debug Log</div>
+        <div class="instruction">
+          Debug information for download troubleshooting.
+        </div>
+
+        <div style="margin-bottom: 12px">
+          <button
+            class="button secondary"
+            id="clear-debug-btn"
+            style="width: auto"
+          >
+            🗑️ Clear Log
+          </button>
+          <button
+            class="button secondary"
+            id="test-download-btn"
+            style="width: auto; margin-left: 8px"
+          >
+            🧪 Download Test
+          </button>
+        </div>
+
+        <textarea
+          id="debug-log"
+          readonly
+          style="
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 11px;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            resize: vertical;
+          "
+          placeholder="Debug logs will be displayed here..."
+        ></textarea>
+      </div>
+
+      <div id="status" class="hidden"></div>
+    </div>
+
+    <script>
+      let selectedFormat = "csv";
+      let exportedData = null;
+
+      // Debug functionality
+      function debugLog(message, type = "info") {
+        const timestamp = new Date().toLocaleTimeString();
+        const debugArea = document.getElementById("debug-log");
+        const prefix =
+          type === "error" ? "❌" : type === "success" ? "✅" : "ℹ️";
+        const logMessage = `[${timestamp}] ${prefix} ${message}\n`;
+
+        if (debugArea) {
+          debugArea.value += logMessage;
+          debugArea.scrollTop = debugArea.scrollHeight;
+        }
+
+        // Also log to console
+        console.log(`[MuffinSync] ${message}`);
+      }
+
+      // Initialize debug logging
+      debugLog("Plugin UI initialization complete");
+      debugLog(`User Agent: ${navigator.userAgent}`);
+      debugLog(`Current URL: ${window.location.href}`);
+
+      // Debug environment info
+      setTimeout(() => {
+        debugLog(`Clipboard API support: ${!!navigator.clipboard}`);
+        debugLog(`File API support: ${!!window.File}`);
+        debugLog(`Blob support: ${!!window.Blob}`);
+        debugLog(`URL.createObjectURL support: ${!!URL.createObjectURL}`);
+        debugLog(`showSaveFilePicker support: ${!!window.showSaveFilePicker}`);
+      }, 100);
+
+      // Format selector
+      document.querySelectorAll(".format-option").forEach((option) => {
+        option.addEventListener("click", () => {
+          document
+            .querySelectorAll(".format-option")
+            .forEach((opt) => opt.classList.remove("selected"));
+          option.classList.add("selected");
+          selectedFormat = option.dataset.format;
+          debugLog(`Format changed: ${selectedFormat}`);
+        });
+      });
+
+      // Extract button
+      document.getElementById("extract-btn").addEventListener("click", () => {
+        debugLog("Text extraction started");
+        showStatus("Extracting text layers...", "info");
+        parent.postMessage(
+          {
+            pluginMessage: { type: "extract-text", format: selectedFormat },
+          },
+          "*"
+        );
+      });
+
+      // Import button
+      document.getElementById("import-btn").addEventListener("click", () => {
+        debugLog("File selection dialog opened");
+        document.getElementById("file-input").click();
+      });
+
+      // Debug toggle button
+      document
+        .getElementById("debug-toggle-btn")
+        .addEventListener("click", () => {
+          const debugSection = document.getElementById("debug-section");
+          if (debugSection.classList.contains("hidden")) {
+            debugSection.classList.remove("hidden");
+            debugLog("Debug panel opened");
+          } else {
+            debugSection.classList.add("hidden");
+          }
+        });
+
+      // Debug clear button
+      document
+        .getElementById("clear-debug-btn")
+        .addEventListener("click", () => {
+          document.getElementById("debug-log").value = "";
+          debugLog("Debug log cleared");
+        });
+
+      // Debug test download button
+      document
+        .getElementById("test-download-btn")
+        .addEventListener("click", () => {
+          debugLog("Download test started");
+          const testData = [
+            { id: "test:123", name: "Test Text", characters: "테스트 텍스트" },
+          ];
+          downloadFile(testData, "csv");
+        });
+
+      // File input
+      document
+        .getElementById("file-input")
+        .addEventListener("change", (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                let data;
+                const content = e.target.result;
+
+                if (file.name.endsWith(".json")) {
+                  data = JSON.parse(content);
+                } else if (file.name.endsWith(".csv")) {
+                  data = parseCSV(content);
+                } else {
+                  showStatus(
+                    "Unsupported file format. Please select a CSV or JSON file.",
+                    "error"
+                  );
+                  return;
+                }
+
+                showStatus("Importing file...", "info");
+                parent.postMessage(
+                  {
+                    pluginMessage: {
+                      type: "import-text",
+                      data: data,
+                      format: file.name.endsWith(".json") ? "json" : "csv",
+                    },
+                  },
+                  "*"
+                );
+              } catch (error) {
+                showStatus(`File reading error: ${error.message}`, "error");
+              }
+            };
+            reader.readAsText(file);
+          }
+        });
+
+      // Listen for messages from plugin
+      window.onmessage = (event) => {
+        debugLog(
+          `Message received from plugin: ${event.data.pluginMessage?.type}`
+        );
+
+        const { type, data, count, message, updatedCount, errorCount, errors } =
+          event.data.pluginMessage;
+
+        switch (type) {
+          case "text-extracted":
+            debugLog(`Text extraction complete: ${count} layers`);
+            showExportedData(data, selectedFormat);
+            showStatus(
+              `Successfully extracted ${count} text layers.`,
+              "success"
+            );
+            break;
+
+          case "no-text-found":
+            debugLog("No text layers found");
+            showStatus(message, "error");
+            break;
+
+          case "import-complete":
+            debugLog(
+              `Text import complete: ${updatedCount} updated, ${errorCount} errors`
+            );
+            let statusMessage = `Updated ${updatedCount} text layers.`;
+            if (errorCount > 0) {
+              statusMessage += ` (${errorCount} errors)`;
+              if (errors && errors.length > 0) {
+                statusMessage +=
+                  "<br><small>" + errors.join("<br>") + "</small>";
+              }
+            }
+            showStatus(statusMessage, errorCount > 0 ? "error" : "success");
+            break;
+
+          case "error":
+            debugLog(`Plugin error: ${message}`, "error");
+            showStatus(message, "error");
+            break;
+
+          default:
+            debugLog(`Unknown message type: ${type}`);
+        }
+      };
+
+      function parseCSV(csvText) {
+        const lines = csvText.trim().split("\n");
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/"/g, ""));
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCSVLine(lines[i]);
+          const obj = {};
+
+          headers.forEach((header, index) => {
+            obj[header] = values[index] || "";
+          });
+
+          data.push(obj);
+        }
+
+        return data;
+      }
+
+      function showExportedData(data, format) {
+        exportedData = data;
+        const exportSection = document.getElementById("export-section");
+
+        // Show the export section
+        exportSection.classList.remove("hidden");
+
+        // Setup direct download buttons
+        document.getElementById("download-csv-btn").onclick = () => {
+          downloadFile(data, "csv");
+        };
+
+        document.getElementById("download-json-btn").onclick = () => {
+          downloadFile(data, "json");
+        };
+
+        // Setup force download button
+        document.getElementById("force-download-btn").onclick = () => {
+          debugLog("Force download button clicked");
+          forceDownloadAll(data);
+        };
+      }
+
+      function parseCSVLine(line) {
+        const values = [];
+        let current = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === "," && !inQuotes) {
+            values.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+
+        values.push(current.trim());
+        return values;
+      }
+
+      function downloadFile(data, format) {
+        debugLog(`Download started: ${format} format, ${data.length} items`);
+
+        try {
+          let content, filename, mimeType;
+
+          if (format === "json") {
+            content = JSON.stringify(data, null, 2);
+            filename = `figma-text-layers-${new Date().getTime()}.json`;
+            mimeType = "application/json";
+          } else {
+            content = convertToCSV(data);
+            filename = `figma-text-layers-${new Date().getTime()}.csv`;
+            mimeType = "text/csv";
+          }
+
+          debugLog(`Filename: ${filename}`);
+          debugLog(`MIME type: ${mimeType}`);
+          debugLog(`Content size: ${content.length} characters`);
+
+          // Try multiple download methods
+          attemptDownload(content, filename, mimeType, format);
+        } catch (error) {
+          debugLog(`❌ Download error: ${error.message}`, "error");
+          debugLog(`❌ Error stack: ${error.stack}`, "error");
+
+          showStatus(
+            "❌ An error occurred. Please check the debug log.",
+            "error"
+          );
+        }
+      }
+
+      async function forceDownloadAll(data) {
+        debugLog("🚀 Force download attempting all methods");
+
+        const timestamp = new Date().getTime();
+        const formats = [
+          {
+            format: "csv",
+            content: convertToCSV(data),
+            filename: `figma-text-layers-${timestamp}.csv`,
+            mimeType: "text/csv",
+          },
+          {
+            format: "json",
+            content: JSON.stringify(data, null, 2),
+            filename: `figma-text-layers-${timestamp}.json`,
+            mimeType: "application/json",
+          },
+        ];
+
+        let successCount = 0;
+
+        for (const file of formats) {
+          try {
+            debugLog(`${file.format.toUpperCase()} force download attempt`);
+
+            // Try all possible methods simultaneously
+            const downloadPromises = [
+              tryBlobDownload(file.content, file.filename, file.mimeType),
+              tryDataUrlDownload(file.content, file.filename, file.mimeType),
+              tryIframeDownload(file.content, file.filename, file.mimeType),
+            ];
+
+            const results = await Promise.allSettled(downloadPromises);
+            const successfulMethods = results.filter(
+              (r) => r.status === "fulfilled"
+            ).length;
+
+            if (successfulMethods > 0) {
+              successCount++;
+              debugLog(
+                `✅ ${file.format.toUpperCase()} download success (${successfulMethods} methods)`,
+                "success"
+              );
+            } else {
+              debugLog(
+                `❌ ${file.format.toUpperCase()} download failed`,
+                "error"
+              );
+            }
+          } catch (error) {
+            debugLog(
+              `${file.format.toUpperCase()} force download error: ${
+                error.message
+              }`,
+              "error"
+            );
+          }
+        }
+
+        if (successCount > 0) {
+          showStatus(
+            `🎉 ${successCount} file downloads completed! Check your download folder.`,
+            "success"
+          );
+        } else {
+          showStatus(
+            "❌ All download methods failed. Please use manual copy.",
+            "error"
+          );
+          // Activate manual copy mode on failure
+          displayDownloadContent(
+            convertToCSV(data),
+            `figma-text-layers-${timestamp}.csv`,
+            "csv"
+          );
+        }
+      }
+
+      async function tryBlobDownload(content, filename, mimeType) {
+        return new Promise((resolve, reject) => {
+          try {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.style.display = "none";
+
+            // Create forced click event
+            const event = new MouseEvent("click", {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+            });
+
+            document.body.appendChild(a);
+            a.dispatchEvent(event);
+
+            setTimeout(() => {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              resolve("blob download success");
+            }, 100);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      async function tryDataUrlDownload(content, filename, mimeType) {
+        return new Promise((resolve, reject) => {
+          try {
+            const dataUrl = `data:${mimeType};charset=utf-8,${encodeURIComponent(
+              content
+            )}`;
+
+            const a = document.createElement("a");
+            a.href = dataUrl;
+            a.download = filename;
+            a.style.display = "none";
+
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+              document.body.removeChild(a);
+              resolve("data url download success");
+            }, 100);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      async function tryIframeDownload(content, filename, mimeType) {
+        return new Promise((resolve, reject) => {
+          try {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.src = url;
+
+            document.body.appendChild(iframe);
+
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              URL.revokeObjectURL(url);
+              resolve("iframe download success");
+            }, 1000);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      async function attemptDownload(content, filename, mimeType, format) {
+        debugLog("🚀 Multiple download methods attempt started");
+
+        // Method 1: File System Access API (Chrome 86+)
+        if (window.showSaveFilePicker) {
+          try {
+            debugLog("Method 1: File System Access API attempt");
+            const fileHandle = await window.showSaveFilePicker({
+              suggestedName: filename,
+              types: [
+                {
+                  description: `${format.toUpperCase()} File`,
+                  accept: {
+                    [mimeType]: [`.${format}`],
+                  },
+                },
+              ],
+            });
+
+            const writable = await fileHandle.createWritable();
+            await writable.write(content);
+            await writable.close();
+
+            debugLog("✅ File System Access API download success", "success");
+            showStatus(
+              `✅ ${filename} file downloaded successfully!`,
+              "success"
+            );
+            return;
+          } catch (error) {
+            debugLog(
+              `File System Access API failed: ${error.message}`,
+              "error"
+            );
+          }
+        }
+
+        // Method 2: Blob + URL.createObjectURL
+        try {
+          debugLog("Method 2: Blob URL download attempt");
+          const blob = new Blob([content], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.style.display = "none";
+
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          // Clean up URL
+          setTimeout(() => URL.revokeObjectURL(url), 100);
+
+          debugLog("✅ Blob URL 다운로드 실행", "success");
+          showStatus(
+            `� ${filename} 다운로드를 시작했습니다. 브라우저 다운로드 폴더를 확인하세요.`,
+            "success"
+          );
+          return;
+        } catch (error) {
+          debugLog(`Blob URL download failed: ${error.message}`, "error");
+        }
+
+        // Method 3: Data URL
+        try {
+          debugLog("Method 3: Data URL download attempt");
+          const dataUrl = `data:${mimeType};charset=utf-8,${encodeURIComponent(
+            content
+          )}`;
+
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = filename;
+          a.style.display = "none";
+
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          debugLog("✅ Data URL download executed", "success");
+          showStatus(
+            `📥 ${filename} download started. Check your browser download folder.`,
+            "success"
+          );
+          return;
+        } catch (error) {
+          debugLog(`Data URL download failed: ${error.message}`, "error");
+        }
+
+        // Method 4: Open in new window
+        try {
+          debugLog("Method 4: New window download attempt");
+          const blob = new Blob([content], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+
+          const newWindow = window.open(url, "_blank");
+          if (newWindow) {
+            debugLog("✅ File opened in new window success", "success");
+            showStatus(
+              `📥 ${filename} opened in new window. Right-click > Save As.`,
+              "info"
+            );
+            return;
+          }
+        } catch (error) {
+          debugLog(`New window download failed: ${error.message}`, "error");
+        }
+
+        // All methods failed - switch to manual copy mode
+        debugLog(
+          "⚠️ All automatic download methods failed, switching to manual mode",
+          "error"
+        );
+        displayDownloadContent(content, filename, format);
+        showStatus(
+          `❌ Automatic download not supported. Please copy the text below to create the file manually.`,
+          "error"
+        );
+      }
+
+      function displayDownloadContent(content, filename, format) {
+        debugLog("Manual download content display");
+
+        // Dynamically create manual download section
+        const exportSection = document.getElementById("export-section");
+
+        // Remove existing manual download area if present
+        const existingManual = document.getElementById("manual-download");
+        if (existingManual) {
+          existingManual.remove();
+        }
+
+        // Create manual download area
+        const manualSection = document.createElement("div");
+        manualSection.id = "manual-download";
+        manualSection.style.cssText = `
+          margin-top: 20px;
+          padding: 16px;
+          background: #fef3c7;
+          border-radius: 8px;
+          border-left: 4px solid #f59e0b;
+        `;
+
+        manualSection.innerHTML = `
+          <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">
+            ⚠️ Manual Download Required
+          </div>
+          <div style="color: #78350f; font-size: 14px; margin-bottom: 12px;">
+            Automatic download is not supported. Please copy the text below and save as a file.
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>Filename:</strong> <code style="background: #fbbf24; padding: 2px 4px; border-radius: 3px;">${filename}</code>
+          </div>
+          <textarea id="manual-content" readonly style="
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 1px solid #d97706;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            background-color: #fffbeb;
+            resize: vertical;
+          " placeholder="File content will be displayed here...">${content}</textarea>
+          <div style="margin-top: 12px; font-size: 13px; color: #78350f;">
+            <strong>How to save:</strong><br>
+            1. Select all text above (Cmd+A or Ctrl+A)<br>
+            2. Copy (Cmd+C or Ctrl+C)<br>
+            3. Paste into text editor and save with .${format} extension
+          </div>
+        `;
+
+        exportSection.appendChild(manualSection);
+
+        // Auto-select text
+        setTimeout(() => {
+          const textarea = document.getElementById("manual-content");
+          if (textarea) {
+            textarea.select();
+            textarea.focus();
+          }
+        }, 100);
+
+        debugLog("Manual download area creation complete");
+      }
+
+      function convertToCSV(data) {
+        if (!data || data.length === 0) return "";
+
+        const headers = Object.keys(data[0]);
+        const csvContent = [
+          headers.join(","),
+          ...data.map((row) =>
+            headers
+              .map((header) => {
+                const value = row[header];
+                return typeof value === "string" &&
+                  (value.includes(",") ||
+                    value.includes('"') ||
+                    value.includes("\n"))
+                  ? `"${value.replace(/"/g, '""')}"`
+                  : value;
+              })
+              .join(",")
+          ),
+        ].join("\n");
+
+        return csvContent;
+      }
+
+      function showStatus(message, type) {
+        const statusDiv = document.getElementById("status");
+        statusDiv.innerHTML = message;
+        statusDiv.className = `status ${type}`;
+        statusDiv.classList.remove("hidden");
+
+        if (type === "info") {
+          setTimeout(() => {
+            statusDiv.classList.add("hidden");
+          }, 3000);
+        }
+      }
+    </script>
+  </body>
+</html>

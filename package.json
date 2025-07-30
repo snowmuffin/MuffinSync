@@ -1,0 +1,24 @@
+{
+  "name": "muffinsync",
+  "version": "1.0.0",
+  "description": "Figma plugin for extracting, editing, and importing text layers",
+  "main": "code.js",
+  "scripts": {
+    "build": "npx webpack --mode=production",
+    "build:watch": "npx webpack --mode=development --watch",
+    "dev": "npx webpack --mode=development"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.75.0",
+    "@types/node": "^18.0.0",
+    "css-loader": "^6.8.1",
+    "html-webpack-plugin": "^5.5.3",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
