@@ -29,13 +29,8 @@ MuffinSync is a free plugin that extracts text layers from Figma designs, allows
 2. **Extract Text**: 
    - Select format (CSV or JSON)
    - Click "Extract Text Layers" button
-3. **Copy and Save Data**:
-   - Click **📄 CSV Download** or **📋 JSON Download** button
-   - When text is auto-selected, copy with `Cmd+C` (Mac) or `Ctrl+C` (Windows)
-   - Create a new file in text editor and paste
-   - Save with `.csv` or `.json` extension
-4. **External Editing**: Open saved file and edit text content
-5. **Import**: Upload edited file using "Select File to Import"
+3. **External Editing**: Open saved file and edit text content
+4. **Import**: Upload edited file using "Select File to Import"
 
 ### 💡 File Saving Tips
 - **Mac**: Use TextEdit.app or VS Code
@@ -126,6 +121,3 @@ MIT License
 
 Bug reports and feature suggestions are always welcome!
 
----
-
-Made with ❤️ for Figma designers

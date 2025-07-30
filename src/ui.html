@@ -211,63 +211,7 @@
           <button class="button primary" id="download-json-btn" style="flex: 1">
             📋 JSON Download
           </button>
-          <button
-            class="button secondary"
-            id="force-download-btn"
-            style="flex: 1"
-          >
-            🚀 Force Download
-          </button>
-          <button
-            class="button secondary"
-            id="debug-toggle-btn"
-            style="width: auto; padding: 12px"
-          >
-            🐛 Debug
-          </button>
         </div>
-      </div>
-
-      <div id="debug-section" class="section hidden">
-        <div class="section-title">🐛 Debug Log</div>
-        <div class="instruction">
-          Debug information for download troubleshooting.
-        </div>
-
-        <div style="margin-bottom: 12px">
-          <button
-            class="button secondary"
-            id="clear-debug-btn"
-            style="width: auto"
-          >
-            🗑️ Clear Log
-          </button>
-          <button
-            class="button secondary"
-            id="test-download-btn"
-            style="width: auto; margin-left: 8px"
-          >
-            🧪 Download Test
-          </button>
-        </div>
-
-        <textarea
-          id="debug-log"
-          readonly
-          style="
-            width: 100%;
-            height: 150px;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 11px;
-            background-color: #1e293b;
-            color: #e2e8f0;
-            resize: vertical;
-          "
-          placeholder="Debug logs will be displayed here..."
-        ></textarea>
       </div>
 
       <div id="status" class="hidden"></div>
@@ -277,20 +221,9 @@
       let selectedFormat = "csv";
       let exportedData = null;
 
-      // Debug functionality
+      // Debug functionality (console logging only)
       function debugLog(message, type = "info") {
-        const timestamp = new Date().toLocaleTimeString();
-        const debugArea = document.getElementById("debug-log");
-        const prefix =
-          type === "error" ? "❌" : type === "success" ? "✅" : "ℹ️";
-        const logMessage = `[${timestamp}] ${prefix} ${message}\n`;
-
-        if (debugArea) {
-          debugArea.value += logMessage;
-          debugArea.scrollTop = debugArea.scrollHeight;
-        }
-
-        // Also log to console
+        // Log to console for development purposes
         console.log(`[MuffinSync] ${message}`);
       }
 
@@ -337,38 +270,6 @@
         debugLog("File selection dialog opened");
         document.getElementById("file-input").click();
       });
-
-      // Debug toggle button
-      document
-        .getElementById("debug-toggle-btn")
-        .addEventListener("click", () => {
-          const debugSection = document.getElementById("debug-section");
-          if (debugSection.classList.contains("hidden")) {
-            debugSection.classList.remove("hidden");
-            debugLog("Debug panel opened");
-          } else {
-            debugSection.classList.add("hidden");
-          }
-        });
-
-      // Debug clear button
-      document
-        .getElementById("clear-debug-btn")
-        .addEventListener("click", () => {
-          document.getElementById("debug-log").value = "";
-          debugLog("Debug log cleared");
-        });
-
-      // Debug test download button
-      document
-        .getElementById("test-download-btn")
-        .addEventListener("click", () => {
-          debugLog("Download test started");
-          const testData = [
-            { id: "test:123", name: "Test Text", characters: "테스트 텍스트" },
-          ];
-          downloadFile(testData, "csv");
-        });
 
       // File input
       document
@@ -498,12 +399,6 @@
         document.getElementById("download-json-btn").onclick = () => {
           downloadFile(data, "json");
         };
-
-        // Setup force download button
-        document.getElementById("force-download-btn").onclick = () => {
-          debugLog("Force download button clicked");
-          forceDownloadAll(data);
-        };
       }
 
       function parseCSVLine(line) {
@@ -561,83 +456,7 @@
         }
       }
 
-      async function forceDownloadAll(data) {
-        debugLog("🚀 Force download attempting all methods");
-
-        const timestamp = new Date().getTime();
-        const formats = [
-          {
-            format: "csv",
-            content: convertToCSV(data),
-            filename: `figma-text-layers-${timestamp}.csv`,
-            mimeType: "text/csv",
-          },
-          {
-            format: "json",
-            content: JSON.stringify(data, null, 2),
-            filename: `figma-text-layers-${timestamp}.json`,
-            mimeType: "application/json",
-          },
-        ];
-
-        let successCount = 0;
-
-        for (const file of formats) {
-          try {
-            debugLog(`${file.format.toUpperCase()} force download attempt`);
-
-            // Try all possible methods simultaneously
-            const downloadPromises = [
-              tryBlobDownload(file.content, file.filename, file.mimeType),
-              tryDataUrlDownload(file.content, file.filename, file.mimeType),
-              tryIframeDownload(file.content, file.filename, file.mimeType),
-            ];
-
-            const results = await Promise.allSettled(downloadPromises);
-            const successfulMethods = results.filter(
-              (r) => r.status === "fulfilled"
-            ).length;
-
-            if (successfulMethods > 0) {
-              successCount++;
-              debugLog(
-                `✅ ${file.format.toUpperCase()} download success (${successfulMethods} methods)`,
-                "success"
-              );
-            } else {
-              debugLog(
-                `❌ ${file.format.toUpperCase()} download failed`,
-                "error"
-              );
-            }
-          } catch (error) {
-            debugLog(
-              `${file.format.toUpperCase()} force download error: ${
-                error.message
-              }`,
-              "error"
-            );
-          }
-        }
-
-        if (successCount > 0) {
-          showStatus(
-            `🎉 ${successCount} file downloads completed! Check your download folder.`,
-            "success"
-          );
-        } else {
-          showStatus(
-            "❌ All download methods failed. Please use manual copy.",
-            "error"
-          );
-          // Activate manual copy mode on failure
-          displayDownloadContent(
-            convertToCSV(data),
-            `figma-text-layers-${timestamp}.csv`,
-            "csv"
-          );
-        }
-      }
+      
 
       async function tryBlobDownload(content, filename, mimeType) {
         return new Promise((resolve, reject) => {
