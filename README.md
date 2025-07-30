@@ -28,103 +28,103 @@ MuffinSync is a free plugin that extracts text layers from Figma designs, allows
 1. **Run Plugin**: Execute Plugins > MuffinSync in Figma
 2. **Extract Text**: 
    - Select format (CSV or JSON)
-   - "텍스트 레이어 추출하기" 버튼 클릭
-3. **데이터 복사 및 저장**:
-   - **📄 CSV 다운로드** 또는 **📋 JSON 다운로드** 버튼 클릭
-   - 텍스트가 자동 선택되면 `Cmd+C` (Mac) 또는 `Ctrl+C` (Windows)로 복사
-   - 텍스트 에디터에서 새 파일을 만들고 붙여넣기
-   - `.csv` 또는 `.json` 확장자로 저장
-4. **외부 편집**: 저장된 파일을 열어 텍스트 내용 편집
-5. **가져오기**: "파일 선택하여 가져오기"로 편집된 파일 업로드
+   - Click "Extract Text Layers" button
+3. **Copy and Save Data**:
+   - Click **📄 CSV Download** or **📋 JSON Download** button
+   - When text is auto-selected, copy with `Cmd+C` (Mac) or `Ctrl+C` (Windows)
+   - Create a new file in text editor and paste
+   - Save with `.csv` or `.json` extension
+4. **External Editing**: Open saved file and edit text content
+5. **Import**: Upload edited file using "Select File to Import"
 
-### 💡 파일 저장 팁
-- **Mac**: 텍스트편집기.app 또는 VS Code 사용
-- **Windows**: 메모장 또는 VS Code 사용  
-- **권장 파일명**: `figma-text-layers-[타임스탬프].csv` 또는 `.json`
-- **중요**: 반드시 올바른 확장자(.csv 또는 .json)로 저장하세요
+### 💡 File Saving Tips
+- **Mac**: Use TextEdit.app or VS Code
+- **Windows**: Use Notepad or VS Code  
+- **Recommended filename**: `figma-text-layers-[timestamp].csv` or `.json`
+- **Important**: Always save with correct extension (.csv or .json)
 
-## 🛠️ 개발 환경 설정
+## 🛠️ Development Setup
 
-### 필요 조건
+### Requirements
 - Node.js 18+
 - npm
 
-### 설치 및 빌드
+### Installation and Build
 ```bash
-# 의존성 설치
+# Install dependencies
 npm install
 
-# 개발 빌드
+# Development build
 npm run dev
 
-# 프로덕션 빌드  
+# Production build  
 npm run build
 
-# 변경사항 감시 모드
+# Watch mode for changes
 npm run build:watch
 ```
 
-### 프로젝트 구조
+### Project Structure
 ```
 MuffinSync/
 ├── src/
-│   ├── code.ts          # 메인 플러그인 로직
-│   ├── ui.html          # 플러그인 UI
-│   ├── ui.ts            # UI 로직
-│   └── global.d.ts      # 타입 정의
-├── dist/                # 빌드 결과물
-├── manifest.json        # Figma 플러그인 매니페스트
+│   ├── code.ts          # Main plugin logic
+│   ├── ui.html          # Plugin UI
+│   ├── ui.ts            # UI logic
+│   └── global.d.ts      # Type definitions
+├── dist/                # Build output
+├── manifest.json        # Figma plugin manifest
 ├── package.json
 ├── tsconfig.json
 └── webpack.config.js
 ```
 
-## 📋 지원 파일 형식
+## 📋 Supported File Formats
 
-### CSV 형식
+### CSV Format
 ```csv
 id,name,characters
-"123:456","Title Text","안녕하세요"
-"123:457","Body Text","본문 텍스트입니다"
+"123:456","Title Text","Hello World"
+"123:457","Body Text","This is body text"
 ```
 
-### JSON 형식
+### JSON Format
 ```json
 [
   {
     "id": "123:456",
     "name": "Title Text", 
-    "characters": "안녕하세요"
+    "characters": "Hello World"
   },
   {
     "id": "123:457",
     "name": "Body Text",
-    "characters": "본문 텍스트입니다"
+    "characters": "This is body text"
   }
 ]
 ```
 
-## 🔧 Figma에 플러그인 설치
+## 🔧 Installing Plugin in Figma
 
-1. Figma Desktop 앱 실행
-2. **Plugins** > **Development** > **Import plugin from manifest...**
-3. 이 프로젝트의 `manifest.json` 파일 선택
-4. 플러그인이 개발 섹션에 추가됩니다
+1. Open Figma Desktop app
+2. Go to **Plugins** > **Development** > **Import plugin from manifest...**
+3. Select the `manifest.json` file from this project
+4. Plugin will be added to the development section
 
-## ⚠️ 주의사항
+## ⚠️ Important Notes
 
-- 텍스트를 수정할 때는 `characters` 필드만 편집하세요
-- `id`와 `name` 필드는 변경하지 마세요 (매칭이 안됩니다)
-- 대량의 텍스트 레이어 처리 시 시간이 걸릴 수 있습니다
-- 폰트가 로드되지 않은 경우 오류가 발생할 수 있습니다
+- Only edit the `characters` field when modifying text
+- Do not change `id` and `name` fields (matching will fail)
+- Processing large numbers of text layers may take time
+- Errors may occur if fonts are not loaded
 
-## 📄 라이선스
+## 📄 License
 
 MIT License
 
-## 🤝 기여
+## 🤝 Contributing
 
-버그 리포트나 기능 제안은 언제든 환영합니다!
+Bug reports and feature suggestions are always welcome!
 
 ---
 
