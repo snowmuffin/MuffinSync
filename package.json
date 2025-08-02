@@ -19,6 +19,14 @@
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
   },
-  "author": "Your Name",
-  "license": "MIT"
+  "author": "snowmuffin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/snowmuffin/MuffinSync.git"
+  },
+  "homepage": "https://github.com/snowmuffin/MuffinSync#readme",
+  "bugs": {
+    "url": "https://github.com/snowmuffin/MuffinSync/issues"
+  }
 }
