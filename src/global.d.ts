@@ -9,6 +9,7 @@ interface PluginAPI {
   ui: UIAPI;
   currentPage: PageNode;
   getNodeById(id: string): SceneNode | null;
+  getNodeByIdAsync(id: string): Promise<BaseNode | null>;
   loadFontAsync(fontName: FontName): Promise<void>;
 }
 

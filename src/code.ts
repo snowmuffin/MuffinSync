@@ -123,8 +123,8 @@ async function importTextLayers(data: TextLayerData[], format: string) {
     
     for (const textData of data) {
       try {
-        // Find the node by ID
-        const node = figma.getNodeById(textData.id);
+        // Find the node by ID (dynamic-page requires async)
+        const node = await figma.getNodeByIdAsync(textData.id);
         
         if (!node) {
           errors.push(`Node with ID ${textData.id} not found.`);
