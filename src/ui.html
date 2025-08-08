@@ -5,7 +5,8 @@
     <title>MuffinSync</title>
     <style>
       body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
         margin: 0;
         padding: 20px;
         background: #f8f9fa;
@@ -176,24 +177,6 @@
           Extract Text Layers
         </button>
       </div>
-
-      <div class="section">
-        <div class="section-title">2️⃣ Import Modified Text</div>
-        <div class="instruction">
-          Upload the edited CSV or JSON file to reflect changes in Figma.
-        </div>
-
-        <input
-          type="file"
-          id="file-input"
-          class="file-input"
-          accept=".csv,.json"
-        />
-        <button class="button secondary" id="import-btn">
-          Select File to Import
-        </button>
-      </div>
-
       <div id="export-section" class="section hidden">
         <div class="section-title">📁 Extracted Data</div>
         <div class="instruction">
@@ -212,6 +195,23 @@
             📋 JSON Download
           </button>
         </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">2️⃣ Import Modified Text</div>
+        <div class="instruction">
+          Upload the edited CSV or JSON file to reflect changes in Figma.
+        </div>
+
+        <input
+          type="file"
+          id="file-input"
+          class="file-input"
+          accept=".csv,.json"
+        />
+        <button class="button secondary" id="import-btn">
+          Select File to Import
+        </button>
       </div>
 
       <div id="status" class="hidden"></div>
@@ -387,18 +387,18 @@
               // Toggle quote state
               inQuotes = !inQuotes;
             }
-          } else if (char === ',' && !inQuotes) {
+          } else if (char === "," && !inQuotes) {
             // Field separator
             currentRow.push(currentField.trim());
             currentField = "";
-          } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          } else if ((char === "\n" || char === "\r") && !inQuotes) {
             // End of row
             if (currentField || currentRow.length > 0) {
               currentRow.push(currentField.trim());
-              
+
               if (headers.length === 0) {
                 // First row is headers
-                headers = currentRow.map(h => h.replace(/"/g, ""));
+                headers = currentRow.map((h) => h.replace(/"/g, ""));
               } else {
                 // Data row
                 const obj = {};
@@ -407,29 +407,29 @@
                 });
                 data.push(obj);
               }
-              
+
               currentRow = [];
               currentField = "";
             }
-            
+
             // Skip \r\n sequences
-            if (char === '\r' && nextChar === '\n') {
+            if (char === "\r" && nextChar === "\n") {
               i++;
             }
           } else {
             // Regular character
             currentField += char;
           }
-          
+
           i++;
         }
 
         // Handle last field/row if no trailing newline
         if (currentField || currentRow.length > 0) {
           currentRow.push(currentField.trim());
-          
+
           if (headers.length === 0) {
-            headers = currentRow.map(h => h.replace(/"/g, ""));
+            headers = currentRow.map((h) => h.replace(/"/g, ""));
           } else {
             const obj = {};
             headers.forEach((header, index) => {
@@ -491,8 +491,6 @@
           );
         }
       }
-
-      
 
       async function tryBlobDownload(content, filename, mimeType) {
         return new Promise((resolve, reject) => {
