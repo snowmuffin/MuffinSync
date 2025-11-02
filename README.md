@@ -1,78 +1,42 @@
+```markdown
 # 🧁 MuffinSync
 
 **Figma Text Layer Extract and Import Plugin**
 
-MuffinSync is a free plugin that extracts text layers from Figma designs, allows external editing, and imports them back to Figma.
+MuffinSync is a powerful and user-friendly plugin for Figma, designed to streamline the workflow of extracting, editing, and importing text layers directly from your design files. This plugin facilitates efficient collaboration by allowing designers and content creators to modify text content externally and seamlessly integrate those changes back into their Figma projects.
 
 ## ✨ Key Features
 
 ### 1️⃣ Text Layer Extraction (Export)
-- Traverse all text layers in selected frames or entire page
-- Extract text layer information:
-  - `id`: Figma Node ID
-  - `name`: Layer name  
-  - `characters`: Actual text content
-- Automatic download as CSV or JSON files
+- **Comprehensive Traversal**: MuffinSync can navigate through all text layers within selected frames or an entire page.
+- **Detailed Extraction**: Extracts essential text layer information including:
+  - `id`: Unique Figma Node ID
+  - `name`: Descriptive layer name
+  - `characters`: Actual text content of the layer
+- **Automatic Downloads**: Users can download the extracted data as CSV or JSON files for easy manipulation.
 
 ### 2️⃣ Text Data Modification (External)
-- Open extracted CSV/JSON files in external editors for text editing
-- ⚠️ **Warning**: Do not modify layer IDs or names
+- **Flexible Editing**: The plugin allows the extracted CSV or JSON files to be opened in any external text editor (like VS Code or Notepad), enabling users to modify text content efficiently.
+- ⚠️ **Important**: Users must avoid altering layer IDs or names to ensure proper functionality during the import phase.
 
 ### 3️⃣ Apply Modified Data (Import)
-- Upload modified CSV/JSON files
-- Find existing Figma text layers and update text content
-- Automatic font loading (`loadFontAsync()`)
+- **Seamless Importing**: Users can upload their modified CSV or JSON files back into Figma, where the plugin locates existing text layers and updates their content accordingly.
+- **Automatic Font Handling**: The plugin includes functionality for asynchronous font loading (`loadFontAsync()`), which helps prevent errors related to font availability.
 
 ## 🚀 How to Use
 
-1. **Run Plugin**: Execute Plugins > MuffinSync in Figma
+1. **Run the Plugin**: Access the plugin via Plugins > MuffinSync in your Figma application.
 2. **Extract Text**: 
-   - Select format (CSV or JSON)
-   - Click "Extract Text Layers" button
-3. **External Editing**: Open saved file and edit text content
-4. **Import**: Upload edited file using "Select File to Import"
+   - Choose your desired format (CSV or JSON).
+   - Click the "Extract Text Layers" button to initiate the export.
+3. **Edit Externally**: Open the saved file in your preferred text editor, make necessary text changes, and save the file.
+4. **Import Changes**: Use the "Select File to Import" button to upload your edited file back into Figma.
 
 ### 💡 File Saving Tips
-- **Mac**: Use TextEdit.app or VS Code
-- **Windows**: Use Notepad or VS Code  
-- **Recommended filename**: `figma-text-layers-[timestamp].csv` or `.json`
-- **Important**: Always save with correct extension (.csv or .json)
-
-## 🛠️ Development Setup
-
-### Requirements
-- Node.js 18+
-- npm
-
-### Installation and Build
-```bash
-# Install dependencies
-npm install
-
-# Development build
-npm run dev
-
-# Production build  
-npm run build
-
-# Watch mode for changes
-npm run build:watch
-```
-
-### Project Structure
-```
-MuffinSync/
-├── src/
-│   ├── code.ts          # Main plugin logic
-│   ├── ui.html          # Plugin UI
-│   ├── ui.ts            # UI logic
-│   └── global.d.ts      # Type definitions
-├── dist/                # Build output
-├── manifest.json        # Figma plugin manifest
-├── package.json
-├── tsconfig.json
-└── webpack.config.js
-```
+- **Mac Users**: Recommended to use TextEdit.app or Visual Studio Code (VS Code).
+- **Windows Users**: Notepad or Visual Studio Code are suitable options.
+- **Naming Convention**: Use a filename format like `figma-text-layers-[timestamp].csv` or `.json` for organization.
+- **File Format**: Ensure to save with the correct extension (.csv or .json) to prevent errors during import.
 
 ## 📋 Supported File Formats
 
@@ -99,25 +63,65 @@ id,name,characters
 ]
 ```
 
-## 🔧 Installing Plugin in Figma
+## 🛠️ Development Setup
 
-1. Open Figma Desktop app
-2. Go to **Plugins** > **Development** > **Import plugin from manifest...**
-3. Select the `manifest.json` file from this project
-4. Plugin will be added to the development section
+### Requirements
+- **Node.js**: Version 18 or higher
+- **npm**: Node package manager
+
+### Installation and Build
+To set up the development environment, follow these commands:
+```bash
+# Install dependencies
+npm install
+
+# Create a development build
+npm run dev
+
+# Create a production build  
+npm run build
+
+# Activate watch mode for live changes
+npm run build:watch
+```
+
+### Project Structure
+```
+MuffinSync/
+├── src/
+│   ├── code.ts          # Contains the main logic of the plugin
+│   ├── ui.html          # Defines the user interface of the plugin
+│   ├── ui.ts            # Manages the UI logic and interactions
+│   └── global.d.ts      # Type definitions for TypeScript
+├── dist/                # Output directory for build artifacts
+├── manifest.json        # Figma plugin manifest file
+├── package.json         # Project metadata and dependencies
+├── tsconfig.json        # TypeScript configuration
+└── webpack.config.js    # Configuration for module bundling
+```
+
+## ⚙️ Installing Plugin in Figma
+
+1. Open the Figma desktop application.
+2. Navigate to **Plugins** > **Development** > **Import plugin from manifest...**.
+3. Select the `manifest.json` file located in this project directory.
+4. The plugin will be added to your development section for testing.
 
 ## ⚠️ Important Notes
 
-- Only edit the `characters` field when modifying text
-- Do not change `id` and `name` fields (matching will fail)
-- Processing large numbers of text layers may take time
-- Errors may occur if fonts are not loaded
+- **Editing Guidance**: Always modify only the `characters` field in your external files. Changing the `id` or `name` fields will disrupt the matching process during import.
+- **Performance Consideration**: Processing a large number of text layers may take some time, so patience is advised.
+- **Font Issues**: If fonts are not loaded when importing, errors may occur, so ensure fonts are available in your Figma project.
 
 ## 📄 License
 
-MIT License
+This project is licensed under the [MIT License](LICENSE).
 
 ## 🤝 Contributing
 
-Bug reports and feature suggestions are always welcome!
+We welcome contributions to MuffinSync! To get started, please refer to our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to fork, clone, and submit changes to the project. 
 
+Bug reports and feature suggestions are always welcome and can be submitted through GitHub issues. Thank you for your interest in making MuffinSync better! 🧁
+```
+
+This enhanced README provides a more comprehensive overview of the MuffinSync project, detailing its purpose, features, and usage while maintaining the structure and core content of the original document. It also includes additional sections for development setup, installation, and contributing, making it more suitable for users and contributors alike.
