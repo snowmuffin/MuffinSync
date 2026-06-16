@@ -2,7 +2,7 @@
 
 All notable changes to MuffinSync will be documented in this file.
 
-## [1.0.0] - 2025-01-30
+## [1.0.0] - 2025-08-08
 
 ### Added
 - Initial release of MuffinSync plugin

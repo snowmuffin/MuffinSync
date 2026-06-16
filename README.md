@@ -1,4 +1,3 @@
-```markdown
 # 🧁 MuffinSync
 
 **Figma Text Layer Extract and Import Plugin**
@@ -89,11 +88,9 @@ npm run build:watch
 ```
 MuffinSync/
 ├── src/
-│   ├── code.ts          # Contains the main logic of the plugin
-│   ├── ui.html          # Defines the user interface of the plugin
-│   ├── ui.ts            # Manages the UI logic and interactions
-│   └── global.d.ts      # Type definitions for TypeScript
-├── dist/                # Output directory for build artifacts
+│   ├── code.ts          # Plugin sandbox logic (runs in Figma)
+│   └── ui.html          # Self-contained plugin UI (markup + inline script)
+├── dist/                # Build output (generated; not committed)
 ├── manifest.json        # Figma plugin manifest file
 ├── package.json         # Project metadata and dependencies
 ├── tsconfig.json        # TypeScript configuration
@@ -102,10 +99,14 @@ MuffinSync/
 
 ## ⚙️ Installing Plugin in Figma
 
+> **Build first:** The `dist/` folder is not committed to the repository. Run `npm install && npm run build` before importing so that `dist/code.js` and `dist/ui.html` exist.
+
 1. Open the Figma desktop application.
 2. Navigate to **Plugins** > **Development** > **Import plugin from manifest...**.
 3. Select the `manifest.json` file located in this project directory.
 4. The plugin will be added to your development section for testing.
+
+> **Publishing to the Figma Community** is done manually from the Figma desktop app (**Plugins → Development → Manage plugins in development → Publish**). Figma does not provide a CLI or API for marketplace publishing.
 
 ## ⚠️ Important Notes
 
@@ -122,6 +123,3 @@ This project is licensed under the [MIT License](LICENSE).
 We welcome contributions to MuffinSync! To get started, please refer to our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to fork, clone, and submit changes to the project. 
 
 Bug reports and feature suggestions are always welcome and can be submitted through GitHub issues. Thank you for your interest in making MuffinSync better! 🧁
-```
-
-This enhanced README provides a more comprehensive overview of the MuffinSync project, detailing its purpose, features, and usage while maintaining the structure and core content of the original document. It also includes additional sections for development setup, installation, and contributing, making it more suitable for users and contributors alike.

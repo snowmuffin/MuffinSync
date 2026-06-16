@@ -627,9 +627,9 @@
           // Clean up URL
           setTimeout(() => URL.revokeObjectURL(url), 100);
 
-          debugLog("✅ Blob URL 다운로드 실행", "success");
+          debugLog("✅ Blob URL download executed", "success");
           showStatus(
-            `� ${filename} 다운로드를 시작했습니다. 브라우저 다운로드 폴더를 확인하세요.`,
+            `📥 ${filename} download started. Check your browser download folder.`,
             "success"
           );
           return;

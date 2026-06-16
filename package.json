@@ -6,7 +6,8 @@
   "scripts": {
     "build": "npx webpack --mode=production",
     "build:watch": "npx webpack --mode=development --watch",
-    "dev": "npx webpack --mode=development"
+    "dev": "npx webpack --mode=development",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.75.0",

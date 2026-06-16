@@ -12,12 +12,21 @@ interface UIMessage {
   format?: string;
 }
 
+// Flip to true during development to enable verbose console logging.
+const DEBUG = false;
+
+function log(...args: unknown[]) {
+  if (DEBUG) {
+    console.log('[MuffinSync]', ...args);
+  }
+}
+
 // Show the plugin UI
 figma.showUI(__html__, { width: 400, height: 500 });
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (event) => {
-  console.log('[MuffinSync] Message received from UI:', event);
+  log('Message received from UI:', event);
   
   // Extract the actual message data
   let msg: UIMessage;
@@ -29,25 +38,25 @@ figma.ui.onmessage = async (event) => {
     msg = event as any as UIMessage;
   }
   
-  console.log('[MuffinSync] Message type:', msg.type);
-  console.log('[MuffinSync] Full message:', msg);
+  log('Message type:', msg.type);
+  log('Full message:', msg);
   
   if (msg.type === 'extract-text') {
-    console.log('[MuffinSync] Starting text extraction request processing');
+    log('Starting text extraction request processing');
     await extractTextLayers();
   } else if (msg.type === 'import-text' && msg.data && msg.format) {
-    console.log('[MuffinSync] Starting text import request processing');
+    log('Starting text import request processing');
     await importTextLayers(msg.data, msg.format);
   } else if (msg.type === 'cancel') {
     figma.closePlugin();
   } else {
-    console.log('[MuffinSync] Unknown message type or structure:', event);
+    log('Unknown message type or structure:', event);
   }
 };
 
 async function extractTextLayers() {
   try {
-    console.log('[MuffinSync] extractTextLayers function started');
+    log('extractTextLayers function started');
     const textLayers: TextLayerData[] = [];
     
     // Get the current selection or current page
@@ -56,11 +65,11 @@ async function extractTextLayers() {
     if (figma.currentPage.selection.length > 0) {
       // If there's a selection, search within selected nodes
       nodesToSearch = figma.currentPage.selection;
-      console.log(`[MuffinSync] Searching text in ${nodesToSearch.length} selected nodes`);
+      log(`Searching text in ${nodesToSearch.length} selected nodes`);
     } else {
       // Otherwise, search the entire page
       nodesToSearch = figma.currentPage.children;
-      console.log(`[MuffinSync] Searching text in entire page (${nodesToSearch.length} nodes)`);
+      log(`Searching text in entire page (${nodesToSearch.length} nodes)`);
     }
     
     // Recursively find all text nodes
@@ -68,10 +77,10 @@ async function extractTextLayers() {
       findTextNodes(node, textLayers);
     }
     
-    console.log(`[MuffinSync] Found ${textLayers.length} text nodes`);
+    log(`Found ${textLayers.length} text nodes`);
     
     if (textLayers.length === 0) {
-      console.log('[MuffinSync] No text layers found, sending message to UI');
+      log('No text layers found, sending message to UI');
       figma.ui.postMessage({
         type: 'no-text-found',
         message: 'No text layers found.'
@@ -79,7 +88,7 @@ async function extractTextLayers() {
       return;
     }
     
-    console.log('[MuffinSync] Extraction complete, sending data to UI');
+    log('Extraction complete, sending data to UI');
     // Send extracted data to UI
     figma.ui.postMessage({
       type: 'text-extracted',
@@ -93,6 +102,16 @@ async function extractTextLayers() {
       type: 'error',
       message: `Error occurred during text extraction: ${error instanceof Error ? error.message : String(error)}`
     });
+  }
+}
+
+// Load all fonts used by a text node, including the multi-font (mixed) case.
+async function loadNodeFonts(textNode: TextNode) {
+  if (textNode.fontName === figma.mixed) {
+    const fonts = textNode.getRangeAllFontNames(0, textNode.characters.length);
+    await Promise.all(fonts.map((font) => figma.loadFontAsync(font)));
+  } else {
+    await figma.loadFontAsync(textNode.fontName);
   }
 }
 
@@ -138,10 +157,11 @@ async function importTextLayers(data: TextLayerData[], format: string) {
           continue;
         }
         
-        // Load font before updating text
+        // Load every font used by the node before editing its text.
+        // A node can use multiple fonts (figma.mixed), so handle both cases.
         const textNode = node as TextNode;
-        await figma.loadFontAsync(textNode.fontName as FontName);
-        
+        await loadNodeFonts(textNode);
+
         // Update the text
         textNode.characters = textData.characters;
         updatedCount++;
