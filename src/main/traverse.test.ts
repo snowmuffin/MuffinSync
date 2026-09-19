@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collectTextLayers, type TraversableNode } from './traverse';
+import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 
 const text = (id: string, name: string, characters: string): TraversableNode =>
   ({ type: 'TEXT', id, name, characters });
@@ -54,5 +54,26 @@ describe('collectTextLayers', () => {
       text('1:4', 'C', 'three'),
     ]);
     expect(result.map((r) => r.id)).toEqual(['1:1', '1:3', '1:4']);
+  });
+});
+
+describe('resolveRoots', () => {
+  const sel = ['s1', 's2'];
+  const page = ['p1', 'p2', 'p3'];
+
+  it('uses the selection when scope is selection and something is selected', () => {
+    expect(resolveRoots('selection', sel, page)).toBe(sel);
+  });
+
+  it('falls back to the page when scope is selection but nothing is selected', () => {
+    expect(resolveRoots('selection', [], page)).toBe(page);
+  });
+
+  it('uses the page when scope is page, even with a selection present', () => {
+    expect(resolveRoots('page', sel, page)).toBe(page);
+  });
+
+  it('returns the page unchanged when both are empty', () => {
+    expect(resolveRoots('selection', [], [])).toEqual([]);
   });
 });

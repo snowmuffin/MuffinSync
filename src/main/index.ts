@@ -1,7 +1,7 @@
 import type { Scope } from '../shared/types';
 import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
-import { collectTextLayers, type TraversableNode } from './traverse';
+import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
 
 figma.showUI(__html__, { width: 400, height: 500 });
@@ -10,12 +10,20 @@ function send(message: MainToUi): void {
   figma.ui.postMessage(message);
 }
 
-/** Resolve a scope to the roots a walk starts from. See spec section 3.1. */
+/**
+ * Resolve a scope to the roots a walk starts from. See spec section 3.1.
+ *
+ * An empty selection falls back to the whole page. The plugin has always
+ * behaved this way — selecting nothing and extracting searches the page —
+ * and the spec keeps the rule, so scope: 'selection' with an empty selection
+ * must not return nothing.
+ */
 function rootsFor(scope: Scope): ReadonlyArray<TraversableNode> {
-  const nodes =
-    scope === 'selection'
-      ? figma.currentPage.selection
-      : figma.currentPage.children;
+  const nodes = resolveRoots(
+    scope,
+    figma.currentPage.selection,
+    figma.currentPage.children
+  );
   // SceneNode satisfies TraversableNode structurally; TypeScript cannot see
   // that through the SceneNode union, so state it once here.
   return nodes as unknown as ReadonlyArray<TraversableNode>;

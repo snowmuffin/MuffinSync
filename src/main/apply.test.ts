@@ -31,6 +31,9 @@ describe('applyTextChanges', () => {
     await applyTextChanges([{ id: '1:1', name: 'T', characters: 'x' }], {
       getNode: async () => target,
       loadFonts: async () => {
+        // Yield first: a fire-and-forget implementation would write the text
+        // during this gap, so 'write' would land before 'fonts'.
+        await Promise.resolve();
         order.push('fonts');
       },
     });

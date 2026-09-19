@@ -37,3 +37,15 @@ function visit(node: TraversableNode, found: TextLayerData[]): void {
     }
   }
 }
+
+/**
+ * Choose which roots a walk starts from. Kept separate from Figma itself so
+ * the fallback rule is testable: an empty selection means the whole page.
+ */
+export function resolveRoots<T>(
+  scope: 'selection' | 'page',
+  selection: ReadonlyArray<T>,
+  pageChildren: ReadonlyArray<T>
+): ReadonlyArray<T> {
+  return scope === 'selection' && selection.length > 0 ? selection : pageChildren;
+}
