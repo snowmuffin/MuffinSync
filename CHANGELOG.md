@@ -12,6 +12,11 @@ All notable changes to MuffinSync will be documented in this file.
   indentation, and carriage returns were silently lost or truncated on export
   and re-import. Values that need protection are now quoted on export, and a
   field that arrived quoted is never trimmed on the way back in.
+- **Malformed import files are now rejected instead of silently mangled.**
+  `fromCSV` rejects a file whose header is missing a required column, and
+  `fromJSON` rejects entries without string `id`, `name`, and `characters`.
+  Previously both were accepted, blanking layers or reporting "Updated 0 text
+  layers" with no explanation of why.
 
 ### Changed
 - Build toolchain updated: webpack 5.111, TypeScript 5.9, ts-loader 9.6,
