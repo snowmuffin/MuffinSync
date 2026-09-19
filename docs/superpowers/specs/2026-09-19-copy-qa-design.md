@@ -140,6 +140,8 @@ type ProposedChange = {
 
 type ChangeSet = {
   changes: ProposedChange[];
+  scope?: Scope;          // set when produced by a traversal; see 3.1.
+                          // absent for 'import', whose targets come from the file
   createdAt: number;
 };
 ```
@@ -157,7 +159,43 @@ What this buys:
   producer.
 - **Layer Navigation is one action on a row**, not a feature per surface.
 
-### 3.1 Applying a change set
+### 3.1 Scope selection
+
+Everything that walks the document needs the same input: a set of root nodes.
+That covers **extract, find & replace, and spell check**. Import is the
+exception — its targets come from the file being imported, so it has no scope.
+
+Both scopes are offered, chosen explicitly by the user, and resolved in one
+place rather than reimplemented per feature.
+
+```ts
+type Scope = 'selection' | 'page';
+```
+
+`traverse.ts` resolves a `Scope` to roots — `figma.currentPage.selection` or
+`figma.currentPage.children` — and recurses from there.
+
+This makes explicit something the code already does implicitly.
+`extractTextLayers()` at `src/code.ts:65-73` silently prefers selection when
+anything is selected and falls back to the page otherwise. The behaviour is
+reasonable; the problem is that **the UI never says which one happened.** A user
+who left something selected by accident gets a partial result with no
+indication why. Surfacing the choice fixes that.
+
+Two rules follow:
+
+- **Nothing selected** — the `selection` option is disabled and the scope is
+  `page`. Better than returning an empty result and leaving the user to guess.
+- **Selection changes while the plugin is open** — `figma.on('selectionchange')`
+  invalidates any existing change set whose `scope` is `selection`. This is not
+  cosmetic: changes apply by `nodeId`, so a stale set produced against one
+  selection could otherwise be applied while a different one is active.
+
+**All pages is deliberately excluded.** Under `documentAccess: dynamic-page`,
+reaching other pages requires `figma.loadAllPagesAsync()`, which is expensive on
+large files. If it is ever wanted, it is its own piece of work.
+
+### 3.2 Applying a change set
 
 `apply.ts` receives only accepted changes. For each:
 
@@ -273,6 +311,9 @@ Figma-facing modules.
 - JSON serialize and parse
 - Change-set construction from each of the three producers
 - Search matching and replacement, including case sensitivity
+- Scope resolution: that `selection` and `page` pick the right roots, and that
+  a change set produced under `selection` is invalidated when the selection
+  changes
 - AI response parsing into `Suggestion[]`, including malformed responses
 
 **What does not get unit tested:** direct Figma API calls. `main/` modules stay
@@ -287,7 +328,7 @@ Each phase ends with a working plugin.
 | Phase | Contents | Done when |
 |---|---|---|
 | **0** | Build pipeline, bundle inlining, module split, vitest | **No behaviour change.** Existing extract and import work exactly as before, now with tests |
-| **1** | Change Set model, Diff Review UI, import retrofitted onto it | Import routes through review instead of overwriting |
+| **1** | Change Set model, Diff Review UI, import retrofitted onto it, shared scope selector | Import routes through review instead of overwriting; extract's scope is visible rather than implicit |
 | **2** | Find & Replace, Layer Navigation | Complete without any network access |
 | **3** | AI provider layer, Spell Check | Figma runtime `networkAccess` verified here |
 
@@ -323,9 +364,6 @@ Revisit before the v1 Community release.
 
 ## 10. Open questions
 
-None blocking. Two items to settle during implementation:
+None blocking. One item to settle during implementation:
 
 1. Which AI provider is the default in the UI when a user has keys for both
-2. Whether Phase 2's Find & Replace searches the current page only, or offers
-   the current selection as a scope — the existing `extractTextLayers()` already
-   prefers selection over page, and consistency argues for matching it
