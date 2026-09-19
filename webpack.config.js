@@ -7,17 +7,20 @@ const path = require('path');
 class InlineScriptPlugin {
   apply(compiler) {
     compiler.hooks.compilation.tap('InlineScriptPlugin', (compilation) => {
+      const inlineTag = (tag) => {
+        if (tag.tagName !== 'script' || !tag.attributes?.src) return tag;
+        const name = path.basename(tag.attributes.src);
+        const asset = compilation.assets[name];
+        if (!asset) return tag;
+        compilation.deleteAsset(name);
+        return { tagName: 'script', closeTag: true, innerHTML: asset.source() };
+      };
+
       HtmlWebpackPlugin.getHooks(compilation).alterAssetTagGroups.tap(
         'InlineScriptPlugin',
         (data) => {
-          data.bodyTags = data.bodyTags.map((tag) => {
-            if (tag.tagName !== 'script' || !tag.attributes?.src) return tag;
-            const name = path.basename(tag.attributes.src);
-            const asset = compilation.assets[name];
-            if (!asset) return tag;
-            delete compilation.assets[name];
-            return { tagName: 'script', closeTag: true, innerHTML: asset.source() };
-          });
+          data.bodyTags = data.bodyTags.map(inlineTag);
+          data.headTags = data.headTags.map(inlineTag);
           return data;
         }
       );
@@ -37,17 +40,18 @@ module.exports = (env, argv) => ({
   module: {
     rules: [
       {
-        // oneOf: exactly one rule may claim a file. The src/ui rule comes
-        // first; without oneOf, src/shared would match both and compile twice.
-        // Being first, this rule claims src/shared for the whole build — that
-        // is fine, since shared code touches neither figma nor the DOM.
+        // oneOf: exactly one rule may claim a file. The UI rule is scoped to
+        // src/ui only, so src/shared falls through to the main rule below and
+        // compiles under tsconfig.main.json. This matters because the UI rule
+        // matches .tsx? while the main rule matches only .ts: if src/shared
+        // were included here, a future .tsx file under src/shared would be
+        // claimed by this rule and compiled with jsxImportSource: preact into
+        // the sandbox bundle. Scoped this way, it instead matches no rule and
+        // fails the build loudly.
         oneOf: [
           {
             test: /\.tsx?$/,
-            include: [
-              path.resolve(__dirname, 'src/ui'),
-              path.resolve(__dirname, 'src/shared'),
-            ],
+            include: [path.resolve(__dirname, 'src/ui')],
             use: {
               loader: 'ts-loader',
               options: {
