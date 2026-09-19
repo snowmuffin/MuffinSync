@@ -2,7 +2,8 @@ import type { TextLayerData } from '../../shared/types';
 import type { UiToMain } from '../../shared/messages';
 import { fromCSV } from '../format/csv';
 import { fromJSON } from '../format/json';
-import { byId, debugLog, messageOf, showStatus } from '../download';
+import { byId, debugLog, messageOf } from '../dom';
+import { showStatus } from '../status';
 
 function post(message: UiToMain): void {
   parent.postMessage({ pluginMessage: message }, '*');

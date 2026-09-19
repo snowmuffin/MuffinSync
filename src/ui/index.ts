@@ -1,5 +1,6 @@
 import { unwrapMainMessage } from '../shared/messages';
-import { debugLog, showStatus } from './download';
+import { debugLog } from './dom';
+import { showStatus } from './status';
 import { initExtract, showExportedData, getSelectedFormat } from './features/extract';
 import { initImport } from './features/import';
 

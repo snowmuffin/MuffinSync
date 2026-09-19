@@ -3,7 +3,9 @@ import { isExportFormat } from '../../shared/types';
 import type { UiToMain } from '../../shared/messages';
 import { toCSV } from '../format/csv';
 import { toJSON } from '../format/json';
-import { byId, debugLog, messageOf, showStatus, attemptDownload } from '../download';
+import { byId, debugLog, messageOf } from '../dom';
+import { showStatus } from '../status';
+import { attemptDownload } from '../download';
 
 let selectedFormat: ExportFormat = 'csv';
 

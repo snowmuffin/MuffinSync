@@ -1,4 +1,6 @@
 import type { ExportFormat } from '../shared/types';
+import { byId, debugLog, messageOf } from './dom';
+import { showStatus } from './status';
 
 /**
  * The File System Access API is not in TypeScript's DOM lib. The download
@@ -14,45 +16,6 @@ declare global {
     showSaveFilePicker?: (
       options?: SaveFilePickerOptions
     ) => Promise<FileSystemFileHandle>;
-  }
-}
-
-export type StatusKind = 'success' | 'error' | 'info';
-
-// Debug functionality (console logging only)
-export function debugLog(message: string, type: string = 'info'): void {
-  // Log to console for development purposes
-  console.log(`[MuffinSync] ${message}`);
-}
-
-/** `catch` binds `unknown` under strict; the old code read `.message` directly. */
-export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-/**
- * `getElementById` is typed `HTMLElement | null`. Every id here is in
- * ui.html, so a miss means the markup and this file drifted apart — log it
- * and let the caller skip rather than throw an unreadable TypeError.
- */
-export function byId(id: string, root: Document = document): HTMLElement | null {
-  const element = root.getElementById(id);
-  if (!element) debugLog(`Element not found: ${id}`);
-  return element;
-}
-
-export function showStatus(message: string, type: StatusKind): void {
-  const statusDiv = byId('status');
-  if (!statusDiv) return;
-
-  statusDiv.innerHTML = message;
-  statusDiv.className = `status ${type}`;
-  statusDiv.classList.remove('hidden');
-
-  if (type === 'info') {
-    setTimeout(() => {
-      statusDiv.classList.add('hidden');
-    }, 3000);
   }
 }
 
