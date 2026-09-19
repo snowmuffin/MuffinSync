@@ -65,21 +65,6 @@ export function mimeTypeFor(format: ExportFormat): string {
   return format === 'csv' ? 'text/csv' : 'application/json';
 }
 
-/**
- * A format-agnostic entry point onto the same download chain `downloadFile`
- * (in features/extract.ts) drives directly. `mimeType` uniquely determines
- * `format` for the two formats this plugin supports, so it is recovered here
- * rather than widening this function's signature.
- */
-export async function download(
-  content: string,
-  filename: string,
-  mimeType: string
-): Promise<void> {
-  const format: ExportFormat = mimeType === 'text/csv' ? 'csv' : 'json';
-  await attemptDownload(content, filename, mimeType, format);
-}
-
 export async function attemptDownload(
   content: string,
   filename: string,
