@@ -8,6 +8,10 @@ All notable changes to MuffinSync will be documented in this file.
 - **Mixed-font import**: text layers using more than one font across character
   ranges failed to import. Every font in the range is now loaded via
   `getRangeAllFontNames()` before the text is replaced.
+- **CSV round-trip preserved exactly.** Leading and trailing whitespace, tab
+  indentation, and carriage returns were silently lost or truncated on export
+  and re-import. Values that need protection are now quoted on export, and a
+  field that arrived quoted is never trimmed on the way back in.
 
 ### Changed
 - Build toolchain updated: webpack 5.111, TypeScript 5.9, ts-loader 9.6,
@@ -19,6 +23,22 @@ All notable changes to MuffinSync will be documented in this file.
 - Console logging is gated behind a `DEBUG` flag instead of always running.
 - `ui.html` is now minified in production builds, cutting it from 22.7 KiB to
   12.6 KiB. `code.js` is 1.84 KiB.
+- **The UI is bundled instead of being one inline script**, so it can use npm
+  packages. The build still inlines the compiled bundle into `ui.html` at
+  build time, so the output remains the single self-contained file Figma
+  requires.
+- **Source is split into `src/main/`, `src/ui/`, and `src/shared/`**, each
+  with its own TypeScript config (`tsconfig.main.json`, `tsconfig.ui.json`,
+  both extending the shared `tsconfig.json`). DOM types are unreachable from
+  sandbox code and Figma types are unreachable from UI code — enforced by the
+  compiler, not by convention.
+- **Messages between the sandbox and the UI are now validated**, not just cast
+  on the message type. `unwrapUiMessage` / `unwrapMainMessage` check every
+  payload field before a message is accepted.
+- **Status detail lines are rendered as structured markup** (a Preact
+  component) instead of being concatenated into an HTML string. Those lines
+  can include text-layer names read from an imported file, so the old
+  approach was an injection path fed by document content.
 
 ### Removed
 - Unused `css-loader` / `style-loader` dependencies and their webpack rule — the
@@ -29,6 +49,9 @@ All notable changes to MuffinSync will be documented in this file.
 ### Added
 - GitHub Actions workflow running type check and build on every push and PR.
 - `.editorconfig`.
+- A test suite (vitest), where there was none: 61 tests covering CSV and JSON
+  handling, the message contract, layer traversal, scope resolution, and text
+  application.
 
 ## [1.0.0] - 2025-08-08
 
