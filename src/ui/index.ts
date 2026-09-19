@@ -25,7 +25,6 @@ declare global {
 type StatusKind = 'success' | 'error' | 'info';
 
 let selectedFormat: ExportFormat = 'csv';
-let exportedData: TextLayerData[] | null = null;
 
 // Debug functionality (console logging only)
 function debugLog(message: string, type: string = 'info'): void {
@@ -184,7 +183,6 @@ window.onmessage = (event: MessageEvent) => {
 };
 
 function showExportedData(data: TextLayerData[], format: ExportFormat): void {
-  exportedData = data;
   const exportSection = byId('export-section');
   if (!exportSection) return;
 
@@ -240,98 +238,6 @@ function downloadFile(data: TextLayerData[], format: ExportFormat): void {
 
     showStatus('❌ An error occurred. Please check the debug log.', 'error');
   }
-}
-
-async function tryBlobDownload(
-  content: string,
-  filename: string,
-  mimeType: string
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-
-      // Create forced click event
-      const event = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-      });
-
-      document.body.appendChild(a);
-      a.dispatchEvent(event);
-
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        resolve('blob download success');
-      }, 100);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-async function tryDataUrlDownload(
-  content: string,
-  filename: string,
-  mimeType: string
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      const dataUrl = `data:${mimeType};charset=utf-8,${encodeURIComponent(
-        content
-      )}`;
-
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = filename;
-      a.style.display = 'none';
-
-      document.body.appendChild(a);
-      a.click();
-
-      setTimeout(() => {
-        document.body.removeChild(a);
-        resolve('data url download success');
-      }, 100);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-async function tryIframeDownload(
-  content: string,
-  filename: string,
-  mimeType: string
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = url;
-
-      document.body.appendChild(iframe);
-
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        URL.revokeObjectURL(url);
-        resolve('iframe download success');
-      }, 1000);
-    } catch (error) {
-      reject(error);
-    }
-  });
 }
 
 async function attemptDownload(
