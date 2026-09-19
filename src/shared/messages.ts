@@ -11,14 +11,6 @@ export type MainToUi =
   | { type: 'import-complete'; updated: number; failed: number; errors: string[] }
   | { type: 'error'; message: string };
 
-const UI_TO_MAIN_TYPES = ['extract', 'import', 'cancel'];
-const MAIN_TO_UI_TYPES = [
-  'extracted',
-  'no-text-found',
-  'import-complete',
-  'error',
-];
-
 /**
  * Figma delivers plugin messages under more than one envelope depending on
  * direction and API version. Peel them here, once, so no caller has to guess.
@@ -39,16 +31,64 @@ function peel(event: unknown): Record<string, unknown> | null {
   return e;
 }
 
-function unwrap<T>(event: unknown, allowed: string[]): T | null {
-  const payload = peel(event);
-  if (!payload || typeof payload.type !== 'string') return null;
-  return allowed.includes(payload.type) ? (payload as T) : null;
+function isTextLayerRows(value: unknown): value is TextLayerData[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (r) =>
+        typeof r === 'object' &&
+        r !== null &&
+        typeof (r as Record<string, unknown>).id === 'string' &&
+        typeof (r as Record<string, unknown>).name === 'string' &&
+        typeof (r as Record<string, unknown>).characters === 'string'
+    )
+  );
 }
 
 export function unwrapUiMessage(event: unknown): UiToMain | null {
-  return unwrap<UiToMain>(event, UI_TO_MAIN_TYPES);
+  const p = peel(event);
+  if (!p || typeof p.type !== 'string') return null;
+
+  switch (p.type) {
+    case 'extract':
+      return p.scope === 'selection' || p.scope === 'page'
+        ? { type: 'extract', scope: p.scope }
+        : null;
+    case 'import':
+      return isTextLayerRows(p.rows) ? { type: 'import', rows: p.rows } : null;
+    case 'cancel':
+      return { type: 'cancel' };
+    default:
+      return null;
+  }
 }
 
 export function unwrapMainMessage(event: unknown): MainToUi | null {
-  return unwrap<MainToUi>(event, MAIN_TO_UI_TYPES);
+  const p = peel(event);
+  if (!p || typeof p.type !== 'string') return null;
+
+  switch (p.type) {
+    case 'extracted':
+      return isTextLayerRows(p.rows) ? { type: 'extracted', rows: p.rows } : null;
+    case 'no-text-found':
+      return { type: 'no-text-found' };
+    case 'import-complete':
+      return typeof p.updated === 'number' &&
+        typeof p.failed === 'number' &&
+        Array.isArray(p.errors) &&
+        p.errors.every((e) => typeof e === 'string')
+        ? {
+            type: 'import-complete',
+            updated: p.updated,
+            failed: p.failed,
+            errors: p.errors as string[],
+          }
+        : null;
+    case 'error':
+      return typeof p.message === 'string'
+        ? { type: 'error', message: p.message }
+        : null;
+    default:
+      return null;
+  }
 }

@@ -32,6 +32,27 @@ describe('unwrapUiMessage', () => {
     expect(unwrapUiMessage('cancel')).toBeNull();
     expect(unwrapUiMessage({})).toBeNull();
   });
+
+  it('rejects extract without a scope', () => {
+    expect(unwrapUiMessage({ type: 'extract' })).toBeNull();
+  });
+
+  it('rejects extract with an unknown scope', () => {
+    expect(unwrapUiMessage({ type: 'extract', scope: 'document' })).toBeNull();
+  });
+
+  it('rejects import without rows', () => {
+    expect(unwrapUiMessage({ type: 'import' })).toBeNull();
+  });
+
+  it('rejects import whose rows are not layer records', () => {
+    expect(unwrapUiMessage({ type: 'import', rows: [{ id: 1 }] })).toBeNull();
+  });
+
+  it('accepts import with well-formed rows', () => {
+    const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
+    expect(unwrapUiMessage({ type: 'import', rows })).toEqual({ type: 'import', rows });
+  });
 });
 
 describe('unwrapMainMessage', () => {
@@ -42,5 +63,13 @@ describe('unwrapMainMessage', () => {
 
   it('returns null for a UI-bound type', () => {
     expect(unwrapMainMessage({ type: 'cancel' })).toBeNull();
+  });
+
+  it('rejects import-complete with missing counts', () => {
+    expect(unwrapMainMessage({ type: 'import-complete', updated: 1 })).toBeNull();
+  });
+
+  it('rejects error without a message string', () => {
+    expect(unwrapMainMessage({ type: 'error' })).toBeNull();
   });
 });
