@@ -1,13 +1,9 @@
 import type { TextLayerData } from '../../shared/types';
-import type { UiToMain } from '../../shared/messages';
 import { fromCSV } from '../format/csv';
 import { fromJSON } from '../format/json';
 import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
-
-function post(message: UiToMain): void {
-  parent.postMessage({ pluginMessage: message }, '*');
-}
+import { post } from '../post';
 
 export function initImport(root: Document): void {
   const fileInputElement = byId('file-input', root);

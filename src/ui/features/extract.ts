@@ -1,21 +1,17 @@
 import type { ExportFormat, TextLayerData } from '../../shared/types';
 import { isExportFormat } from '../../shared/types';
-import type { UiToMain } from '../../shared/messages';
 import { toCSV } from '../format/csv';
 import { toJSON } from '../format/json';
 import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
 import { attemptDownload, filenameFor, mimeTypeFor } from '../download';
+import { post } from '../post';
 
 let selectedFormat: ExportFormat = 'csv';
 
 /** Read by index.ts's message listener when an 'extracted' message arrives. */
 export function getSelectedFormat(): ExportFormat {
   return selectedFormat;
-}
-
-function post(message: UiToMain): void {
-  parent.postMessage({ pluginMessage: message }, '*');
 }
 
 export function initExtract(root: Document): void {
