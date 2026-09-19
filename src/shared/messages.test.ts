@@ -72,4 +72,39 @@ describe('unwrapMainMessage', () => {
   it('rejects error without a message string', () => {
     expect(unwrapMainMessage({ type: 'error' })).toBeNull();
   });
+
+  it('accepts an extracted message and keeps its rows', () => {
+    const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
+    expect(unwrapMainMessage({ pluginMessage: { type: 'extracted', rows } })).toEqual({
+      type: 'extracted',
+      rows,
+    });
+  });
+
+  it('accepts an import-complete message and keeps its counts', () => {
+    expect(
+      unwrapMainMessage({
+        pluginMessage: {
+          type: 'import-complete',
+          updated: 3,
+          failed: 1,
+          errors: ['boom'],
+        },
+      })
+    ).toEqual({ type: 'import-complete', updated: 3, failed: 1, errors: ['boom'] });
+  });
+
+  it('accepts an error message and keeps its text', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'error', message: 'nope' } })).toEqual(
+      { type: 'error', message: 'nope' }
+    );
+  });
+
+  it('reads the envelope the UI actually receives at runtime', () => {
+    // figma.ui.postMessage arrives in the iframe as event.data.pluginMessage.
+    const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
+    expect(
+      unwrapMainMessage({ data: { pluginMessage: { type: 'extracted', rows } } })
+    ).toEqual({ type: 'extracted', rows });
+  });
 });
