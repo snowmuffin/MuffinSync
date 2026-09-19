@@ -31,14 +31,17 @@ function StatusBanner() {
     <div class={`status ${status.kind}`}>
       {status.message}
       {status.details.length > 0 && (
-        <small>
-          {status.details.map((line, index) => (
-            <>
-              {index > 0 && <br />}
-              {line}
-            </>
-          ))}
-        </small>
+        <>
+          <br />
+          <small>
+            {status.details.map((line, index) => (
+              <>
+                {index > 0 && <br />}
+                {line}
+              </>
+            ))}
+          </small>
+        </>
       )}
     </div>
   );
