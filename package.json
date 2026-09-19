@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Figma plugin for extracting, editing, and importing text layers",
   "main": "code.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "npx webpack --mode=production",
     "build:watch": "npx webpack --mode=development --watch",
@@ -10,14 +13,12 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@figma/plugin-typings": "^1.75.0",
-    "@types/node": "^18.0.0",
-    "css-loader": "^6.8.1",
-    "html-webpack-plugin": "^5.5.3",
-    "style-loader": "^3.3.3",
-    "ts-loader": "^9.4.4",
-    "typescript": "^5.1.6",
-    "webpack": "^5.88.2",
+    "@figma/plugin-typings": "^1.138.0",
+    "@types/node": "^22.20.4",
+    "html-webpack-plugin": "^5.6.8",
+    "ts-loader": "^9.6.2",
+    "typescript": "^5.9.3",
+    "webpack": "^5.111.1",
     "webpack-cli": "^5.1.4"
   },
   "author": "snowmuffin",

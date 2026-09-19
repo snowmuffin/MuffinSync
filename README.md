@@ -20,7 +20,7 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 
 ### 3️⃣ Apply Modified Data (Import)
 - **Seamless Importing**: Users can upload their modified CSV or JSON files back into Figma, where the plugin locates existing text layers and updates their content accordingly.
-- **Automatic Font Handling**: The plugin includes functionality for asynchronous font loading (`loadFontAsync()`), which helps prevent errors related to font availability.
+- **Automatic Font Handling**: Every font a text layer uses is loaded before its content is replaced. Layers with mixed fonts across character ranges are handled too — each range's font is loaded via `getRangeAllFontNames()`, so multi-font layers import without errors.
 
 ## 🚀 How to Use
 
@@ -65,7 +65,7 @@ id,name,characters
 ## 🛠️ Development Setup
 
 ### Requirements
-- **Node.js**: Version 18 or higher
+- **Node.js**: Version 22 or higher (CI builds on Node 22)
 - **npm**: Node package manager
 
 ### Installation and Build
