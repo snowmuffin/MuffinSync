@@ -49,3 +49,7 @@ temp/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# Agent scratch: worktrees and execution ledgers. Local state, never committed.
+/.claude/worktrees/
+/.superpowers/
