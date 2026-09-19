@@ -1,8 +1,11 @@
 import { unwrapMainMessage } from '../shared/messages';
-import { debugLog } from './dom';
-import { showStatus } from './status';
+import { byId, debugLog } from './dom';
+import { mountStatus, showStatus } from './status';
 import { initExtract, showExportedData, getSelectedFormat } from './features/extract';
 import { initImport } from './features/import';
+
+const statusHost = byId('status-host');
+if (statusHost) mountStatus(statusHost);
 
 // Initialize debug logging
 debugLog('Plugin UI initialization complete');
@@ -54,11 +57,12 @@ window.onmessage = (event: MessageEvent) => {
       let statusMessage = `Updated ${message.updated} text layers.`;
       if (message.failed > 0) {
         statusMessage += ` (${message.failed} errors)`;
-        if (message.errors && message.errors.length > 0) {
-          statusMessage += '<br><small>' + message.errors.join('<br>') + '</small>';
-        }
       }
-      showStatus(statusMessage, message.failed > 0 ? 'error' : 'success');
+      showStatus(
+        statusMessage,
+        message.failed > 0 ? 'error' : 'success',
+        message.failed > 0 ? message.errors : []
+      );
       break;
     }
 

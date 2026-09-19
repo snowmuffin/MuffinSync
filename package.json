@@ -33,5 +33,8 @@
   "homepage": "https://github.com/snowmuffin/MuffinSync#readme",
   "bugs": {
     "url": "https://github.com/snowmuffin/MuffinSync/issues"
+  },
+  "dependencies": {
+    "preact": "^10.29.8"
   }
 }
