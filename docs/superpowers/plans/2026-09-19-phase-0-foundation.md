@@ -1649,7 +1649,9 @@ git commit -m "docs: bring README and CHANGELOG up to the Phase 0 structure"
 
 Stated so no reviewer looks for them:
 
-- **No scope selector.** `extract` sends `scope: 'page'` unconditionally. The selector, and the `selectionchange` invalidation that goes with it, are Phase 1 (spec section 3.1).
+- **No scope selector.** `extract` sends one fixed scope; the selector, and the
+  `selectionchange` invalidation that goes with it, are Phase 1 (spec section
+  3.1). See the amendment below for which scope.
 - **No Change Set.** Import still applies directly. Routing it through review is Phase 1.
 - **No Preact port.** Only the status banner, and only to prove the pipeline.
 - **No network.** `manifest.json` keeps `allowedDomains: ["none"]`.
@@ -1664,3 +1666,47 @@ Stated so no reviewer looks for them:
 **Type consistency.** `TextLayerData` is defined once in Task 1 and imported everywhere after. `collectTextLayers` and `applyTextChanges` keep the names given in Task 4's Interfaces block. `ApplicableNode` is defined in `apply.ts` and imported by `main/index.ts`. `FormatError` is defined in `csv.ts` and imported by `json.ts` and its test. `showStatus` keeps its original signature so Task 7 changes no call site.
 
 **One known rough edge.** Task 5 Step 4 is a move of ~580 lines and is the largest single step here. It resists decomposition: the inline script has to leave `ui.html` in one piece or the plugin is broken in between. Its gate is the six-point manual parity check in Step 6, which is why that check is specified in full rather than left to judgement.
+
+---
+
+## Amendments made during execution
+
+This plan was written before any of it ran. Four of its instructions turned out
+to be wrong, and were overridden while executing. They are recorded here so the
+document does not mislead anyone reading it later; the code is the authority.
+
+**1. `extract` sends `scope: 'selection'`, not `scope: 'page'`.**
+Task 5's instruction to send `'page'` contradicted Task 5's own manual check 5,
+which requires that selecting a frame and extracting yields only that frame's
+layers. Sending `'page'` would have extracted the whole page regardless of
+selection — a silent regression in the plugin's most common use. The sandbox's
+`resolveRoots` falls back to the page when the selection is empty, so sending
+`'selection'` reproduces the behaviour the plugin has always had.
+
+**2. Webpack rules use `oneOf`, and the UI rule covers `src/ui` only.**
+As drawn, the Task 4 and Task 5 rules both matched `src/shared/*.ts`, which
+would have compiled those files twice under different configs. The UI rule also
+matches `.tsx` while the sandbox rule matches `.ts`, so a future `.tsx` under
+`src/shared` would otherwise be pulled into the sandbox bundle with Preact JSX.
+
+**3. Both tsconfigs are created in Task 4, and `typecheck` runs both.**
+The plan left `tsconfig.json` directly compilable with no DOM lib and no Figma
+types, which would have failed on every file.
+
+**4. Status detail lines are a `string[]`, not concatenated markup.**
+Task 7 as drawn would have rendered `<br>` and `<small>` as literal text, since
+JSX escapes text children. Reaching for `dangerouslySetInnerHTML` would have
+preserved the output but kept an injection path: those strings interpolate layer
+names read from imported files. That matters once Phase 3 opens network access
+and stores API keys, so `showStatus` takes its detail lines as data instead.
+
+Two smaller things the plan got wrong and the code corrected: `"types":
+["@figma/plugin-typings"]` does not resolve under the given `typeRoots` (the
+bare directory name does), and `noEmit: true` in the base config prevents
+ts-loader from emitting, so the loader overrides it.
+
+**Deferred out of this phase**, deliberately: the mixed-font loading path in
+`src/main/index.ts` has no test, because testing it requires injecting the Figma
+API; and `src/ui/status.tsx` has no rendering test, because that needs a DOM
+environment this phase does not carry. Phase 1 needs component tests for the
+diff table anyway and can bring both.
