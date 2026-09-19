@@ -2,14 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { filenameFor, mimeTypeFor } from './download';
 
 describe('filenameFor', () => {
-  const when = new Date('2026-09-19T14:30:00Z');
-
-  it('names CSV exports with a sortable timestamp', () => {
-    expect(filenameFor('csv', when)).toBe('figma-text-layers-2026-09-19.csv');
+  it('names CSV exports with the epoch timestamp', () => {
+    expect(filenameFor('csv', new Date(1700000000000))).toBe(
+      'figma-text-layers-1700000000000.csv'
+    );
   });
 
   it('names JSON exports the same way', () => {
-    expect(filenameFor('json', when)).toBe('figma-text-layers-2026-09-19.json');
+    expect(filenameFor('json', new Date(1700000000000))).toBe(
+      'figma-text-layers-1700000000000.json'
+    );
+  });
+
+  it('takes the timestamp from the date it is given, not from now', () => {
+    expect(filenameFor('csv', new Date(1))).toBe('figma-text-layers-1.csv');
   });
 });
 

@@ -5,7 +5,7 @@ import { toCSV } from '../format/csv';
 import { toJSON } from '../format/json';
 import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
-import { attemptDownload } from '../download';
+import { attemptDownload, filenameFor, mimeTypeFor } from '../download';
 
 let selectedFormat: ExportFormat = 'csv';
 
@@ -71,19 +71,9 @@ function downloadFile(data: TextLayerData[], format: ExportFormat): void {
   debugLog(`Download started: ${format} format, ${data.length} items`);
 
   try {
-    let content: string;
-    let filename: string;
-    let mimeType: string;
-
-    if (format === 'json') {
-      content = toJSON(data);
-      filename = `figma-text-layers-${new Date().getTime()}.json`;
-      mimeType = 'application/json';
-    } else {
-      content = toCSV(data);
-      filename = `figma-text-layers-${new Date().getTime()}.csv`;
-      mimeType = 'text/csv';
-    }
+    const content = format === 'json' ? toJSON(data) : toCSV(data);
+    const filename = filenameFor(format);
+    const mimeType = mimeTypeFor(format);
 
     debugLog(`Filename: ${filename}`);
     debugLog(`MIME type: ${mimeType}`);

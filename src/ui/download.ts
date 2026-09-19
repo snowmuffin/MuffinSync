@@ -19,9 +19,13 @@ declare global {
   }
 }
 
+/**
+ * Downloads are named with epoch milliseconds, which is what the plugin has
+ * always emitted. Keep the format here rather than inline at the call site,
+ * so there is one definition of it and a test can pin it.
+ */
 export function filenameFor(format: ExportFormat, now: Date = new Date()): string {
-  const date = now.toISOString().slice(0, 10);
-  return `figma-text-layers-${date}.${format}`;
+  return `figma-text-layers-${now.getTime()}.${format}`;
 }
 
 export function mimeTypeFor(format: ExportFormat): string {
