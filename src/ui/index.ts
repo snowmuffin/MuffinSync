@@ -1,7 +1,7 @@
 import { unwrapMainMessage } from '../shared/messages';
 import { byId, debugLog } from './dom';
 import { mountStatus, showStatus } from './status';
-import { initExtract, showExportedData, getSelectedFormat } from './features/extract';
+import { initExtract, showExportedData } from './features/extract';
 import { initImport } from './features/import';
 
 const statusHost = byId('status-host');
@@ -37,7 +37,7 @@ window.onmessage = (event: MessageEvent) => {
   switch (message.type) {
     case 'extracted':
       debugLog(`Text extraction complete: ${message.rows.length} layers`);
-      showExportedData(message.rows, getSelectedFormat());
+      showExportedData(message.rows);
       showStatus(
         `Successfully extracted ${message.rows.length} text layers.`,
         'success'

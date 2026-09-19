@@ -73,7 +73,8 @@ describe('resolveRoots', () => {
     expect(resolveRoots('page', sel, page)).toBe(page);
   });
 
-  it('returns the page unchanged when both are empty', () => {
-    expect(resolveRoots('selection', [], [])).toEqual([]);
+  it('returns the page array itself when both are empty', () => {
+    const empty: string[] = [];
+    expect(resolveRoots('selection', [], empty)).toBe(empty);
   });
 });

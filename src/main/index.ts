@@ -47,17 +47,33 @@ figma.ui.onmessage = async (event: unknown) => {
   try {
     switch (message.type) {
       case 'extract': {
-        const rows = collectTextLayers(rootsFor(message.scope));
-        send(rows.length === 0 ? { type: 'no-text-found' } : { type: 'extracted', rows });
+        try {
+          const rows = collectTextLayers(rootsFor(message.scope));
+          send(rows.length === 0 ? { type: 'no-text-found' } : { type: 'extracted', rows });
+        } catch (error) {
+          throw new Error(
+            `Error occurred during text extraction: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
         break;
       }
       case 'import': {
-        const result = await applyTextChanges(message.rows, {
-          getNode: async (id) =>
-            (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
-          loadFonts,
-        });
-        send({ type: 'import-complete', ...result });
+        try {
+          const result = await applyTextChanges(message.rows, {
+            getNode: async (id) =>
+              (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
+            loadFonts,
+          });
+          send({ type: 'import-complete', ...result });
+        } catch (error) {
+          throw new Error(
+            `Error occurred during text import: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
         break;
       }
       case 'cancel':

@@ -5,6 +5,6 @@ export default defineConfig({
     // Every module under test is pure logic. Nothing here needs a DOM;
     // code that does touch the DOM stays out of the test suite by design.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
 });

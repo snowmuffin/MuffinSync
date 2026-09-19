@@ -9,11 +9,6 @@ import { post } from '../post';
 
 let selectedFormat: ExportFormat = 'csv';
 
-/** Read by index.ts's message listener when an 'extracted' message arrives. */
-export function getSelectedFormat(): ExportFormat {
-  return selectedFormat;
-}
-
 export function initExtract(root: Document): void {
   // Format selector
   root.querySelectorAll<HTMLElement>('.format-option').forEach((option) => {
@@ -40,7 +35,7 @@ export function initExtract(root: Document): void {
   });
 }
 
-export function showExportedData(data: TextLayerData[], format: ExportFormat): void {
+export function showExportedData(data: TextLayerData[]): void {
   const exportSection = byId('export-section');
   if (!exportSection) return;
 
