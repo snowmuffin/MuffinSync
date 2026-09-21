@@ -82,20 +82,45 @@ npm run build
 
 # Activate watch mode for live changes
 npm run build:watch
+
+# Run the test suite
+npm test
+
+# Re-run on change
+npm run test:watch
 ```
 
 ### Project Structure
 ```
 MuffinSync/
 ├── src/
-│   ├── code.ts          # Plugin sandbox logic (runs in Figma)
-│   └── ui.html          # Self-contained plugin UI (markup + inline script)
-├── dist/                # Build output (generated; not committed)
-├── manifest.json        # Figma plugin manifest file
-├── package.json         # Project metadata and dependencies
-├── tsconfig.json        # TypeScript configuration
-└── webpack.config.js    # Configuration for module bundling
+│   ├── main/            # Figma sandbox. No DOM, no network.
+│   │   ├── index.ts     # message router, scope resolution, font loading
+│   │   ├── traverse.ts  # collectTextLayers, resolveRoots
+│   │   └── apply.ts     # applyTextChanges
+│   ├── shared/          # imported by both sides
+│   │   ├── types.ts     # TextLayerData, Scope, ExportFormat
+│   │   └── messages.ts  # UiToMain, MainToUi, unwrapUiMessage, unwrapMainMessage
+│   ├── ui/              # iframe. DOM, no Figma API.
+│   │   ├── index.ts     # mounts the status banner, routes inbound messages
+│   │   ├── dom.ts       # byId, debugLog, messageOf
+│   │   ├── status.tsx   # Preact status banner
+│   │   ├── post.ts      # typed postMessage to the sandbox
+│   │   ├── download.ts  # filenameFor, mimeTypeFor, attemptDownload, displayDownloadContent
+│   │   ├── features/    # extract.ts, import.ts
+│   │   └── format/      # csv.ts, json.ts
+│   └── ui.html          # markup and styles only; the bundle is inlined at build time
+├── dist/                 # Build output (generated; not committed)
+├── manifest.json         # Figma plugin manifest file
+├── package.json          # Project metadata and dependencies
+├── tsconfig.json         # Base TypeScript config; never compiled directly
+├── tsconfig.main.json    # Extends the base for src/main + src/shared (no DOM types)
+├── tsconfig.ui.json      # Extends the base for src/ui + src/shared (DOM + Preact JSX)
+├── vitest.config.ts      # Test runner configuration
+└── webpack.config.js     # Bundles src/main and src/ui, inlines the UI bundle into ui.html
 ```
+
+Tests sit beside the code they cover, as `*.test.ts`.
 
 ## ⚙️ Installing Plugin in Figma
 
