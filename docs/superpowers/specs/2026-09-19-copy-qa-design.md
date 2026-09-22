@@ -138,13 +138,30 @@ type ProposedChange = {
   accepted: boolean;      // user's decision in review
 };
 
+/** A row that names a target the document cannot offer. Not a proposal. */
+type BlockedChange = {
+  nodeId: string;
+  layerName: string;      // as written in the source; the document has no node to ask
+  reason: 'missing' | 'not-text';
+};
+
 type ChangeSet = {
-  changes: ProposedChange[];
+  changes: ProposedChange[];   // only rows whose text actually differs
+  blocked: BlockedChange[];    // cannot be applied; shown, never selectable
+  unchangedCount: number;      // rows that matched; counted, not listed
   scope?: Scope;          // set when produced by a traversal; see 3.1.
                           // absent for 'import', whose targets come from the file
   createdAt: number;
 };
 ```
+
+Blocked rows are a separate array rather than a status on `ProposedChange`, so
+that `ProposedChange` keeps one meaning: something the user can accept. The
+apply path filters on `accepted` alone, and a row the document cannot take has
+no way to reach it.
+
+Unchanged rows are counted, not listed. A re-imported file usually differs in a
+handful of rows out of hundreds; listing the rest buries the ones that matter.
 
 Three producers, one review UI, one apply path (`main/apply.ts`).
 
@@ -207,6 +224,61 @@ large files. If it is ever wanted, it is its own piece of work.
 
 Per-change failures are collected and reported; one bad node does not abort the
 batch. This matches the current import behaviour and should be preserved.
+
+Step 2 stays even though the review already screened for it. The document can
+change between review and apply — a layer deleted, a node replaced — so the
+check at write time is the one that counts.
+
+### 3.3 Reviewing a change set
+
+**Who builds the set.** The UI parses the file, but it cannot read the
+document, so it cannot know the "before" text. It sends the parsed rows to the
+sandbox, which reads each node's current `characters` and returns a complete
+`ChangeSet`. This keeps the invariants in 2.2 intact: only the sandbox touches
+nodes, only the UI touches files.
+
+```
+choose file → UI parses → sandbox builds the change set → review → apply
+```
+
+**The screen.** Review takes over the whole panel rather than appearing as
+another section. The plugin window is 400×500, and a list of changes with a
+header and an action bar needs that height. Cancelling returns to the main
+screen with nothing applied. No tabs — Phase 2 and 3 can introduce them when
+they have something to put in one.
+
+Each entry shows the layer name, then the before and after text stacked, not
+side by side: at 400px wide, two columns give roughly 170px each, which wraps
+or truncates ordinary UI copy badly enough to defeat the purpose.
+
+```
+┌─ Review changes ──────────────────┐
+│ 3 of 200 layers changed           │
+│ [✓ Select all]      197 unchanged │
+│───────────────────────────────────│
+│ ☑ Hero / Title                    │
+│   − Welcome back                  │
+│   + Welcome back, friend          │
+│───────────────────────────────────│
+│ ☐ Footer / Legal                  │
+│   − © 2025 Acme                   │
+│   + © 2026 Acme                   │
+│───────────────────────────────────│
+│ Cannot apply (1)                  │
+│   Old CTA — layer no longer exists │
+│───────────────────────────────────│
+│         [Apply 2 changes]         │
+└───────────────────────────────────┘
+```
+
+Blocked rows sit in their own section at the bottom, with the reason and no
+checkbox. They are shown rather than summarised so the user can fix the file or
+the document before applying — or ignore them and proceed, which is why they do
+not block the button.
+
+**Very large change sets are not virtualised.** Whether hundreds of rows in a
+400px panel is actually a problem is a question to answer by measuring, not by
+building a windowing layer first.
 
 ---
 
@@ -304,6 +376,14 @@ inside the `ui.html` inline script with no test covering it.
 
 **Runner:** vitest — native TypeScript, fast, no extra build step.
 
+**A DOM environment arrives with Phase 1, not before.** Phase 0 runs vitest
+under `environment: 'node'` because every module it tests is pure. The review
+screen is the first component whose rendered output is worth asserting, so the
+DOM environment comes in alongside it. Two things go in at the same time: the
+review's own tests, and a rendering test for the status banner — Phase 0 shipped
+a commit where its detail lines ran into the message text, and review caught
+that, not a test.
+
 **What gets tested:** pure functions, which is why logic is pushed out of the
 Figma-facing modules.
 
@@ -328,7 +408,7 @@ Each phase ends with a working plugin.
 | Phase | Contents | Done when |
 |---|---|---|
 | **0** | Build pipeline, bundle inlining, module split, vitest | **No behaviour change.** Existing extract and import work exactly as before, now with tests |
-| **1** | Change Set model, Diff Review UI, import retrofitted onto it, shared scope selector | Import routes through review instead of overwriting; extract's scope is visible rather than implicit |
+| **1** | Change Set model, Diff Review UI, import retrofitted onto it, shared scope selector, DOM test environment | Import routes through review instead of overwriting; extract's scope is visible rather than implicit; component output is under test |
 | **2** | Find & Replace, Layer Navigation | Complete without any network access |
 | **3** | AI provider layer, Spell Check | Figma runtime `networkAccess` verified here |
 
