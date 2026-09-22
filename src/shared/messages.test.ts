@@ -62,6 +62,12 @@ describe('unwrapUiMessage', () => {
     expect(unwrapUiMessage({ type: 'plan-import' })).toBeNull();
   });
 
+  it('rejects plan-import whose rows are not layer records', () => {
+    expect(unwrapUiMessage({ type: 'plan-import', rows: [{ id: 1 }] })).toBeNull();
+    expect(unwrapUiMessage({ type: 'plan-import', rows: [{ id: '1:1', name: 'A' }] })).toBeNull();
+    expect(unwrapUiMessage({ type: 'plan-import', rows: 'not an array' })).toBeNull();
+  });
+
   it('accepts apply with well-formed changes', () => {
     expect(unwrapUiMessage({ type: 'apply', changes: [change] })).toEqual({
       type: 'apply',
@@ -107,6 +113,15 @@ describe('unwrapMainMessage', () => {
       type: 'extracted',
       rows,
     });
+  });
+
+  it('rejects extracted whose rows are not layer records', () => {
+    expect(
+      unwrapMainMessage({ pluginMessage: { type: 'extracted', rows: [{ id: 1 }] } })
+    ).toBeNull();
+    expect(
+      unwrapMainMessage({ pluginMessage: { type: 'extracted', rows: [{ characters: 'x' }] } })
+    ).toBeNull();
   });
 
   it('accepts an import-complete message and keeps its counts', () => {
