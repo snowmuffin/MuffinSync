@@ -40,6 +40,8 @@ const boxes = () =>
   Array.from(host.querySelectorAll<HTMLInputElement>('input[type=checkbox][data-change]'));
 const applyButton = () =>
   host.querySelector<HTMLButtonElement>('[data-action=apply]');
+const selectAllBox = () =>
+  host.querySelector<HTMLInputElement>('.review-select-all input[type=checkbox]');
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -102,6 +104,52 @@ describe('ReviewScreen', () => {
       boxes()[0].click();
     });
     expect(applyButton()?.disabled).toBe(true);
+  });
+
+  it('clicking select-all when everything is selected clears the selection', () => {
+    draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
+    expect(selectAllBox()?.checked).toBe(true);
+
+    act(() => {
+      selectAllBox()?.click();
+    });
+
+    expect(boxes().every((b) => !b.checked)).toBe(true);
+    expect(applyButton()?.disabled).toBe(true);
+  });
+
+  it('clicking select-all again re-selects everything', () => {
+    draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
+
+    act(() => {
+      selectAllBox()?.click();
+    });
+    act(() => {
+      selectAllBox()?.click();
+    });
+
+    expect(boxes().every((b) => b.checked)).toBe(true);
+    expect(applyButton()?.textContent).toContain('2');
+  });
+
+  it('clicking select-all with a mixed selection selects everything', () => {
+    draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
+
+    // Untick one row, leaving a mixed selection.
+    act(() => {
+      boxes()[0].click();
+    });
+    expect(selectAllBox()?.checked).toBe(false);
+
+    act(() => {
+      selectAllBox()?.click();
+    });
+
+    // The control read as unchecked (not all were selected), so the click
+    // native-toggles it to checked -- which the handler reads as "select
+    // all", not "clear".
+    expect(boxes().every((b) => b.checked)).toBe(true);
+    expect(applyButton()?.textContent).toContain('2');
   });
 
   it('lists blocked rows with a reason and no checkbox', () => {
