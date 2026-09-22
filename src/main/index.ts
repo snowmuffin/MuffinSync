@@ -12,6 +12,17 @@ function send(message: MainToUi): void {
 }
 
 /**
+ * The UI cannot ask Figma what is selected, so the sandbox tells it: once at
+ * startup, and again on every change. This only feeds the visible choice in
+ * the scope control -- it does not affect what `rootsFor` resolves.
+ */
+const reportSelection = () =>
+  send({ type: 'selection', present: figma.currentPage.selection.length > 0 });
+
+figma.on('selectionchange', reportSelection);
+reportSelection();
+
+/**
  * Resolve a scope to the roots a walk starts from. See spec section 3.1.
  *
  * An empty selection falls back to the whole page. The plugin has always

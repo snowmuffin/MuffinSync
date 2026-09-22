@@ -198,4 +198,26 @@ describe('unwrapMainMessage', () => {
       })
     ).toBeNull();
   });
+
+  it('accepts a selection message reporting a present selection', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'selection', present: true } })).toEqual(
+      { type: 'selection', present: true }
+    );
+  });
+
+  it('accepts a selection message reporting no selection', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'selection', present: false } })).toEqual(
+      { type: 'selection', present: false }
+    );
+  });
+
+  it('rejects a selection message missing present', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'selection' } })).toBeNull();
+  });
+
+  it('rejects a selection message whose present is not a boolean', () => {
+    expect(
+      unwrapMainMessage({ pluginMessage: { type: 'selection', present: 'yes' } })
+    ).toBeNull();
+  });
 });

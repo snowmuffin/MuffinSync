@@ -17,7 +17,8 @@ export type MainToUi =
   | { type: 'no-text-found' }
   | { type: 'change-set'; changeSet: ChangeSet }
   | { type: 'import-complete'; updated: number; failed: number; errors: string[] }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'selection'; present: boolean };
 
 /**
  * Figma delivers plugin messages under more than one envelope depending on
@@ -149,6 +150,10 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
     case 'error':
       return typeof p.message === 'string'
         ? { type: 'error', message: p.message }
+        : null;
+    case 'selection':
+      return typeof p.present === 'boolean'
+        ? { type: 'selection', present: p.present }
         : null;
     default:
       return null;

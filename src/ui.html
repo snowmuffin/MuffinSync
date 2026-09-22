@@ -142,6 +142,39 @@
         border-color: #3b82f6;
       }
 
+      .scope-selector {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .scope-option {
+        flex: 1;
+        padding: 8px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .scope-option.selected {
+        border-color: #3b82f6;
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .scope-option:hover {
+        border-color: #3b82f6;
+      }
+
+      .scope-option.disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
       .instruction {
         font-size: 13px;
         color: #64748b;
@@ -172,6 +205,11 @@
           <div class="format-selector">
             <div class="format-option selected" data-format="csv">CSV</div>
             <div class="format-option" data-format="json">JSON</div>
+          </div>
+
+          <div class="scope-selector">
+            <div class="scope-option selected" data-scope="selection">Selection</div>
+            <div class="scope-option" data-scope="page">Current page</div>
           </div>
 
           <button class="button primary" id="extract-btn">

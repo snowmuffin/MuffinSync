@@ -4,6 +4,7 @@ import { mountStatus, showStatus } from './status';
 import { initExtract, showExportedData } from './features/extract';
 import { initImport } from './features/import';
 import { openReview, closeReview } from './features/review';
+import { initScope, setSelectionPresent } from './features/scope';
 
 const statusHost = byId('status-host');
 if (statusHost) mountStatus(statusHost);
@@ -24,6 +25,7 @@ setTimeout(() => {
 
 initExtract(document);
 initImport(document);
+initScope(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {
@@ -80,6 +82,11 @@ window.onmessage = (event: MessageEvent) => {
     case 'error':
       debugLog(`Plugin error: ${message.message}`, 'error');
       showStatus(message.message, 'error');
+      break;
+
+    case 'selection':
+      debugLog(`Selection changed: present=${message.present}`);
+      setSelectionPresent(message.present);
       break;
   }
 };
