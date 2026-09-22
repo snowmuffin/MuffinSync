@@ -46,10 +46,16 @@ describe('scope control', () => {
   });
 
   it('re-enables the Selection option when a selection returns', () => {
+    // Starts with Selection chosen (the default asserted above).
     setSelectionPresent(false);
     setSelectionPresent(true);
 
     expect(selectionOption()?.classList.contains('disabled')).toBe(false);
+
+    // Re-enabling must not resurrect the old choice: the user's scope stayed
+    // on 'page' when the selection vanished, and it stays there until they
+    // pick something themselves.
+    expect(getScope()).toBe('page');
   });
 
   it('changes the choice when an option is clicked', () => {
