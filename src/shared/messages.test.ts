@@ -41,17 +41,45 @@ describe('unwrapUiMessage', () => {
     expect(unwrapUiMessage({ type: 'extract', scope: 'document' })).toBeNull();
   });
 
-  it('rejects import without rows', () => {
-    expect(unwrapUiMessage({ type: 'import' })).toBeNull();
-  });
+  const change = {
+    nodeId: '1:1',
+    layerName: 'Title',
+    before: 'old',
+    after: 'new',
+    source: 'import',
+    accepted: true,
+  };
 
-  it('rejects import whose rows are not layer records', () => {
-    expect(unwrapUiMessage({ type: 'import', rows: [{ id: 1 }] })).toBeNull();
-  });
-
-  it('accepts import with well-formed rows', () => {
+  it('accepts plan-import with well-formed rows', () => {
     const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
-    expect(unwrapUiMessage({ type: 'import', rows })).toEqual({ type: 'import', rows });
+    expect(unwrapUiMessage({ type: 'plan-import', rows })).toEqual({
+      type: 'plan-import',
+      rows,
+    });
+  });
+
+  it('rejects plan-import without rows', () => {
+    expect(unwrapUiMessage({ type: 'plan-import' })).toBeNull();
+  });
+
+  it('accepts apply with well-formed changes', () => {
+    expect(unwrapUiMessage({ type: 'apply', changes: [change] })).toEqual({
+      type: 'apply',
+      changes: [change],
+    });
+  });
+
+  it('rejects apply whose changes are not proposals', () => {
+    expect(unwrapUiMessage({ type: 'apply', changes: [{ nodeId: 1 }] })).toBeNull();
+  });
+
+  it('rejects apply without changes', () => {
+    expect(unwrapUiMessage({ type: 'apply' })).toBeNull();
+  });
+
+  it('no longer recognises the old import message', () => {
+    const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
+    expect(unwrapUiMessage({ type: 'import', rows })).toBeNull();
   });
 });
 
@@ -106,5 +134,53 @@ describe('unwrapMainMessage', () => {
     expect(
       unwrapMainMessage({ data: { pluginMessage: { type: 'extracted', rows } } })
     ).toEqual({ type: 'extracted', rows });
+  });
+
+  const change = {
+    nodeId: '1:1',
+    layerName: 'Title',
+    before: 'old',
+    after: 'new',
+    source: 'import',
+    accepted: true,
+  };
+
+  it('accepts a change-set and keeps its contents', () => {
+    const changeSet = {
+      changes: [change],
+      blocked: [{ nodeId: '1:2', layerName: 'Gone', reason: 'missing' }],
+      unchangedCount: 7,
+      createdAt: 1700000000000,
+    };
+    expect(unwrapMainMessage({ pluginMessage: { type: 'change-set', changeSet } })).toEqual(
+      { type: 'change-set', changeSet }
+    );
+  });
+
+  it('rejects a change-set missing its counts', () => {
+    expect(
+      unwrapMainMessage({
+        pluginMessage: {
+          type: 'change-set',
+          changeSet: { changes: [], blocked: [] },
+        },
+      })
+    ).toBeNull();
+  });
+
+  it('rejects a change-set whose blocked reason is unknown', () => {
+    expect(
+      unwrapMainMessage({
+        pluginMessage: {
+          type: 'change-set',
+          changeSet: {
+            changes: [],
+            blocked: [{ nodeId: '1:1', layerName: 'x', reason: 'banana' }],
+            unchangedCount: 0,
+            createdAt: 1,
+          },
+        },
+      })
+    ).toBeNull();
   });
 });

@@ -1,13 +1,21 @@
-import type { TextLayerData, Scope } from './types';
+import type {
+  TextLayerData,
+  Scope,
+  ProposedChange,
+  BlockedChange,
+  ChangeSet,
+} from './types';
 
 export type UiToMain =
   | { type: 'extract'; scope: Scope }
-  | { type: 'import'; rows: TextLayerData[] }
+  | { type: 'plan-import'; rows: TextLayerData[] }
+  | { type: 'apply'; changes: ProposedChange[] }
   | { type: 'cancel' };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
   | { type: 'no-text-found' }
+  | { type: 'change-set'; changeSet: ChangeSet }
   | { type: 'import-complete'; updated: number; failed: number; errors: string[] }
   | { type: 'error'; message: string };
 
@@ -45,6 +53,56 @@ function isTextLayerRows(value: unknown): value is TextLayerData[] {
   );
 }
 
+const SOURCES = ['import', 'find-replace', 'spellcheck'];
+const BLOCK_REASONS = ['missing', 'not-text'];
+
+function isProposedChanges(value: unknown): value is ProposedChange[] {
+  return (
+    Array.isArray(value) &&
+    value.every((c) => {
+      if (typeof c !== 'object' || c === null) return false;
+      const v = c as Record<string, unknown>;
+      return (
+        typeof v.nodeId === 'string' &&
+        typeof v.layerName === 'string' &&
+        typeof v.before === 'string' &&
+        typeof v.after === 'string' &&
+        typeof v.source === 'string' &&
+        SOURCES.includes(v.source) &&
+        typeof v.accepted === 'boolean' &&
+        (v.reason === undefined || typeof v.reason === 'string')
+      );
+    })
+  );
+}
+
+function isBlockedChanges(value: unknown): value is BlockedChange[] {
+  return (
+    Array.isArray(value) &&
+    value.every((b) => {
+      if (typeof b !== 'object' || b === null) return false;
+      const v = b as Record<string, unknown>;
+      return (
+        typeof v.nodeId === 'string' &&
+        typeof v.layerName === 'string' &&
+        typeof v.reason === 'string' &&
+        BLOCK_REASONS.includes(v.reason)
+      );
+    })
+  );
+}
+
+function isChangeSet(value: unknown): value is ChangeSet {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isProposedChanges(v.changes) &&
+    isBlockedChanges(v.blocked) &&
+    typeof v.unchangedCount === 'number' &&
+    typeof v.createdAt === 'number'
+  );
+}
+
 export function unwrapUiMessage(event: unknown): UiToMain | null {
   const p = peel(event);
   if (!p || typeof p.type !== 'string') return null;
@@ -54,8 +112,10 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return p.scope === 'selection' || p.scope === 'page'
         ? { type: 'extract', scope: p.scope }
         : null;
-    case 'import':
-      return isTextLayerRows(p.rows) ? { type: 'import', rows: p.rows } : null;
+    case 'plan-import':
+      return isTextLayerRows(p.rows) ? { type: 'plan-import', rows: p.rows } : null;
+    case 'apply':
+      return isProposedChanges(p.changes) ? { type: 'apply', changes: p.changes } : null;
     case 'cancel':
       return { type: 'cancel' };
     default:
@@ -72,6 +132,8 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
       return isTextLayerRows(p.rows) ? { type: 'extracted', rows: p.rows } : null;
     case 'no-text-found':
       return { type: 'no-text-found' };
+    case 'change-set':
+      return isChangeSet(p.changeSet) ? { type: 'change-set', changeSet: p.changeSet } : null;
     case 'import-complete':
       return typeof p.updated === 'number' &&
         typeof p.failed === 'number' &&
