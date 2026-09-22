@@ -3,6 +3,7 @@ import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
+import { buildChangeSet } from './plan';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
@@ -59,9 +60,25 @@ figma.ui.onmessage = async (event: unknown) => {
         }
         break;
       }
-      case 'import': {
+      case 'plan-import': {
         try {
-          const result = await applyTextChanges(message.rows, {
+          const changeSet = await buildChangeSet(message.rows, {
+            getNode: async (id) =>
+              (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
+          });
+          send({ type: 'change-set', changeSet });
+        } catch (error) {
+          throw new Error(
+            `Error occurred while planning the import: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        break;
+      }
+      case 'apply': {
+        try {
+          const result = await applyTextChanges(message.changes, {
             getNode: async (id) =>
               (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
             loadFonts,

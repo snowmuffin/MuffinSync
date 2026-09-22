@@ -12,12 +12,39 @@ describe('applyTextChanges', () => {
   it('writes characters and counts the update', async () => {
     const target = node('1:1', 'Title');
     const result = await applyTextChanges(
-      [{ id: '1:1', name: 'Title', characters: 'new' }],
+      [
+        {
+          nodeId: '1:1',
+          layerName: 'Title',
+          before: 'old',
+          after: 'new',
+          source: 'import',
+          accepted: true,
+        },
+      ],
       { getNode: async () => target, loadFonts: async () => {} }
     );
 
     expect(target.characters).toBe('new');
     expect(result).toEqual({ updated: 1, failed: 0, errors: [] });
+  });
+
+  it('writes the after text, not the before text', async () => {
+    const target = node('1:1', 'Title');
+    await applyTextChanges(
+      [
+        {
+          nodeId: '1:1',
+          layerName: 'Title',
+          before: 'old',
+          after: 'new',
+          source: 'import',
+          accepted: true,
+        },
+      ],
+      { getNode: async () => target, loadFonts: async () => {} }
+    );
+    expect(target.characters).toBe('new');
   });
 
   it('loads fonts before writing', async () => {
@@ -28,15 +55,27 @@ describe('applyTextChanges', () => {
       get: () => '',
     });
 
-    await applyTextChanges([{ id: '1:1', name: 'T', characters: 'x' }], {
-      getNode: async () => target,
-      loadFonts: async () => {
-        // Yield first: a fire-and-forget implementation would write the text
-        // during this gap, so 'write' would land before 'fonts'.
-        await Promise.resolve();
-        order.push('fonts');
-      },
-    });
+    await applyTextChanges(
+      [
+        {
+          nodeId: '1:1',
+          layerName: 'T',
+          before: 'old',
+          after: 'x',
+          source: 'import',
+          accepted: true,
+        },
+      ],
+      {
+        getNode: async () => target,
+        loadFonts: async () => {
+          // Yield first: a fire-and-forget implementation would write the text
+          // during this gap, so 'write' would land before 'fonts'.
+          await Promise.resolve();
+          order.push('fonts');
+        },
+      }
+    );
 
     expect(order).toEqual(['fonts', 'write']);
   });
@@ -45,8 +84,22 @@ describe('applyTextChanges', () => {
     const target = node('1:2', 'Body');
     const result = await applyTextChanges(
       [
-        { id: '1:1', name: 'Gone', characters: 'a' },
-        { id: '1:2', name: 'Body', characters: 'b' },
+        {
+          nodeId: '1:1',
+          layerName: 'Gone',
+          before: 'old',
+          after: 'a',
+          source: 'import',
+          accepted: true,
+        },
+        {
+          nodeId: '1:2',
+          layerName: 'Body',
+          before: 'old',
+          after: 'b',
+          source: 'import',
+          accepted: true,
+        },
       ],
       {
         getNode: async (id) => (id === '1:2' ? target : null),
@@ -62,7 +115,16 @@ describe('applyTextChanges', () => {
 
   it('reports a node that is no longer a text layer', async () => {
     const result = await applyTextChanges(
-      [{ id: '1:1', name: 'Shape', characters: 'a' }],
+      [
+        {
+          nodeId: '1:1',
+          layerName: 'Shape',
+          before: 'old',
+          after: 'a',
+          source: 'import',
+          accepted: true,
+        },
+      ],
       {
         getNode: async () => ({ ...node('1:1', 'Shape'), type: 'RECTANGLE' }),
         loadFonts: async () => {},
@@ -75,7 +137,16 @@ describe('applyTextChanges', () => {
 
   it('survives a font that will not load', async () => {
     const result = await applyTextChanges(
-      [{ id: '1:1', name: 'T', characters: 'a' }],
+      [
+        {
+          nodeId: '1:1',
+          layerName: 'T',
+          before: 'old',
+          after: 'a',
+          source: 'import',
+          accepted: true,
+        },
+      ],
       {
         getNode: async () => node('1:1', 'T'),
         loadFonts: async () => {
@@ -93,9 +164,12 @@ describe('applyTextChanges', () => {
 
   it('caps the error list at five but keeps counting', async () => {
     const rows = Array.from({ length: 9 }, (_, i) => ({
-      id: `1:${i}`,
-      name: `L${i}`,
-      characters: 'x',
+      nodeId: `1:${i}`,
+      layerName: `L${i}`,
+      before: 'old',
+      after: 'x',
+      source: 'import' as const,
+      accepted: true,
     }));
     const result = await applyTextChanges(rows, {
       getNode: async () => null,

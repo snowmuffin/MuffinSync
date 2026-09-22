@@ -1,4 +1,4 @@
-import type { TextLayerData } from '../shared/types';
+import type { ProposedChange } from '../shared/types';
 
 /** The part of a Figma node this module writes to. */
 export interface ApplicableNode {
@@ -27,7 +27,7 @@ const MAX_REPORTED_ERRORS = 5;
  * is caught per row and collected rather than thrown.
  */
 export async function applyTextChanges(
-  rows: TextLayerData[],
+  changes: ProposedChange[],
   deps: ApplyDeps
 ): Promise<ApplyResult> {
   let updated = 0;
@@ -39,25 +39,25 @@ export async function applyTextChanges(
     if (errors.length < MAX_REPORTED_ERRORS) errors.push(message);
   };
 
-  for (const row of rows) {
+  for (const change of changes) {
     try {
-      const node = await deps.getNode(row.id);
+      const node = await deps.getNode(change.nodeId);
       if (!node) {
-        fail(`No layer found with id ${row.id} (${row.name}).`);
+        fail(`No layer found with id ${change.nodeId} (${change.layerName}).`);
         continue;
       }
       if (node.type !== 'TEXT') {
-        fail(`Layer ${row.name} (${row.id}) is not a text layer.`);
+        fail(`Layer ${change.layerName} (${change.nodeId}) is not a text layer.`);
         continue;
       }
 
       // Every font the layer uses must be loaded before its text is replaced.
       await deps.loadFonts(node);
-      node.characters = row.characters;
+      node.characters = change.after;
       updated++;
     } catch (error) {
       fail(
-        `Failed to update ${row.name}: ${
+        `Failed to update ${change.layerName}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

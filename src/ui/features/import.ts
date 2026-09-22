@@ -41,7 +41,7 @@ export function initImport(root: Document): void {
           }
 
           showStatus('Importing file...', 'info');
-          post({ type: 'import', rows: data });
+          post({ type: 'plan-import', rows: data });
         } catch (error) {
           showStatus(`File reading error: ${messageOf(error)}`, 'error');
         }
