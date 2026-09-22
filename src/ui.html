@@ -161,58 +161,62 @@
         <div class="subtitle">Text Layer Extract & Import</div>
       </div>
 
-      <div class="section">
-        <div class="section-title">1️⃣ Extract Text</div>
-        <div class="instruction">
-          Extract all text layers from the currently selected frames or entire
-          page.
-        </div>
+      <div id="main-content">
+        <div class="section">
+          <div class="section-title">1️⃣ Extract Text</div>
+          <div class="instruction">
+            Extract all text layers from the currently selected frames or
+            entire page.
+          </div>
 
-        <div class="format-selector">
-          <div class="format-option selected" data-format="csv">CSV</div>
-          <div class="format-option" data-format="json">JSON</div>
-        </div>
+          <div class="format-selector">
+            <div class="format-option selected" data-format="csv">CSV</div>
+            <div class="format-option" data-format="json">JSON</div>
+          </div>
 
-        <button class="button primary" id="extract-btn">
-          Extract Text Layers
-        </button>
-      </div>
-      <div id="export-section" class="section hidden">
-        <div class="section-title">📁 Extracted Data</div>
-        <div class="instruction">
-          Text layer extraction completed! Download in your preferred format
-          below.
-        </div>
-
-        <div
-          class="download-buttons"
-          style="display: flex; gap: 8px; margin-bottom: 16px"
-        >
-          <button class="button primary" id="download-csv-btn" style="flex: 1">
-            📄 CSV Download
-          </button>
-          <button class="button primary" id="download-json-btn" style="flex: 1">
-            📋 JSON Download
+          <button class="button primary" id="extract-btn">
+            Extract Text Layers
           </button>
         </div>
-      </div>
+        <div id="export-section" class="section hidden">
+          <div class="section-title">📁 Extracted Data</div>
+          <div class="instruction">
+            Text layer extraction completed! Download in your preferred
+            format below.
+          </div>
 
-      <div class="section">
-        <div class="section-title">2️⃣ Import Modified Text</div>
-        <div class="instruction">
-          Upload the edited CSV or JSON file to reflect changes in Figma.
+          <div
+            class="download-buttons"
+            style="display: flex; gap: 8px; margin-bottom: 16px"
+          >
+            <button class="button primary" id="download-csv-btn" style="flex: 1">
+              📄 CSV Download
+            </button>
+            <button class="button primary" id="download-json-btn" style="flex: 1">
+              📋 JSON Download
+            </button>
+          </div>
         </div>
 
-        <input
-          type="file"
-          id="file-input"
-          class="file-input"
-          accept=".csv,.json"
-        />
-        <button class="button secondary" id="import-btn">
-          Select File to Import
-        </button>
+        <div class="section">
+          <div class="section-title">2️⃣ Import Modified Text</div>
+          <div class="instruction">
+            Upload the edited CSV or JSON file to reflect changes in Figma.
+          </div>
+
+          <input
+            type="file"
+            id="file-input"
+            class="file-input"
+            accept=".csv,.json"
+          />
+          <button class="button secondary" id="import-btn">
+            Select File to Import
+          </button>
+        </div>
       </div>
+
+      <div id="review-host"></div>
 
       <div id="status-host"></div>
     </div>
