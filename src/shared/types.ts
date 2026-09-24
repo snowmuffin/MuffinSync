@@ -53,4 +53,10 @@ export interface ChangeSet {
   blocked: BlockedChange[];    // shown in review, never selectable
   unchangedCount: number;      // counted, not listed
   createdAt: number;
+  /**
+   * Set when a traversal produced this set, so the UI can tell whether a
+   * selection change invalidates it. Absent for 'import', whose targets come
+   * from a file. See spec section 3.1.
+   */
+  scope?: Scope;
 }

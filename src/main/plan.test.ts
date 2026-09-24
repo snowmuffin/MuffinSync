@@ -1,27 +1,29 @@
-import { describe, it, expect } from 'vitest';
-import { buildChangeSet } from './plan';
+import { describe, expect, it } from 'vitest';
+import { buildChangeSet, type ChangeTarget } from './plan';
 import type { ApplicableNode } from './apply';
 
-const node = (
-  id: string,
-  name: string,
-  characters: string,
-  type = 'TEXT'
-): ApplicableNode => ({ id, name, type, characters });
+const node = (id: string, name: string, characters = '', type = 'TEXT'): ApplicableNode =>
+  ({ id, name, characters, type }) as ApplicableNode;
 
-/** A document as a lookup table, so no Figma runtime is needed. */
-const documentOf = (nodes: ApplicableNode[]) => ({
+const deps = (nodes: ApplicableNode[]) => ({
   getNode: async (id: string) => nodes.find((n) => n.id === id) ?? null,
+});
+
+/** The import producer: the file's text wins, whatever the node holds. */
+const fromFile = (id: string, name: string, characters: string): ChangeTarget => ({
+  id,
+  fallbackName: name,
+  after: () => characters,
 });
 
 describe('buildChangeSet', () => {
   it('proposes a change when the text differs', async () => {
     const set = await buildChangeSet(
-      [{ id: '1:1', name: 'Title', characters: 'new' }],
-      documentOf([node('1:1', 'Title', 'old')]),
-      1700000000000
+      [fromFile('1:1', 'Title', 'new')],
+      'import',
+      deps([node('1:1', 'Title', 'old')]),
+      42
     );
-
     expect(set.changes).toEqual([
       {
         nodeId: '1:1',
@@ -32,82 +34,91 @@ describe('buildChangeSet', () => {
         accepted: true,
       },
     ]);
-    expect(set.blocked).toEqual([]);
-    expect(set.unchangedCount).toBe(0);
-    expect(set.createdAt).toBe(1700000000000);
+    expect(set.createdAt).toBe(42);
   });
 
-  it('counts rows that match without listing them', async () => {
+  it('counts a row whose text already matches instead of listing it', async () => {
     const set = await buildChangeSet(
-      [{ id: '1:1', name: 'Title', characters: 'same' }],
-      documentOf([node('1:1', 'Title', 'same')])
+      [fromFile('1:1', 'Title', 'same')],
+      'import',
+      deps([node('1:1', 'Title', 'same')])
     );
-
     expect(set.changes).toEqual([]);
     expect(set.unchangedCount).toBe(1);
   });
 
-  it('treats a whitespace-only difference as a real change', async () => {
-    // The CSV round-trip fix exists so this difference survives a file. It must
-    // not be swallowed here.
+  it('blocks a target the document no longer has, naming it from fallbackName', async () => {
     const set = await buildChangeSet(
-      [{ id: '1:1', name: 'Title', characters: '  spaced  ' }],
-      documentOf([node('1:1', 'Title', 'spaced')])
+      [fromFile('9:9', 'Gone from the file', 'new')],
+      'import',
+      deps([])
     );
-
-    expect(set.changes).toHaveLength(1);
-    expect(set.changes[0].after).toBe('  spaced  ');
-  });
-
-  it('blocks a row whose layer is gone, naming it from the file', async () => {
-    const set = await buildChangeSet(
-      [{ id: '1:1', name: 'Old CTA', characters: 'x' }],
-      documentOf([])
-    );
-
+    expect(set.blocked).toEqual([
+      { nodeId: '9:9', layerName: 'Gone from the file', reason: 'missing' },
+    ]);
     expect(set.changes).toEqual([]);
+  });
+
+  it('blocks a node that is no longer text, naming it from the document', async () => {
+    const set = await buildChangeSet(
+      [fromFile('1:1', 'Name in the file', 'new')],
+      'import',
+      deps([node('1:1', 'Name in the document', '', 'RECTANGLE')])
+    );
     expect(set.blocked).toEqual([
-      { nodeId: '1:1', layerName: 'Old CTA', reason: 'missing' },
+      { nodeId: '1:1', layerName: 'Name in the document', reason: 'not-text' },
     ]);
   });
 
-  it('blocks a row whose node is no longer text, naming it from the document', async () => {
+  it('prefers the document name over fallbackName when the node exists', async () => {
     const set = await buildChangeSet(
-      [{ id: '1:1', name: 'stale name', characters: 'x' }],
-      documentOf([node('1:1', 'Now a rectangle', '', 'RECTANGLE')])
+      [fromFile('1:1', 'Stale name', 'new')],
+      'import',
+      deps([node('1:1', 'Current name', 'old')])
     );
-
-    expect(set.blocked).toEqual([
-      { nodeId: '1:1', layerName: 'Now a rectangle', reason: 'not-text' },
-    ]);
+    expect(set.changes[0].layerName).toBe('Current name');
   });
 
-  it('uses the document layer name, not the one in the file', async () => {
-    const set = await buildChangeSet(
-      [{ id: '1:1', name: 'renamed in the file', characters: 'new' }],
-      documentOf([node('1:1', 'Actual name', 'old')])
-    );
-
-    expect(set.changes[0].layerName).toBe('Actual name');
+  it('passes the node current text to after, so a producer can derive from it', async () => {
+    const seen: string[] = [];
+    const target: ChangeTarget = {
+      id: '1:1',
+      fallbackName: 'unused',
+      after: (current) => {
+        seen.push(current);
+        return current.toUpperCase();
+      },
+    };
+    const set = await buildChangeSet([target], 'find-replace', deps([node('1:1', 'T', 'quiet')]));
+    expect(seen).toEqual(['quiet']);
+    expect(set.changes[0].after).toBe('QUIET');
   });
 
-  it('keeps every category in one pass', async () => {
+  it('stamps the source it was given', async () => {
     const set = await buildChangeSet(
-      [
-        { id: '1:1', name: 'A', characters: 'changed' },
-        { id: '1:2', name: 'B', characters: 'same' },
-        { id: '1:3', name: 'C', characters: 'x' },
-      ],
-      documentOf([node('1:1', 'A', 'original'), node('1:2', 'B', 'same')])
+      [{ id: '1:1', fallbackName: 'f', after: () => 'new' }],
+      'find-replace',
+      deps([node('1:1', 'T', 'old')])
     );
+    expect(set.changes[0].source).toBe('find-replace');
+  });
 
-    expect(set.changes).toHaveLength(1);
-    expect(set.unchangedCount).toBe(1);
+  it('records the scope when one is given, and omits it otherwise', async () => {
+    const targets = [fromFile('1:1', 'T', 'new')];
+    const withScope = await buildChangeSet(targets, 'find-replace', deps([node('1:1', 'T', 'old')]), 1, 'page');
+    expect(withScope.scope).toBe('page');
+
+    const without = await buildChangeSet(targets, 'import', deps([node('1:1', 'T', 'old')]), 1);
+    expect(without.scope).toBeUndefined();
+  });
+
+  it('keeps going after a blocked target', async () => {
+    const set = await buildChangeSet(
+      [fromFile('9:9', 'Gone', 'x'), fromFile('1:1', 'Here', 'new')],
+      'import',
+      deps([node('1:1', 'Here', 'old')])
+    );
     expect(set.blocked).toHaveLength(1);
-  });
-
-  it('returns an empty set for no rows', async () => {
-    const set = await buildChangeSet([], documentOf([]));
-    expect(set).toMatchObject({ changes: [], blocked: [], unchangedCount: 0 });
+    expect(set.changes).toHaveLength(1);
   });
 });

@@ -81,10 +81,18 @@ figma.ui.onmessage = async (event: unknown) => {
       }
       case 'plan-import': {
         try {
-          const changeSet = await buildChangeSet(message.rows, {
-            getNode: async (id) =>
-              (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
-          });
+          const changeSet = await buildChangeSet(
+            message.rows.map((row) => ({
+              id: row.id,
+              fallbackName: row.name,
+              after: () => row.characters,
+            })),
+            'import',
+            {
+              getNode: async (id) =>
+                (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
+            }
+          );
           send({ type: 'change-set', changeSet });
         } catch (error) {
           throw new Error(
