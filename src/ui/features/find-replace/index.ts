@@ -65,6 +65,7 @@ export function showResults(matches: SearchMatch[]): void {
 
   if (matches.length === 0) {
     render(null, host);
+    setMainHidden(false);
     showStatus('No layers matched your search.', 'info');
     return;
   }

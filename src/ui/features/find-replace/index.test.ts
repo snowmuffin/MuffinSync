@@ -244,6 +244,23 @@ describe('find & replace wiring', () => {
     expect(Array.from(boxes()).every((b) => b.checked)).toBe(true);
   });
 
+  it('returns to the main screen when a second search comes back with nothing', () => {
+    // Two searches can be in flight (see the test above): rows from search 1
+    // hide #main-content, then search 2 comes back empty. Without restoring
+    // visibility here, the user is stranded on a hidden main screen with only
+    // a status banner and no way back short of reopening the plugin.
+    act(() => {
+      showResults(matches);
+    });
+    expect(document.getElementById('main-content')?.classList.contains('hidden')).toBe(true);
+
+    act(() => {
+      showResults([]);
+    });
+    expect(document.getElementById('main-content')?.classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('results-host')?.innerHTML).toBe('');
+  });
+
   it('offers no replace action when the replacement was left empty', () => {
     input('find-input').value = 'Sign up';
     input('find-input').dispatchEvent(new Event('input'));
