@@ -8,6 +8,20 @@ export interface TextLayerData {
 /** Which roots a document walk starts from. See spec section 3.1. */
 export type Scope = 'selection' | 'page';
 
+/** How a query is compared against a layer's text. See spec section 3.4. */
+export interface MatchOptions {
+  caseSensitive: boolean;
+  wholeWord: boolean;
+}
+
+/** One layer the query occurs in. See spec section 3.4. */
+export interface SearchMatch {
+  nodeId: string;
+  layerName: string;
+  characters: string;   // the layer's current text
+  matchCount: number;
+}
+
 export type ExportFormat = 'csv' | 'json';
 
 const EXPORT_FORMATS: readonly string[] = ['csv', 'json'];
