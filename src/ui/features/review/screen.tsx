@@ -51,7 +51,14 @@ export function ReviewScreen({ changeSet, onApply, onCancel }: ReviewProps) {
   };
 
   const handleApply = () => {
-    onApply(changes.filter((change) => selected.has(change.nodeId)));
+    // `accepted` arrives here as `true` on every change, because planning has
+    // no user to ask. Overwrite it with what the user actually decided: it is
+    // the field spec 3.2's apply path filters on, so it has to mean something.
+    const decided = changes.map((change) => ({
+      ...change,
+      accepted: selected.has(change.nodeId),
+    }));
+    onApply(decided.filter((change) => change.accepted));
   };
 
   return (

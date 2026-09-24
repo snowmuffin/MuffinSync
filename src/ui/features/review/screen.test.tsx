@@ -88,6 +88,24 @@ describe('ReviewScreen', () => {
     expect(accepted.map((c) => c.nodeId)).toEqual(['1:2']);
   });
 
+  it('marks what it sends with the user decision, not the planned one', () => {
+    // A change that arrived unaccepted starts unticked; ticking it is the
+    // user's decision, and that is what has to travel with the change.
+    const planned = { ...change('1:1', 'a'), accepted: false };
+    const { onApply } = draw(setOf({ changes: [planned] }));
+    expect(boxes()[0].checked).toBe(false);
+
+    act(() => {
+      boxes()[0].click();
+    });
+    act(() => {
+      applyButton()?.click();
+    });
+
+    const sent = onApply.mock.calls[0][0] as ProposedChange[];
+    expect(sent).toEqual([{ ...planned, accepted: true }]);
+  });
+
   it('counts the selection in the apply button', () => {
     draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
     expect(applyButton()?.textContent).toContain('2');

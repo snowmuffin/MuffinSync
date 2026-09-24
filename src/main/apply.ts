@@ -25,6 +25,10 @@ const MAX_REPORTED_ERRORS = 5;
 /**
  * One bad layer must not cost the user the rest of the batch, so every failure
  * is caught per row and collected rather than thrown.
+ *
+ * Only accepted changes are written. Spec 3.2 puts that filter on the apply
+ * path; keeping it here rather than trusting the sender means an unaccepted
+ * row that somehow crosses the boundary still is not applied.
  */
 export async function applyTextChanges(
   changes: ProposedChange[],
@@ -40,6 +44,8 @@ export async function applyTextChanges(
   };
 
   for (const change of changes) {
+    if (!change.accepted) continue;
+
     try {
       const node = await deps.getNode(change.nodeId);
       if (!node) {
@@ -48,6 +54,17 @@ export async function applyTextChanges(
       }
       if (node.type !== 'TEXT') {
         fail(`Layer ${change.layerName} (${change.nodeId}) is not a text layer.`);
+        continue;
+      }
+      // The canvas stays live while the review panel is open. If the layer no
+      // longer holds the text this change was diffed against, the user has
+      // edited it since, and `after` would silently discard that edit. Beyond
+      // the two re-checks in spec 3.2, by ruling.
+      if (node.characters !== change.before) {
+        fail(
+          `Layer ${change.layerName} (${change.nodeId}) changed since review; ` +
+            `it was not updated.`
+        );
         continue;
       }
 
