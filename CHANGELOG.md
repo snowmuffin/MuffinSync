@@ -14,7 +14,8 @@ All notable changes to MuffinSync will be documented in this file.
   literally — regular expressions are not supported.
 - Replacement is per layer: a layer with several matches is one row, accepted
   or refused whole.
-- Any row in the results or the review can centre its layer in the viewport.
+- Any row naming a layer still in the document — in the results or the
+  review — can centre it in the viewport.
 - Extract and Find & Replace are now separate tabs.
 - GitHub Actions workflow running type check, tests, and build on every push
   and PR.
