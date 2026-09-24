@@ -96,13 +96,19 @@ export function initFindReplace(root: Document): void {
   const searchBtn = root.getElementById('search-btn') as HTMLButtonElement | null;
   if (!findInput || !replaceInput || !caseSensitive || !wholeWord || !searchBtn) return;
 
+  // Empty disables the button (spec 3.4); whitespace does not. A query of two
+  // spaces replaced by one is ordinary copy QA, so the length that decides is
+  // the raw one -- trimming here would make that job unreachable.
   findInput.addEventListener('input', () => {
-    searchBtn.disabled = findInput.value.trim().length === 0;
+    searchBtn.disabled = findInput.value.length === 0;
   });
 
   searchBtn.addEventListener('click', () => {
-    const query = findInput.value.trim();
-    if (!query) return;
+    // Posted verbatim. Trimming would search something other than what the
+    // field shows: " Pro" typed to avoid matching "Product" would search
+    // "Pro" and then rewrite it, on the path that writes to the document.
+    const query = findInput.value;
+    if (query.length === 0) return;
 
     const options: MatchOptions = {
       caseSensitive: caseSensitive.checked,

@@ -60,10 +60,36 @@ describe('find & replace wiring', () => {
     expect(searchBtn().disabled).toBe(true);
   });
 
-  it('treats a whitespace-only query as empty', () => {
-    input('find-input').value = '   ';
+  it('treats a whitespace-only query as searchable, and posts it verbatim', () => {
+    // Collapsing a double space into a single one is one of the jobs this
+    // feature exists for, so only an empty field disables Search.
+    input('find-input').value = '  ';
     input('find-input').dispatchEvent(new Event('input'));
-    expect(searchBtn().disabled).toBe(true);
+    expect(searchBtn().disabled).toBe(false);
+
+    searchBtn().click();
+    expect(post).toHaveBeenCalledWith({
+      type: 'search',
+      query: '  ',
+      scope: 'selection',
+      caseSensitive: false,
+      wholeWord: false,
+    });
+  });
+
+  it('keeps a leading space in the posted query', () => {
+    // " Pro" is how a user avoids matching "Product". Trimming it would search
+    // "Pro" while the field showed " Pro", and then replace on that.
+    input('find-input').value = ' Pro';
+    input('find-input').dispatchEvent(new Event('input'));
+    searchBtn().click();
+    expect(post).toHaveBeenCalledWith({
+      type: 'search',
+      query: ' Pro',
+      scope: 'selection',
+      caseSensitive: false,
+      wholeWord: false,
+    });
   });
 
   it('posts the query, the scope, and both options', () => {
