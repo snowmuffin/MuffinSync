@@ -228,9 +228,9 @@ describe('ReviewScreen', () => {
     expect(onNavigate).toHaveBeenCalledWith('1:1');
   });
 
-  it('offers the action on blocked rows too, since they name a node', () => {
-    // A blocked row names a node the document could not take. 'missing' has
-    // nothing to centre, but 'not-text' does, and the user needs to find it.
+  it('offers the action on a not-text blocked row, which still names a node', () => {
+    // A blocked row names a node the document could not take. 'not-text' is
+    // still in the document and the user needs to find it.
     const { onNavigate } = draw(
       setOf({
         changes: [],
@@ -241,5 +241,24 @@ describe('ReviewScreen', () => {
       host.querySelectorAll<HTMLElement>('[data-navigate]')[0].click();
     });
     expect(onNavigate).toHaveBeenCalledWith('2:2');
+  });
+
+  it('offers no action on a missing blocked row, where it could only fail', () => {
+    // 'missing' means the node is gone, so Show would always come back with
+    // "That layer no longer exists."
+    draw(
+      setOf({
+        changes: [],
+        blocked: [
+          { nodeId: '2:1', layerName: 'Gone', reason: 'missing' },
+          { nodeId: '2:2', layerName: 'Shape', reason: 'not-text' },
+        ],
+      })
+    );
+
+    const blockedRows = Array.from(host.querySelectorAll('.review-blocked-row'));
+    expect(blockedRows).toHaveLength(2);
+    expect(blockedRows[0].querySelector('[data-navigate]')).toBeNull();
+    expect(blockedRows[1].querySelector('[data-navigate]')).not.toBeNull();
   });
 });

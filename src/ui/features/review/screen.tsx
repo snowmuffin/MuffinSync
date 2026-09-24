@@ -117,14 +117,19 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
               <span class="review-blocked-row-text">
                 {change.layerName} — {BLOCKED_REASON[change.reason]}
               </span>
-              <button
-                type="button"
-                class="results-row-navigate"
-                data-navigate=""
-                onClick={() => onNavigate(change.nodeId)}
-              >
-                Show
-              </button>
+              {/* A 'missing' node is gone, so Show could only ever report
+                  "That layer no longer exists." A 'not-text' node is still
+                  there and is exactly what the user needs to find. */}
+              {change.reason !== 'missing' && (
+                <button
+                  type="button"
+                  class="results-row-navigate"
+                  data-navigate=""
+                  onClick={() => onNavigate(change.nodeId)}
+                >
+                  Show
+                </button>
+              )}
             </div>
           ))}
         </div>
