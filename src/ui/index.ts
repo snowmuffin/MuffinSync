@@ -6,6 +6,7 @@ import { initExtract, showExportedData } from './features/extract';
 import { initImport } from './features/import';
 import { openReview, closeReview } from './features/review';
 import { initScope, setSelectionPresent } from './features/scope';
+import { initTabs } from './features/tabs';
 
 const statusHost = byId('status-host');
 if (statusHost) mountStatus(statusHost);
@@ -27,6 +28,7 @@ setTimeout(() => {
 initExtract(document);
 initImport(document);
 initScope(document);
+initTabs(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {

@@ -159,6 +159,31 @@
         line-height: 1.4;
       }
 
+      .tab-bar {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 8px 4px;
+        border: none;
+        border-bottom: 2px solid transparent;
+        background: none;
+        font: inherit;
+        font-size: 13px;
+        color: #64748b;
+        cursor: pointer;
+      }
+
+      .tab.selected {
+        color: #1e293b;
+        font-weight: 600;
+        border-bottom-color: #1e293b;
+      }
+
       /*
         Review screen. The panel is 400px wide and the container caps at 360px,
         so rows separate by a rule rather than by indentation, and before/after
@@ -255,62 +280,73 @@
       </div>
 
       <div id="main-content">
-        <div class="section">
-          <div class="section-title">1️⃣ Extract Text</div>
-          <div class="instruction">
-            Extract all text layers from the currently selected frames or
-            entire page.
-          </div>
-
-          <div class="format-selector">
-            <div class="format-option selected" data-format="csv">CSV</div>
-            <div class="format-option" data-format="json">JSON</div>
-          </div>
-
-          <div class="scope-selector">
-            <div class="scope-option selected" data-scope="selection">Selection</div>
-            <div class="scope-option" data-scope="page">Current page</div>
-          </div>
-
-          <button class="button primary" id="extract-btn">
-            Extract Text Layers
-          </button>
-        </div>
-        <div id="export-section" class="section hidden">
-          <div class="section-title">📁 Extracted Data</div>
-          <div class="instruction">
-            Text layer extraction completed! Download in your preferred
-            format below.
-          </div>
-
-          <div
-            class="download-buttons"
-            style="display: flex; gap: 8px; margin-bottom: 16px"
-          >
-            <button class="button primary" id="download-csv-btn" style="flex: 1">
-              📄 CSV Download
-            </button>
-            <button class="button primary" id="download-json-btn" style="flex: 1">
-              📋 JSON Download
-            </button>
-          </div>
+        <div class="tab-bar">
+          <button class="tab selected" data-tab="extract" type="button">Extract</button>
+          <button class="tab" data-tab="find-replace" type="button">Find &amp; Replace</button>
         </div>
 
-        <div class="section">
-          <div class="section-title">2️⃣ Import Modified Text</div>
-          <div class="instruction">
-            Upload the edited CSV or JSON file to reflect changes in Figma.
+        <div id="extract-panel" class="tab-panel">
+          <div class="section">
+            <div class="section-title">1️⃣ Extract Text</div>
+            <div class="instruction">
+              Extract all text layers from the currently selected frames or
+              entire page.
+            </div>
+
+            <div class="format-selector">
+              <div class="format-option selected" data-format="csv">CSV</div>
+              <div class="format-option" data-format="json">JSON</div>
+            </div>
+
+            <div class="scope-selector">
+              <div class="scope-option selected" data-scope="selection">Selection</div>
+              <div class="scope-option" data-scope="page">Current page</div>
+            </div>
+
+            <button class="button primary" id="extract-btn">
+              Extract Text Layers
+            </button>
+          </div>
+          <div id="export-section" class="section hidden">
+            <div class="section-title">📁 Extracted Data</div>
+            <div class="instruction">
+              Text layer extraction completed! Download in your preferred
+              format below.
+            </div>
+
+            <div
+              class="download-buttons"
+              style="display: flex; gap: 8px; margin-bottom: 16px"
+            >
+              <button class="button primary" id="download-csv-btn" style="flex: 1">
+                📄 CSV Download
+              </button>
+              <button class="button primary" id="download-json-btn" style="flex: 1">
+                📋 JSON Download
+              </button>
+            </div>
           </div>
 
-          <input
-            type="file"
-            id="file-input"
-            class="file-input"
-            accept=".csv,.json"
-          />
-          <button class="button secondary" id="import-btn">
-            Select File to Import
-          </button>
+          <div class="section">
+            <div class="section-title">2️⃣ Import Modified Text</div>
+            <div class="instruction">
+              Upload the edited CSV or JSON file to reflect changes in Figma.
+            </div>
+
+            <input
+              type="file"
+              id="file-input"
+              class="file-input"
+              accept=".csv,.json"
+            />
+            <button class="button secondary" id="import-btn">
+              Select File to Import
+            </button>
+          </div>
+        </div>
+
+        <div id="find-replace-panel" class="tab-panel hidden">
+          <!-- Task 6 fills this -->
         </div>
       </div>
 
