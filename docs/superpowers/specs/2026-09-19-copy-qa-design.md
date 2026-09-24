@@ -58,15 +58,15 @@ src/
 │   ├── traverse.ts       # text node collection
 │   ├── apply.ts          # write text, load fonts
 │   ├── search.ts         # find matches
-│   ├── navigate.ts       # select and zoom a node
+│   ├── navigate.ts       # centre a node in the viewport; see 3.5
 │   └── storage.ts        # figma.clientStorage wrapper
 ├── shared/
 │   ├── messages.ts       # typed message contract, imported by both sides
 │   └── types.ts          # TextLayerData, ProposedChange, ...
 └── ui/                   # iframe. DOM and network.
     ├── index.tsx         # Preact mount
-    ├── app.tsx           # tab shell
     ├── features/
+    │   ├── tabs.ts       # panel switching; see 3.3
     │   ├── extract/      # existing export, unchanged behaviour
     │   ├── find-replace/
     │   ├── spellcheck/
@@ -105,11 +105,13 @@ envelope shape is known and the casts disappear.
 
 **Preact + TypeScript**, wired into the existing webpack build.
 
-The v1 UI has four tabs, a search result list, a diff table with per-row
-selection, and a settings screen. That is stateful list rendering — the case
-where hand-rolled DOM manipulation produces the most bugs. Preact is ~4 KB, so
-the bundle cost is negligible, and it uses the React API, so the knowledge
-transfers.
+The v1 UI has a search result list and a diff table with per-row selection.
+That is stateful list rendering — the case where hand-rolled DOM manipulation
+produces the most bugs. Preact is ~4 KB, so the bundle cost is negligible, and
+it uses the React API, so the knowledge transfers.
+
+The lists are the whole of the argument. The tab bar and the settings screen are
+not reasons to reach for a framework, and 3.3 does not use one for the tabs.
 
 `@create-figma-plugin` was considered and rejected. It would supply
 Figma-styled components and typed messaging out of the box, but requires
@@ -176,6 +178,38 @@ What this buys:
   producer.
 - **Layer Navigation is one action on a row**, not a feature per surface.
 
+**One builder, not one per producer.** Every producer needs the same four-way
+classification: the node is gone, the node is not text, the text already
+matches, or the text differs. Writing that per producer is how two definitions
+of one rule start to drift. `buildChangeSet` takes what to write as an
+argument instead:
+
+```ts
+type ChangeTarget = {
+  id: string;
+  fallbackName: string;            // used only when the node is gone
+  after(current: string): string;  // computed from the node's current text
+};
+
+buildChangeSet(
+  targets: ChangeTarget[],
+  source: ProposedChange['source'],
+  deps: PlanDeps,
+  now?: number
+): Promise<ChangeSet>
+```
+
+Import passes `after: () => row.characters` — the file is the authority.
+Find & replace passes `after: cur => replaceAll(cur, query, replacement, opts)`
+— the document's current text is the input. Spell check will pass the
+suggestion. The classification, the naming rules, and the `unchangedCount`
+accounting all stay in one place.
+
+`fallbackName` exists because a missing node cannot be asked its name. When the
+node is present the document is the authority on what the layer is called; a
+file, or a search result a moment stale, can carry a name that has since been
+edited.
+
 ### 3.1 Scope selection
 
 Everything that walks the document needs the same input: a set of root nodes.
@@ -207,6 +241,15 @@ Two rules follow:
   invalidates any existing change set whose `scope` is `selection`. This is not
   cosmetic: changes apply by `nodeId`, so a stale set produced against one
   selection could otherwise be applied while a different one is active.
+
+**Both of these land in Phase 2, not Phase 1.** Phase 1 built the disabled-option
+rule but deliberately left `ChangeSet.scope` unset and invalidation unbuilt,
+because import is the one producer with no scope and Phase 1 shipped no other.
+Find & replace is the first traversal-produced set, so Phase 2 is where `scope`
+becomes load-bearing and invalidation has something to invalidate.
+
+Invalidation closes an open review and says why. It does not silently drop the
+set: a review that vanishes with no explanation reads as a crash.
 
 **All pages is deliberately excluded.** Under `documentAccess: dynamic-page`,
 reaching other pages requires `figma.loadAllPagesAsync()`, which is expensive on
@@ -244,8 +287,22 @@ choose file → UI parses → sandbox builds the change set → review → apply
 **The screen.** Review takes over the whole panel rather than appearing as
 another section. The plugin window is 400×500, and a list of changes with a
 header and an action bar needs that height. Cancelling returns to the main
-screen with nothing applied. No tabs — Phase 2 and 3 can introduce them when
-they have something to put in one.
+screen with nothing applied.
+
+**Tabs arrive in Phase 2**, which is the first phase with a second thing to put
+in one: Extract and Find & Replace. Review keeps covering the whole panel,
+including the tab bar, so a review cannot be left open behind a tab the user
+switched away from.
+
+`features/tabs.ts` switches panel visibility by toggling a class, the shape
+`features/scope.ts` and `features/review/index.ts` already use. Earlier drafts
+of this spec put a Preact `app.tsx` shell in 2.1's tree instead; that is a
+deliberate departure, and 2.1 now names `tabs.ts`. The extract and import
+sections are imperative modules that query `ui.html`'s markup, so wrapping them
+in a component tree means rewriting both for a result the user cannot see.
+Preact is here for stateful list rendering — the review table and the search
+results — not for two buttons that hide a div. `app.tsx` is worth building when
+something needs it.
 
 Each entry shows the layer name, then the before and after text stacked, not
 side by side: at 400px wide, two columns give roughly 170px each, which wraps
@@ -279,6 +336,100 @@ not block the button.
 **Very large change sets are not virtualised.** Whether hundreds of rows in a
 400px panel is actually a problem is a question to answer by measuring, not by
 building a windowing layer first.
+
+### 3.4 Find & replace
+
+**Two steps, not one.** Searching and replacing are separated: a query produces
+a result list, and replacing from that list produces a change set that goes
+through 3.3's review.
+
+```
+query → sandbox searches → result list → choose rows
+      → sandbox builds the change set → review → apply
+```
+
+Collapsing the two would make the review screen the only surface, which reads
+tidier and costs the feature its other half: **searching with no replacement.**
+"Where does this phrase appear?" is a question worth answering on its own, and a
+flow that demands a replacement before it will show anything cannot answer it.
+The result list is also where Layer Navigation belongs (3.5).
+
+**The sandbox owns matching.** `main/search.ts` holds two pure functions:
+
+```ts
+findMatches(text: string, query: string, opts: MatchOptions): Match[]
+replaceAll(text: string, query: string, replacement: string, opts: MatchOptions): string
+
+type MatchOptions = { caseSensitive: boolean; wholeWord: boolean };
+```
+
+The UI sends the query and, later, the chosen node ids; it never computes the
+replacement itself. Two reasons. The matching rule stays defined once — the UI
+recomputing it is the drift this design keeps ruling against. And the change set
+is built by re-reading each node, so its `before` is the document's text at
+replace time rather than at search time.
+
+**Case sensitivity and whole word, and nothing else.** Whole word earns its place
+because unwanted substring matches are the common failure in exactly the job this
+feature is for: renaming a product or unifying a term. Replacing `Pro` with
+`Plus` should not touch `Product` or `Profile`.
+
+**Regular expressions are excluded.** They bring a surface the rest of this
+feature does not: invalid-pattern reporting, a decision about capture references
+in the replacement, and catastrophic backtracking that can hang the sandbox on a
+pattern a user typed by accident. If they are ever wanted, they are their own
+piece of work. A query is matched literally.
+
+**Replacement is per layer, not per occurrence.** `ProposedChange` holds one
+`before` and one `after` for a node, so a layer with three matches is one row
+that is accepted or refused whole. The result list says how many matches a layer
+holds so the count is not hidden, but "replace the second one only" is not
+representable and is not offered. This follows from reusing the change set rather
+than being a separate decision, and the alternative — a per-occurrence model —
+would fork `ProposedChange` for one producer.
+
+```
+┌─ Find & Replace ──────────────────┐
+│ Find    [ Sign up              ]  │
+│ Replace [ Get started          ]  │
+│ Scope   ● Current page ○ Selection│
+│ ☐ Case sensitive  ☑ Whole word    │
+│           [ Search ]              │
+│───────────────────────────────────│
+│ 12 matches in 9 layers            │
+│ ☑ Hero / CTA button          ⌖ 2  │
+│   Sign up free                    │
+│ ☑ Pricing / Card 1 / Button  ⌖ 1  │
+│   Sign up                         │
+│───────────────────────────────────│
+│       [Replace 9 selected…]       │
+└───────────────────────────────────┘
+```
+
+A result row carries the layer name, its current text, a match count, and the
+navigate action. Selection here chooses what goes into the change set; the review
+screen that follows is still free to veto per row.
+
+**Empty query searches nothing.** The button is disabled rather than returning
+every layer.
+
+### 3.5 Layer navigation
+
+One action, available on any row that names a node — search results and review
+rows both. `main/navigate.ts` is a thin wrapper over the Figma viewport API and
+is not unit tested, per section 6.
+
+**It zooms; it does not select.** Section 2.1 originally described this as
+"select and zoom", which is what a jump-to-layer action usually does. It cannot
+be that here: setting `figma.currentPage.selection` fires `selectionchange`,
+which 3.1 requires to invalidate any `selection`-scoped change set — so pressing
+navigate on a review row would close the review the user is reading. Suppressing
+self-inflicted events with a flag would work and would be a lie waiting to
+desynchronise. `figma.viewport.scrollAndZoomIntoView([node])` alone centres the
+layer, answers "where is this", and cannot trip the rule.
+
+**A node can be gone by the time it is clicked.** Navigation reports that and
+changes nothing, the same as any other write-time miss.
 
 ---
 
@@ -389,8 +540,13 @@ Figma-facing modules.
 
 - CSV serialize and parse, including multi-line values, embedded quotes, commas
 - JSON serialize and parse
-- Change-set construction from each of the three producers
-- Search matching and replacement, including case sensitivity
+- Change-set construction from each of the three producers, through the one
+  `buildChangeSet` they share: that each producer's `after` resolver is applied,
+  and that all four classification branches are reachable from each
+- Search matching and replacement: case sensitivity, whole word, matches at the
+  start and end of a string, adjacent and repeated matches in one layer, a query
+  containing regular-expression metacharacters treated literally, and a
+  replacement that reproduces the original text landing in `unchangedCount`
 - Scope resolution: that `selection` and `page` pick the right roots, and that
   a change set produced under `selection` is invalidated when the selection
   changes
@@ -409,7 +565,7 @@ Each phase ends with a working plugin.
 |---|---|---|
 | **0** | Build pipeline, bundle inlining, module split, vitest | **No behaviour change.** Existing extract and import work exactly as before, now with tests |
 | **1** | Change Set model, Diff Review UI, import retrofitted onto it, shared scope selector, DOM test environment | Import routes through review instead of overwriting; extract's scope is visible rather than implicit; component output is under test |
-| **2** | Find & Replace, Layer Navigation | Complete without any network access |
+| **2** | Find & Replace, Layer Navigation, the tab bar, `buildChangeSet` generalised to serve two producers, and the two rules 3.1 left unbuilt — `ChangeSet.scope` and `selectionchange` invalidation | Searching answers "where does this appear" on its own; replacing routes through the same review import does; a selection-scoped set cannot outlive the selection it was built against |
 | **3** | AI provider layer, Spell Check | Figma runtime `networkAccess` verified here |
 
 Phase 0 changes no user-visible behaviour by design. That is what makes it
@@ -423,7 +579,7 @@ safe: any regression is unambiguous.
 |---|---|
 | Figma runtime blocks provider requests | Server-side CORS already cleared. Remaining surface is `allowedDomains`, which we control. Verified in Phase 3; failure disables one tab, not the plugin |
 | Bundle inlining proves awkward | Confirmed first, in Phase 0, before anything depends on it |
-| Large documents freeze the UI | `findTextNodes()` is synchronous recursion today. Traversal must chunk and yield. Needs a document with thousands of text nodes to test against |
+| Large documents freeze the UI | `collectTextLayers()` is synchronous recursion. Traversal must chunk and yield. Needs a document with thousands of text nodes to test against. **Deliberately not in Phase 2:** the defect predates it, find & replace walks the same tree extract already walks, and the fix changes `traverse.ts`'s contract for all three producers at once. Its own spec and plan cycle |
 | LLM flags correct text as wrong | Structural: suggestions cannot bypass Diff Review |
 | Scope creep from later tiers | Each tier gets its own spec and plan cycle |
 
