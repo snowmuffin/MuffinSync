@@ -161,6 +161,54 @@ describe('find & replace wiring', () => {
     });
   });
 
+  it('says it is searching while the search runs', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    act(() => {
+      searchBtn().click();
+    });
+    expect(document.getElementById('status-host')?.textContent).toContain(
+      'Searching text layers'
+    );
+  });
+
+  it('takes the searching message down when results arrive', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    act(() => {
+      searchBtn().click();
+    });
+    act(() => {
+      showResults(matches);
+    });
+    // The results are the answer to it, and the banner sits outside
+    // #main-content, so it would otherwise stay up beside the answer.
+    expect(document.getElementById('status-host')?.innerHTML).toBe('');
+  });
+
+  it('says it is checking what would change while the replacement is planned', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('replace-input').value = 'Get started';
+    act(() => {
+      searchBtn().click();
+    });
+    act(() => {
+      showResults(matches);
+    });
+
+    const replace = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Replace')
+    )!;
+    act(() => {
+      replace.click();
+    });
+
+    expect(document.getElementById('status-host')?.textContent).toContain(
+      'Checking what would change'
+    );
+  });
+
   it('offers no replace action when the replacement was left empty', () => {
     input('find-input').value = 'Sign up';
     input('find-input').dispatchEvent(new Event('input'));

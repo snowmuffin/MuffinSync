@@ -45,6 +45,10 @@ function handleReplace(targets: ReplaceTarget[]): void {
     wholeWord: lastSearch.options.wholeWord,
   });
   closeResults();
+  // The results are already gone but the sandbox is still re-reading every
+  // target; say so until `change-set` opens the review, whose `openReview`
+  // clears this. Same sentence as the import producer: it is the same wait.
+  showStatus('Checking what would change...', 'info');
 }
 
 function handleNavigate(nodeId: string): void {
@@ -119,6 +123,11 @@ export function initFindReplace(root: Document): void {
 
     lastSearch = { query, replacement, scope, options };
 
+    // Traversal is not chunked (deferred by ruling), so a large page can hold
+    // the panel for seconds. Silence there reads as a crash. `showResults`
+    // takes this down either way -- with `clearStatus` when rows arrive, or by
+    // replacing it with "No layers matched your search."
+    showStatus('Searching text layers...', 'info');
     post({
       type: 'search',
       query,
