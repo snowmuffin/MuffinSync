@@ -73,6 +73,12 @@ export function showResults(matches: SearchMatch[]): void {
 
   clearStatus();
   setMainHidden(true);
+  // Unmount first, so a second result set cannot reconcile the first one's
+  // tree and inherit its checkbox state -- `ResultList` seeds its selection in
+  // a `useState` initialiser, which does not re-run on an update. Two searches
+  // can be in flight: the main screen stays live until the first rows arrive.
+  // (`openReview` gets the same guarantee from its `key`.)
+  render(null, host);
   render(
     h(ResultList, {
       matches,

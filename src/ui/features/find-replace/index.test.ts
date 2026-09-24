@@ -209,6 +209,41 @@ describe('find & replace wiring', () => {
     );
   });
 
+  it('does not inherit the previous selection when a second search comes back', () => {
+    // #main-content stays visible until the first results arrive, so two
+    // searches can be in flight: type `a`, Search, type `b`, Search. Without a
+    // fresh mount the second list reconciles the first one's tree and the
+    // useState initialiser never re-runs, so it arrives carrying the old
+    // decisions. Mirrors review/index.test.ts's equivalent test.
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('replace-input').value = 'Get started';
+    act(() => {
+      searchBtn().click();
+    });
+
+    act(() => {
+      showResults([
+        { nodeId: '1:1', layerName: 'Hero', characters: 'Sign up', matchCount: 1 },
+        { nodeId: '1:2', layerName: 'Footer', characters: 'Sign up', matchCount: 1 },
+      ]);
+    });
+    const boxes = () =>
+      document.querySelectorAll<HTMLInputElement>('#results-host [data-match]');
+    act(() => {
+      boxes()[0].click();
+    });
+    expect(boxes()[0].checked).toBe(false);
+
+    act(() => {
+      showResults([
+        { nodeId: '9:1', layerName: 'Card', characters: 'Sign up', matchCount: 1 },
+        { nodeId: '9:2', layerName: 'Modal', characters: 'Sign up', matchCount: 1 },
+      ]);
+    });
+    expect(Array.from(boxes()).every((b) => b.checked)).toBe(true);
+  });
+
   it('offers no replace action when the replacement was left empty', () => {
     input('find-input').value = 'Sign up';
     input('find-input').dispatchEvent(new Event('input'));
