@@ -267,6 +267,92 @@
         margin-top: 16px;
       }
 
+      .field-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 6px;
+      }
+
+      .text-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font: inherit;
+        font-size: 14px;
+        color: #2c3e50;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+      }
+
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 12px;
+        cursor: pointer;
+      }
+
+      #find-replace-panel .scope-selector {
+        margin-top: 4px;
+      }
+
+      /*
+        Result list. Same panel width as review, so it borrows the same
+        stacked-row shape and colour values -- #e2e8f0 borders, #64748b
+        secondary text, #1e293b headings.
+      */
+      .results-summary {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 16px;
+      }
+
+      .results-row {
+        border-top: 1px solid #e2e8f0;
+        padding: 10px 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .results-row-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .results-row-name {
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .results-row-text {
+        margin-top: 4px;
+        font-size: 13px;
+        color: #64748b;
+        overflow-wrap: anywhere;
+      }
+
+      .results-row-navigate {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #3b82f6;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      #results-host .button.primary {
+        margin-top: 16px;
+      }
+
       .hidden {
         display: none !important;
       }
@@ -346,11 +432,35 @@
         </div>
 
         <div id="find-replace-panel" class="tab-panel hidden">
-          <!-- Task 6 fills this -->
+          <div class="section">
+            <label class="field-label" for="find-input">Find</label>
+            <input id="find-input" type="text" class="text-input" placeholder="Text to find" />
+
+            <label class="field-label" for="replace-input">Replace with</label>
+            <input id="replace-input" type="text" class="text-input" placeholder="Leave empty to search only" />
+
+            <label class="checkbox-row">
+              <input id="case-sensitive" type="checkbox" /> Case sensitive
+            </label>
+            <label class="checkbox-row">
+              <input id="whole-word" type="checkbox" /> Whole word
+            </label>
+
+            <div class="scope-selector">
+              <div class="scope-option selected" data-scope="selection">Selection</div>
+              <div class="scope-option" data-scope="page">Current page</div>
+            </div>
+
+            <button class="button primary" id="search-btn" type="button" disabled>
+              Search
+            </button>
+          </div>
         </div>
       </div>
 
       <div id="review-host"></div>
+
+      <div id="results-host"></div>
 
       <div id="status-host"></div>
     </div>

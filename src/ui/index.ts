@@ -5,6 +5,7 @@ import { mountStatus, showStatus } from './status';
 import { initExtract, showExportedData } from './features/extract';
 import { initImport } from './features/import';
 import { openReview, closeReview } from './features/review';
+import { initFindReplace, showResults } from './features/find-replace';
 import { initScope, setSelectionPresent } from './features/scope';
 import { initTabs } from './features/tabs';
 
@@ -27,6 +28,7 @@ setTimeout(() => {
 
 initExtract(document);
 initImport(document);
+initFindReplace(document);
 initScope(document);
 initTabs(document);
 
@@ -90,6 +92,11 @@ window.onmessage = (event: MessageEvent) => {
     case 'selection':
       debugLog(`Selection changed: present=${message.present}`);
       setSelectionPresent(message.present);
+      break;
+
+    case 'search-results':
+      debugLog(`Search results: ${message.matches.length} layers matched`);
+      showResults(message.matches);
       break;
   }
 };

@@ -1,0 +1,144 @@
+// @vitest-environment happy-dom
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'preact/test-utils';
+
+vi.mock('../../post', () => ({ post: vi.fn() }));
+
+import { post } from '../../post';
+import { initFindReplace, showResults } from './index';
+import type { SearchMatch } from '../../../shared/types';
+
+const matches: SearchMatch[] = [
+  { nodeId: '1:1', layerName: 'Hero', characters: 'Sign up', matchCount: 1 },
+];
+
+function markup(): void {
+  document.body.innerHTML = `
+    <div id="main-content">
+      <div id="find-replace-panel" class="tab-panel">
+        <input id="find-input" type="text" />
+        <input id="replace-input" type="text" />
+        <input id="case-sensitive" type="checkbox" />
+        <input id="whole-word" type="checkbox" />
+        <button class="button primary" id="search-btn" type="button" disabled></button>
+      </div>
+      <div class="scope-selector">
+        <div class="scope-option selected" data-scope="selection"></div>
+        <div class="scope-option" data-scope="page"></div>
+      </div>
+    </div>
+    <div id="results-host"></div>
+    <div id="status-host"></div>
+  `;
+}
+
+const input = (id: string) => document.getElementById(id) as HTMLInputElement;
+const searchBtn = () => document.getElementById('search-btn') as HTMLButtonElement;
+
+describe('find & replace wiring', () => {
+  beforeEach(() => {
+    vi.mocked(post).mockClear();
+    markup();
+    initFindReplace(document);
+  });
+
+  it('keeps Search disabled until there is something to find', () => {
+    expect(searchBtn().disabled).toBe(true);
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    expect(searchBtn().disabled).toBe(false);
+  });
+
+  it('disables Search again when the query is cleared', () => {
+    input('find-input').value = 'x';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('find-input').value = '';
+    input('find-input').dispatchEvent(new Event('input'));
+    expect(searchBtn().disabled).toBe(true);
+  });
+
+  it('treats a whitespace-only query as empty', () => {
+    input('find-input').value = '   ';
+    input('find-input').dispatchEvent(new Event('input'));
+    expect(searchBtn().disabled).toBe(true);
+  });
+
+  it('posts the query, the scope, and both options', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('case-sensitive').checked = true;
+    searchBtn().click();
+    expect(post).toHaveBeenCalledWith({
+      type: 'search',
+      query: 'Sign up',
+      scope: 'selection',
+      caseSensitive: true,
+      wholeWord: false,
+    });
+  });
+
+  it('says so when a search comes back with nothing', () => {
+    // Preact batches the status banner's state update (see status.test.tsx
+    // and review/index.test.ts, which wrap every status-triggering call the
+    // same way), so the assertion below needs the update flushed first.
+    act(() => {
+      showResults([]);
+    });
+    expect(document.getElementById('results-host')?.innerHTML).toBe('');
+    expect(document.getElementById('status-host')?.textContent).toContain('No layers');
+  });
+
+  it('covers the main screen while results are showing', () => {
+    showResults(matches);
+    expect(document.getElementById('main-content')?.classList.contains('hidden')).toBe(true);
+  });
+
+  it('uncovers it again on close', () => {
+    showResults(matches);
+    const close = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Close')
+    )!;
+    close.click();
+    expect(document.getElementById('main-content')?.classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('results-host')?.innerHTML).toBe('');
+  });
+
+  it('posts a navigate when a row asks to be centred', () => {
+    showResults(matches);
+    document.querySelector<HTMLElement>('[data-navigate]')!.click();
+    expect(post).toHaveBeenCalledWith({ type: 'navigate', nodeId: '1:1' });
+  });
+
+  it('posts plan-replace with the query and replacement it was searched with', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('replace-input').value = 'Get started';
+    searchBtn().click();
+    showResults(matches);
+
+    const replace = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Replace')
+    )!;
+    replace.click();
+
+    expect(post).toHaveBeenCalledWith({
+      type: 'plan-replace',
+      query: 'Sign up',
+      replacement: 'Get started',
+      targets: [{ nodeId: '1:1', layerName: 'Hero' }],
+      scope: 'selection',
+      caseSensitive: false,
+      wholeWord: false,
+    });
+  });
+
+  it('offers no replace action when the replacement was left empty', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    searchBtn().click();
+    showResults(matches);
+    expect(
+      Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Replace'))
+    ).toBe(false);
+  });
+});

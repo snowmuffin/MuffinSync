@@ -1,0 +1,131 @@
+import { h, render } from 'preact';
+import type { MatchOptions, ReplaceTarget, Scope, SearchMatch } from '../../../shared/types';
+import { ResultList } from './results';
+import { post } from '../../post';
+import { clearStatus, mountStatus, showStatus } from '../../status';
+import { byId } from '../../dom';
+import { getScope } from '../scope';
+
+/**
+ * `ResultList` is pure -- it reports a decision, it sends nothing. This
+ * module is the only thing that turns that decision into a message and owns
+ * when the list is mounted at all. No JSX here on purpose: this file keeps
+ * the `.ts` extension, and JSX syntax requires `.tsx`.
+ */
+
+interface RememberedSearch {
+  query: string;
+  replacement: string;
+  scope: Scope;
+  options: MatchOptions;
+}
+
+/**
+ * What a search was run with, captured the moment Search is clicked. The
+ * inputs can change while results are on screen -- the row checkboxes, the
+ * find/replace text -- so `plan-replace` has to read this, not the live DOM,
+ * or it would send whatever the fields happen to hold rather than what the
+ * results in front of the user were produced from.
+ */
+let lastSearch: RememberedSearch | null = null;
+
+function setMainHidden(hidden: boolean): void {
+  byId('main-content')?.classList.toggle('hidden', hidden);
+}
+
+function handleReplace(targets: ReplaceTarget[]): void {
+  if (!lastSearch) return;
+  post({
+    type: 'plan-replace',
+    query: lastSearch.query,
+    replacement: lastSearch.replacement,
+    targets,
+    scope: lastSearch.scope,
+    caseSensitive: lastSearch.options.caseSensitive,
+    wholeWord: lastSearch.options.wholeWord,
+  });
+  closeResults();
+}
+
+function handleNavigate(nodeId: string): void {
+  post({ type: 'navigate', nodeId });
+}
+
+function handleCancel(): void {
+  closeResults();
+}
+
+export function showResults(matches: SearchMatch[]): void {
+  const host = byId('results-host');
+  if (!host) return;
+
+  if (matches.length === 0) {
+    render(null, host);
+    showStatus('No layers matched your search.', 'info');
+    return;
+  }
+
+  const canReplace = (lastSearch?.replacement ?? '').length > 0;
+
+  clearStatus();
+  setMainHidden(true);
+  render(
+    h(ResultList, {
+      matches,
+      canReplace,
+      onReplace: handleReplace,
+      onCancel: handleCancel,
+      onNavigate: handleNavigate,
+    }),
+    host
+  );
+}
+
+function closeResults(): void {
+  const host = byId('results-host');
+  if (!host) return;
+  render(null, host);
+  setMainHidden(false);
+}
+
+export function initFindReplace(root: Document): void {
+  // Guards the case where this module's tests mount their own `#status-host`
+  // without going through `ui/index.ts`'s own `mountStatus` call. Mounting
+  // twice onto the same node in production is harmless -- Preact reconciles
+  // against the container's existing tree rather than starting over.
+  const statusHost = root.getElementById('status-host');
+  if (statusHost) mountStatus(statusHost);
+
+  const findInput = root.getElementById('find-input') as HTMLInputElement | null;
+  const replaceInput = root.getElementById('replace-input') as HTMLInputElement | null;
+  const caseSensitive = root.getElementById('case-sensitive') as HTMLInputElement | null;
+  const wholeWord = root.getElementById('whole-word') as HTMLInputElement | null;
+  const searchBtn = root.getElementById('search-btn') as HTMLButtonElement | null;
+  if (!findInput || !replaceInput || !caseSensitive || !wholeWord || !searchBtn) return;
+
+  findInput.addEventListener('input', () => {
+    searchBtn.disabled = findInput.value.trim().length === 0;
+  });
+
+  searchBtn.addEventListener('click', () => {
+    const query = findInput.value.trim();
+    if (!query) return;
+
+    const options: MatchOptions = {
+      caseSensitive: caseSensitive.checked,
+      wholeWord: wholeWord.checked,
+    };
+    const scope = getScope();
+    const replacement = replaceInput.value;
+
+    lastSearch = { query, replacement, scope, options };
+
+    post({
+      type: 'search',
+      query,
+      scope,
+      caseSensitive: options.caseSensitive,
+      wholeWord: options.wholeWord,
+    });
+  });
+}
