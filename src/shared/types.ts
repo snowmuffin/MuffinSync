@@ -48,6 +48,16 @@ export interface BlockedChange {
   reason: 'missing' | 'not-text';
 }
 
+/** One node the user chose to replace in. See spec section 3.4. */
+export interface ReplaceTarget {
+  nodeId: string;
+  /**
+   * Carried so a node deleted between searching and replacing can still be
+   * named in the blocked row; a missing node cannot be asked its name.
+   */
+  layerName: string;
+}
+
 export interface ChangeSet {
   changes: ProposedChange[];   // only rows whose text actually differs
   blocked: BlockedChange[];    // shown in review, never selectable

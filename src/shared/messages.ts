@@ -4,6 +4,8 @@ import type {
   ProposedChange,
   BlockedChange,
   ChangeSet,
+  SearchMatch,
+  ReplaceTarget,
 } from './types';
 
 export type UiToMain =
@@ -13,7 +15,20 @@ export type UiToMain =
   | { type: 'extract'; scope: Scope }
   | { type: 'plan-import'; rows: TextLayerData[] }
   | { type: 'apply'; changes: ProposedChange[] }
-  | { type: 'cancel' };
+  | { type: 'cancel' }
+  | { type: 'search'; query: string; scope: Scope; caseSensitive: boolean; wholeWord: boolean }
+  | {
+      type: 'plan-replace';
+      query: string;
+      replacement: string;
+      // Name included so a node deleted between searching and replacing can
+      // still be named in the blocked row.
+      targets: ReplaceTarget[];
+      scope: Scope;
+      caseSensitive: boolean;
+      wholeWord: boolean;
+    }
+  | { type: 'navigate'; nodeId: string };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
@@ -21,7 +36,8 @@ export type MainToUi =
   | { type: 'change-set'; changeSet: ChangeSet }
   | { type: 'import-complete'; updated: number; failed: number; errors: string[] }
   | { type: 'error'; message: string }
-  | { type: 'selection'; present: boolean };
+  | { type: 'selection'; present: boolean }
+  | { type: 'search-results'; matches: SearchMatch[]; scope: Scope };
 
 /**
  * Figma delivers plugin messages under more than one envelope depending on
@@ -119,6 +135,37 @@ function isBlockedChanges(value: unknown): value is BlockedChange[] {
   );
 }
 
+function isScope(value: unknown): value is Scope {
+  return value === 'selection' || value === 'page';
+}
+
+function isReplaceTargets(value: unknown): value is ReplaceTarget[] {
+  return (
+    Array.isArray(value) &&
+    value.every((t) => {
+      if (typeof t !== 'object' || t === null) return false;
+      const v = t as Record<string, unknown>;
+      return typeof v.nodeId === 'string' && typeof v.layerName === 'string';
+    })
+  );
+}
+
+function isSearchMatches(value: unknown): value is SearchMatch[] {
+  return (
+    Array.isArray(value) &&
+    value.every((m) => {
+      if (typeof m !== 'object' || m === null) return false;
+      const v = m as Record<string, unknown>;
+      return (
+        typeof v.nodeId === 'string' &&
+        typeof v.layerName === 'string' &&
+        typeof v.characters === 'string' &&
+        typeof v.matchCount === 'number'
+      );
+    })
+  );
+}
+
 function isChangeSet(value: unknown): value is ChangeSet {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -126,7 +173,8 @@ function isChangeSet(value: unknown): value is ChangeSet {
     isProposedChanges(v.changes) &&
     isBlockedChanges(v.blocked) &&
     typeof v.unchangedCount === 'number' &&
-    typeof v.createdAt === 'number'
+    typeof v.createdAt === 'number' &&
+    (v.scope === undefined || isScope(v.scope))
   );
 }
 
@@ -148,6 +196,38 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return isProposedChanges(p.changes) ? { type: 'apply', changes: p.changes } : null;
     case 'cancel':
       return { type: 'cancel' };
+    case 'search':
+      return typeof p.query === 'string' &&
+        isScope(p.scope) &&
+        typeof p.caseSensitive === 'boolean' &&
+        typeof p.wholeWord === 'boolean'
+        ? {
+            type: 'search',
+            query: p.query,
+            scope: p.scope,
+            caseSensitive: p.caseSensitive,
+            wholeWord: p.wholeWord,
+          }
+        : null;
+    case 'plan-replace':
+      return typeof p.query === 'string' &&
+        typeof p.replacement === 'string' &&
+        isReplaceTargets(p.targets) &&
+        isScope(p.scope) &&
+        typeof p.caseSensitive === 'boolean' &&
+        typeof p.wholeWord === 'boolean'
+        ? {
+            type: 'plan-replace',
+            query: p.query,
+            replacement: p.replacement,
+            targets: p.targets,
+            scope: p.scope,
+            caseSensitive: p.caseSensitive,
+            wholeWord: p.wholeWord,
+          }
+        : null;
+    case 'navigate':
+      return typeof p.nodeId === 'string' ? { type: 'navigate', nodeId: p.nodeId } : null;
     default:
       return null;
   }
@@ -183,6 +263,10 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
     case 'selection':
       return typeof p.present === 'boolean'
         ? { type: 'selection', present: p.present }
+        : null;
+    case 'search-results':
+      return isSearchMatches(p.matches) && isScope(p.scope)
+        ? { type: 'search-results', matches: p.matches, scope: p.scope }
         : null;
     default:
       return null;
