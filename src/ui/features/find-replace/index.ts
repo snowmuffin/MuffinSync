@@ -2,7 +2,7 @@ import { h, render } from 'preact';
 import type { MatchOptions, ReplaceTarget, Scope, SearchMatch } from '../../../shared/types';
 import { ResultList } from './results';
 import { post } from '../../post';
-import { clearStatus, mountStatus, showStatus } from '../../status';
+import { clearStatus, showStatus } from '../../status';
 import { byId } from '../../dom';
 import { getScope } from '../scope';
 
@@ -89,13 +89,6 @@ function closeResults(): void {
 }
 
 export function initFindReplace(root: Document): void {
-  // Guards the case where this module's tests mount their own `#status-host`
-  // without going through `ui/index.ts`'s own `mountStatus` call. Mounting
-  // twice onto the same node in production is harmless -- Preact reconciles
-  // against the container's existing tree rather than starting over.
-  const statusHost = root.getElementById('status-host');
-  if (statusHost) mountStatus(statusHost);
-
   const findInput = root.getElementById('find-input') as HTMLInputElement | null;
   const replaceInput = root.getElementById('replace-input') as HTMLInputElement | null;
   const caseSensitive = root.getElementById('case-sensitive') as HTMLInputElement | null;

@@ -5,6 +5,7 @@ import { act } from 'preact/test-utils';
 vi.mock('../../post', () => ({ post: vi.fn() }));
 
 import { post } from '../../post';
+import { mountStatus } from '../../status';
 import { initFindReplace, showResults } from './index';
 import type { SearchMatch } from '../../../shared/types';
 
@@ -39,6 +40,8 @@ describe('find & replace wiring', () => {
   beforeEach(() => {
     vi.mocked(post).mockClear();
     markup();
+    const host = document.getElementById('status-host');
+    if (host) mountStatus(host);
     initFindReplace(document);
   });
 
