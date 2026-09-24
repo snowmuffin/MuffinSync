@@ -159,6 +159,82 @@
         line-height: 1.4;
       }
 
+      /*
+        Review screen. The panel is 400px wide and the container caps at 360px,
+        so rows separate by a rule rather than by indentation, and before/after
+        stack instead of sitting side by side. Colours, borders and the spacing
+        scale are the ones the rest of this sheet already uses: #e2e8f0 for
+        borders, #64748b for secondary text, #1e293b for headings, and the
+        status banner's #991b1b / #166534 for removed and added text.
+      */
+      .review-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
+
+      /* Both are a checkbox followed by its label text. */
+      .review-select-all,
+      .review-row-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .review-unchanged {
+        color: #64748b;
+      }
+
+      .review-row {
+        border-top: 1px solid #e2e8f0;
+        padding: 10px 0;
+      }
+
+      /* The layer name and the blocked-section heading read as one kind of
+         label, so they share a definition. */
+      .review-row-name,
+      .review-blocked-title {
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .review-blocked-title {
+        margin-bottom: 8px;
+      }
+
+      .review-row-diff {
+        margin-top: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        /* Layer text is arbitrary and often has no spaces to break at. */
+        overflow-wrap: anywhere;
+      }
+
+      .review-row-before {
+        color: #991b1b;
+      }
+
+      .review-row-after {
+        color: #166534;
+      }
+
+      .review-blocked {
+        margin-top: 16px;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 12px;
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .review-blocked-row {
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+
       .hidden {
         display: none !important;
       }
