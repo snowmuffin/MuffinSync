@@ -4,6 +4,17 @@ All notable changes to MuffinSync will be documented in this file.
 
 ## [Unreleased]
 
+### Changed (import review)
+- Import now shows what would change and applies only what is accepted,
+  instead of applying to the document the moment a file is chosen.
+- Rows the document cannot take — because the layer id no longer exists, or
+  the node is no longer a text layer — are listed under "Cannot apply" before
+  anything is applied, rather than being reported as errors afterwards.
+- Rows whose text already matches the document are counted, not listed, so
+  the review screen only spells out what would actually change.
+- The extraction scope (current page or selection) is now a visible choice in
+  the UI rather than something inferred from what happens to be selected.
+
 ### Fixed
 - **Mixed-font import**: text layers using more than one font across character
   ranges failed to import. Every font in the range is now loaded via
