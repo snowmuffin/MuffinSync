@@ -262,6 +262,33 @@ describe('unwrapUiMessage', () => {
     ).toBeNull();
   });
 
+  // One case per remaining plan-replace check, each breaking that field alone
+  // on an otherwise valid message. Without these, deleting any of the four
+  // leaves the suite green -- `search` has its own fixtures, but they exercise
+  // a different case of the switch.
+  const replaceMessage = {
+    type: 'plan-replace',
+    query: 'Sign up',
+    replacement: 'Get started',
+    targets: [{ nodeId: '1:1', layerName: 'Hero' }],
+    scope: 'page',
+    caseSensitive: false,
+    wholeWord: false,
+  };
+
+  const badReplace: Array<[string, Record<string, unknown>]> = [
+    ['query is not a string', { ...replaceMessage, query: 5 }],
+    ['scope is not a known scope', { ...replaceMessage, scope: 'document' }],
+    ['caseSensitive is not a boolean', { ...replaceMessage, caseSensitive: 'yes' }],
+    ['wholeWord is not a boolean', { ...replaceMessage, wholeWord: 1 }],
+  ];
+
+  for (const [label, bad] of badReplace) {
+    it(`rejects a plan-replace message whose ${label}`, () => {
+      expect(unwrapUiMessage(bad)).toBeNull();
+    });
+  }
+
   it('accepts a navigate message', () => {
     expect(unwrapUiMessage({ type: 'navigate', nodeId: '1:1' })).toEqual({
       type: 'navigate',
@@ -433,6 +460,28 @@ describe('unwrapMainMessage', () => {
       unwrapMainMessage({
         type: 'search-results',
         matches: [{ nodeId: '1:1', layerName: 'Hero', matchCount: 1 }],
+        scope: 'page',
+      })
+    ).toBeNull();
+  });
+
+  // The other two fields of a match, each broken alone on an otherwise valid
+  // row -- `characters` and `matchCount` are pinned above, these were not.
+  it('rejects search results whose nodeId is not a string', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'search-results',
+        matches: [{ nodeId: 1, layerName: 'Hero', characters: 'x', matchCount: 1 }],
+        scope: 'page',
+      })
+    ).toBeNull();
+  });
+
+  it('rejects search results whose layerName is missing', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'search-results',
+        matches: [{ nodeId: '1:1', characters: 'x', matchCount: 1 }],
         scope: 'page',
       })
     ).toBeNull();
