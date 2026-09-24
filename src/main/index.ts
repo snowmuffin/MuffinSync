@@ -174,9 +174,11 @@ figma.ui.onmessage = async (event: unknown) => {
       }
       case 'navigate': {
         try {
-          const found = await centreOnNode(message.nodeId);
-          if (!found) {
+          const result = await centreOnNode(message.nodeId);
+          if (result === 'not-found') {
             send({ type: 'error', message: 'That layer no longer exists.' });
+          } else if (result === 'other-page') {
+            send({ type: 'error', message: 'That layer is on another page.' });
           }
         } catch (error) {
           throw new Error(
