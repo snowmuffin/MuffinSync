@@ -59,6 +59,21 @@ describe('countMatches', () => {
     expect(countMatches('회원가입', '회원', opts({ wholeWord: true }))).toBe(0);
     expect(countMatches('회원가입', '회원', opts())).toBe(1);
   });
+
+  it('keeps positions in the original text when case folding changes length', () => {
+    // 'İ'.toLowerCase() is two code units, so an index taken from a folded
+    // copy of the text would not line up with the text itself.
+    expect(countMatches('İ sign up', 'sign up', opts())).toBe(1);
+  });
+
+  it('does not treat a dotted capital I as ASCII i', () => {
+    // Different letters; matching them would be the Turkish-i bug in reverse.
+    expect(countMatches('İ', 'i', opts())).toBe(0);
+  });
+
+  it('finds nothing when the query is longer than the text', () => {
+    expect(countMatches('ab', 'abcdef', opts())).toBe(0);
+  });
 });
 
 describe('replaceAll', () => {
@@ -97,6 +112,14 @@ describe('replaceAll', () => {
 
   it('returns the text unchanged for an empty query', () => {
     expect(replaceAll('anything', '', 'x', opts())).toBe('anything');
+  });
+
+  it('does not corrupt surrounding text when folding changes length', () => {
+    expect(replaceAll('İ sign up', 'sign up', 'get started', opts())).toBe('İ get started');
+  });
+
+  it('finds nothing when the query is longer than the text', () => {
+    expect(replaceAll('ab', 'abcdef', 'x', opts())).toBe('ab');
   });
 });
 

@@ -18,36 +18,58 @@ function isWordChar(char: string | undefined): boolean {
   return char !== undefined && WORD.test(char);
 }
 
-/** Is the occurrence at `at` flanked by non-word characters (or nothing)? */
-function isWholeWordAt(text: string, at: string, index: number): boolean {
-  return (
-    !isWordChar(text[index - 1]) && !isWordChar(text[index + at.length])
-  );
+/** Is the occurrence at `index` flanked by non-word characters, or by nothing? */
+function isWholeWord(text: string, index: number, length: number): boolean {
+  return !isWordChar(text[index - 1]) && !isWordChar(text[index + length]);
+}
+
+/** Does `query` occur in `text` starting exactly at `index`? */
+function matchesAt(
+  text: string,
+  query: string,
+  index: number,
+  caseSensitive: boolean
+): boolean {
+  if (index + query.length > text.length) return false;
+  for (let k = 0; k < query.length; k++) {
+    const a = text[index + k];
+    const b = query[k];
+    if (a === b) continue;
+    if (caseSensitive) return false;
+    if (a.toLowerCase() !== b.toLowerCase()) return false;
+  }
+  return true;
 }
 
 /**
- * Every index where `query` occurs, left to right and non-overlapping. The
- * boundary check runs against the original text so that case folding cannot
- * shift positions.
+ * Every index where `query` occurs, left to right and non-overlapping.
+ *
+ * Positions are found in `text` itself rather than in a case-folded copy of
+ * it. `toLowerCase()` is not length-preserving for all input -- 'İ' becomes
+ * two code units -- so an index taken from a folded string cannot be trusted
+ * against the original, and both the boundary check below and `replaceAll`'s
+ * slicing depend on it being the same coordinate space.
  */
 function occurrences(text: string, query: string, opts: MatchOptions): number[] {
   if (query === '') return [];
 
-  const haystack = opts.caseSensitive ? text : text.toLowerCase();
-  const needle = opts.caseSensitive ? query : query.toLowerCase();
   const found: number[] = [];
-
-  let from = 0;
-  for (;;) {
-    const at = haystack.indexOf(needle, from);
-    if (at === -1) break;
-    if (!opts.wholeWord || isWholeWordAt(text, needle, at)) {
-      found.push(at);
+  let at = 0;
+  while (at + query.length <= text.length) {
+    if (!matchesAt(text, query, at, opts.caseSensitive)) {
+      at++;
+      continue;
     }
-    // Advance past this occurrence so 'aa' counts twice in 'aaaa', not three
-    // times. When the match is rejected by the boundary check, advancing by one
-    // is right -- the next occurrence may start inside this one.
-    from = opts.wholeWord && !isWholeWordAt(text, needle, at) ? at + 1 : at + needle.length;
+    if (opts.wholeWord && !isWholeWord(text, at, query.length)) {
+      // Rejected candidates advance by one: the next real occurrence may begin
+      // inside this one.
+      at++;
+      continue;
+    }
+    // An accepted match advances past itself, so 'aa' occurs twice in 'aaaa'
+    // rather than three times.
+    found.push(at);
+    at += query.length;
   }
   return found;
 }
