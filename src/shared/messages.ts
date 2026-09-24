@@ -187,9 +187,7 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       // No payload: the discriminant is the whole message.
       return { type: 'ui-ready' };
     case 'extract':
-      return p.scope === 'selection' || p.scope === 'page'
-        ? { type: 'extract', scope: p.scope }
-        : null;
+      return isScope(p.scope) ? { type: 'extract', scope: p.scope } : null;
     case 'plan-import':
       return isTextLayerRows(p.rows) ? { type: 'plan-import', rows: p.rows } : null;
     case 'apply':
