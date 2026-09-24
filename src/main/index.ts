@@ -3,7 +3,9 @@ import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
-import { buildChangeSet } from './plan';
+import { buildChangeSet, type ChangeTarget } from './plan';
+import { matchingLayers, replaceAll } from './search';
+import { centreOnNode } from './navigate';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
@@ -114,6 +116,71 @@ figma.ui.onmessage = async (event: unknown) => {
         } catch (error) {
           throw new Error(
             `Error occurred during text import: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        break;
+      }
+      case 'search': {
+        try {
+          const rows = collectTextLayers(rootsFor(message.scope));
+          const matches = matchingLayers(rows, message.query, {
+            caseSensitive: message.caseSensitive,
+            wholeWord: message.wholeWord,
+          });
+          send({ type: 'search-results', matches, scope: message.scope });
+        } catch (error) {
+          throw new Error(
+            `Error occurred during search: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        break;
+      }
+      case 'plan-replace': {
+        try {
+          const opts = {
+            caseSensitive: message.caseSensitive,
+            wholeWord: message.wholeWord,
+          };
+          // Each node is re-read and the replacement recomputed here, so the
+          // set's `before` is the document's text now, not at search time.
+          const targets: ChangeTarget[] = message.targets.map((target) => ({
+            id: target.nodeId,
+            fallbackName: target.layerName,
+            after: (current) => replaceAll(current, message.query, message.replacement, opts),
+          }));
+          const changeSet = await buildChangeSet(
+            targets,
+            'find-replace',
+            {
+              getNode: async (id) =>
+                (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
+            },
+            Date.now(),
+            message.scope
+          );
+          send({ type: 'change-set', changeSet });
+        } catch (error) {
+          throw new Error(
+            `Error occurred while planning the replacement: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        break;
+      }
+      case 'navigate': {
+        try {
+          const found = await centreOnNode(message.nodeId);
+          if (!found) {
+            send({ type: 'error', message: 'That layer no longer exists.' });
+          }
+        } catch (error) {
+          throw new Error(
+            `Error occurred while navigating: ${
               error instanceof Error ? error.message : String(error)
             }`
           );
