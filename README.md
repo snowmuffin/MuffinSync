@@ -24,6 +24,14 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 - **Uncheck what you don't want.** Each changed row has its own checkbox (plus a "select all"); only checked rows are sent when you click Apply. Cancelling closes the review and applies nothing.
 - **Automatic Font Handling**: Every font a text layer uses is loaded before its content is replaced. Layers with mixed fonts across character ranges are handled too — each range's font is loaded via `getRangeAllFontNames()`, so multi-font layers import without errors.
 
+### 4️⃣ Find & Replace
+- **A separate tab from Extract.** The plugin panel opens on Extract; a tab bar switches to Find & Replace, and each tab keeps its own inputs when you switch away and back.
+- **Two steps, same review screen as import.** Searching walks the chosen scope (Selection or Current page) and lists every layer the query occurs in, with that layer's current text and how many times the query occurs in it. Pick which rows to act on; replacing re-reads each chosen layer, recomputes the replacement, and sends the result through the same review screen import uses — nothing is written to the document until it is applied there.
+- **Leave "Replace with" empty to search without replacing.** The results list still shows where the query occurs, but with no checkboxes and no Replace button — only a Close button and each row's jump action.
+- **Case sensitivity and whole word, not regular expressions.** A query is matched literally. Whole word treats letters by Unicode category rather than by script-specific word rules, so it is close to useless for languages that don't delimit words with spaces (e.g. Korean).
+- **Replacement is per layer.** A layer with several matches is one row in the results, accepted or refused as a whole; the match count is shown, but replacing only one occurrence within a layer isn't offered.
+- **Jump to a layer without selecting it.** Any row that names a layer — in the results list or in review — has a "Show" button that centres it in the viewport. It only zooms; it never changes the current selection.
+
 ## 🚀 How to Use
 
 1. **Run the Plugin**: Access the plugin via Plugins > MuffinSync in your Figma application.
@@ -33,6 +41,7 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
    - Click the "Extract Text Layers" button to initiate the export.
 3. **Edit Externally**: Open the saved file in your preferred text editor, make necessary text changes, and save the file.
 4. **Import Changes**: Use the "Select File to Import" button to choose your edited file. The plugin shows a review screen listing what would change; uncheck anything you don't want and click **Apply** to write the accepted changes, or **Cancel** to close the review without changing anything.
+5. **Find & Replace**: Switch to the **Find & Replace** tab. Type the text to find, and optionally what to replace it with; choose Selection or Current page, then click **Search**. The results list shows every matching layer with its text and match count. Uncheck any layers you don't want, then click **Replace N layers** to send them to the same review screen import uses, or **Close** to leave the document untouched. Leaving "Replace with" empty turns Search into a pure lookup — the results list has no checkboxes or Replace button, only Close.
 
 ### 💡 File Saving Tips
 - **Mac Users**: Recommended to use TextEdit.app or Visual Studio Code (VS Code).
@@ -100,10 +109,12 @@ MuffinSync/
 │   ├── main/            # Figma sandbox. No DOM, no network.
 │   │   ├── index.ts     # message router, scope resolution, font loading
 │   │   ├── traverse.ts  # collectTextLayers, resolveRoots
-│   │   ├── plan.ts      # buildChangeSet: diffs imported rows against the document
-│   │   └── apply.ts     # applyTextChanges (re-checks each node before writing)
+│   │   ├── plan.ts      # buildChangeSet: diffs imported/proposed rows against the document
+│   │   ├── apply.ts     # applyTextChanges (re-checks each node before writing)
+│   │   ├── search.ts    # countMatches, replaceAll, matchingLayers (literal matching, case/whole-word options)
+│   │   └── navigate.ts  # centreOnNode: zooms the viewport to a node without changing selection
 │   ├── shared/          # imported by both sides
-│   │   ├── types.ts     # TextLayerData, Scope, ExportFormat, ChangeSet, ProposedChange, BlockedChange
+│   │   ├── types.ts     # TextLayerData, Scope, MatchOptions, SearchMatch, ExportFormat, ChangeSet, ProposedChange, BlockedChange, ReplaceTarget
 │   │   └── messages.ts  # UiToMain, MainToUi, unwrapUiMessage, unwrapMainMessage
 │   ├── ui/              # iframe. DOM, no Figma API.
 │   │   ├── index.ts     # mounts the status banner, routes inbound messages
@@ -114,9 +125,13 @@ MuffinSync/
 │   │   ├── features/
 │   │   │   ├── extract.ts        # format selection, extract button, scoped extraction
 │   │   │   ├── import.ts         # parses the chosen file, posts plan-import
-│   │   │   ├── scope.ts          # tracks the chosen extraction scope, disables Selection when nothing is selected
+│   │   │   ├── scope.ts          # tracks the chosen extraction/search scope, disables Selection when nothing is selected
+│   │   │   ├── tabs.ts           # switches the Extract / Find & Replace panels by class toggle
+│   │   │   ├── find-replace/
+│   │   │   │   ├── index.ts      # owns the remembered search, posts search/plan-replace, mounts ResultList
+│   │   │   │   └── results.tsx   # ResultList: pure Preact component rendering search results
 │   │   │   └── review/
-│   │   │       ├── index.ts      # mounts/unmounts ReviewScreen, turns its decision into apply/cancel
+│   │   │       ├── index.ts      # mounts/unmounts ReviewScreen, turns its decision into apply/cancel, invalidates on selection change
 │   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
 │   │   └── format/      # csv.ts, json.ts
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time

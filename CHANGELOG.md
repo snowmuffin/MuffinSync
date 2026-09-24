@@ -4,7 +4,23 @@ All notable changes to MuffinSync will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Find & Replace searches the current page or the selection and lists every
+  layer the query occurs in, with its text and an occurrence count.
+- Replacing routes through the same review screen import uses; nothing is
+  written until it is applied there.
+- Leaving the replacement empty searches without replacing.
+- Matching offers case sensitivity and whole word. A query is matched
+  literally — regular expressions are not supported.
+- Replacement is per layer: a layer with several matches is one row, accepted
+  or refused whole.
+- Any row in the results or the review can centre its layer in the viewport.
+- Extract and Find & Replace are now separate tabs.
+
 ### Changed
+- A review built from a selection now closes when the selection changes,
+  because changes apply by layer id and a stale set could otherwise be
+  applied against different layers.
 - Import now shows what would change and applies only what is accepted,
   instead of applying to the document the moment a file is chosen.
 - Rows the document cannot take — because the layer id no longer exists, or
