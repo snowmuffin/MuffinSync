@@ -41,7 +41,9 @@ and `layer` when either is 1).
 
 Expected: the results list shows the matching rows, each with its text and
 count, but with no checkbox next to any row and no "Replace" button below the
-list. The only button under the list is **Close**. Clicking a row's **Show**
+list. The only button under the list is **Close**, and it is set off from the
+last row by the same gap the **Replace** button gets when there is one — it
+does not sit flush against the row above it. Clicking a row's **Show**
 button still centres that layer in the viewport. Clicking **Close** returns to
 the Find & Replace form without changing anything in the document.
 
@@ -98,32 +100,32 @@ the layers that were checked in the results list appear in the review.
 
 ## 7. A layer whose text already equals the replacement is counted as unchanged rather than listed
 
-The comparison that decides "unchanged" is an exact string equality
-(`node.characters === after` in `src/main/plan.ts`), and `replaceAll`
-(`src/main/search.ts`) only replaces the substring it matched — it does not
-alter the rest of the layer's text. So this check only holds when the text
-`replaceAll` produces is character-for-character identical to what was there
-before, which requires the match itself to be an exact, case-including match
-of the query. **Check Case sensitive** for this check so the default
-case-insensitive matching (which would leave a differing-case match replaced
-with the query's own casing, producing a change) can't interfere.
+Fixture: one text layer whose text is exactly `Hello there`, and nothing else
+selected.
 
-1. Check **Case sensitive**. Search for a term matching at least two layers
-   **using the exact case those layers contain**, with **Replace with** set
-   to the exact same text as **Find** (so replacing changes nothing for any
-   matched layer), plus one more layer where you separately confirm the
-   replacement would differ (use a second search, or edit **Replace with**
-   to something else and repeat step 2 for that one layer only).
-2. With **Case sensitive** still checked and **Find** and **Replace with**
-   set to the same value, select all rows and click **Replace**.
+1. On the **Find & Replace** tab, choose **Current page** as scope and check
+   **Case sensitive**.[^case]
+2. Type `Hello` into **Find** and `Hello` into **Replace with**, then click
+   **Search**.
+3. The results list shows the layer with one match. Leave its row checked and
+   click **Replace 1 layer**.
 
-Expected: the review screen does not list any of these layers as individual
-change rows — every one of them is folded into the unchanged count shown in
-the toolbar (`M unchanged`), and the instruction line reads
-`No changes to apply (M unchanged)` if every matched layer was included this
-way. Repeating with a **Replace with** value that actually differs from
-**Find** produces a normal listed change row for the same layer, confirming
-the unchanged case is about the resulting text, not the layer.
+Expected: the review screen lists no change rows at all. Its instruction line
+reads `No changes to apply (1 unchanged)`, **Apply** is disabled, and
+**Cancel** is the only way out. Clicking **Cancel** closes the review and the
+status banner reads "Review cancelled. Nothing was changed." — it names the
+screen, not a producer, because no import was run here.
+
+4. Repeat steps 2–3 with **Replace with** set to `Howdy` instead.
+
+Expected: the same layer now produces one normal change row, reading
+`− Hello there` and `+ Howdy there`. That contrast is the point: "unchanged"
+is decided by the text replacing would produce, not by the layer.
+
+[^case]: Without **Case sensitive**, a match differing in case from the query
+    (e.g. a layer reading `hello there`) would be rewritten with the query's
+    casing and so count as a change — which is correct behaviour, but it is
+    not what this check is about.
 
 ## 8. Deleting a matched layer after searching but before replacing shows it under "Cannot apply"
 
@@ -187,7 +189,8 @@ neither is invalidated by a selection change.
 
 ## 12. Switching tabs preserves each tab's text and matching options; the scope choice is shared
 
-Each tab keeps its own **Find**/**Replace with** text and its own checkboxes.
+The Find & Replace panel keeps its own **Find**/**Replace with** text and its
+own checkboxes.
 The scope choice (**Selection** / **Current page**) is not per-tab — by
 design, per spec 3.1, it is one choice with two visible copies, one in each
 panel — so switching tabs never resets it, and changing it in either panel is

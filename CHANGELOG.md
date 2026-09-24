@@ -19,9 +19,9 @@ All notable changes to MuffinSync will be documented in this file.
 - GitHub Actions workflow running type check, tests, and build on every push
   and PR.
 - `.editorconfig`.
-- A test suite (vitest), where there was none: 65 tests covering CSV and JSON
-  handling, the message contract, layer traversal, scope resolution, and text
-  application. CI runs them on every push and pull request.
+- A test suite (vitest), where there was none, covering CSV and JSON handling,
+  the message contract, layer traversal, scope resolution, and text
+  application. CI runs it on every push and pull request.
 
 ### Changed
 - A review built from a selection now closes when the selection changes,

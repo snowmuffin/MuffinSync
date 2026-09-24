@@ -25,12 +25,12 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 - **Automatic Font Handling**: Every font a text layer uses is loaded before its content is replaced. Layers with mixed fonts across character ranges are handled too — each range's font is loaded via `getRangeAllFontNames()`, so multi-font layers import without errors.
 
 ### 4️⃣ Find & Replace
-- **A separate tab from Extract.** The plugin panel opens on Extract; a tab bar switches to Find & Replace. Each tab keeps its own Find/Replace text and matching options when you switch away and back; the scope choice (Selection or Current page) is shared between the two tabs by design — it's one choice with a visible copy in each panel, not two independent settings.
+- **A separate tab from Extract.** The plugin panel opens on Extract; a tab bar switches to Find & Replace. The Find & Replace panel keeps its own Find/Replace text and matching options when you switch away and back; the scope choice (Selection or Current page) is shared between the two tabs by design — it's one choice with a visible copy in each panel, not two independent settings.
 - **Two steps, same review screen as import.** Searching walks the chosen scope (Selection or Current page) and lists every layer the query occurs in, with that layer's current text and how many times the query occurs in it. Pick which rows to act on; replacing re-reads each chosen layer, recomputes the replacement, and sends the result through the same review screen import uses — nothing is written to the document until it is applied there.
 - **Leave "Replace with" empty to search without replacing.** The results list still shows where the query occurs, but with no checkboxes and no Replace button — only a Close button and each row's jump action.
 - **Case sensitivity and whole word, not regular expressions.** A query is matched literally. Whole word treats letters by Unicode category rather than by script-specific word rules, so it is close to useless for languages that don't delimit words with spaces (e.g. Korean).
 - **Replacement is per layer.** A layer with several matches is one row in the results, accepted or refused as a whole; the match count is shown, but replacing only one occurrence within a layer isn't offered.
-- **Jump to a layer without selecting it.** Any row that names a layer — in the results list or in review — has a "Show" button that centres it in the viewport. It only zooms; it never changes the current selection.
+- **Jump to a layer without selecting it.** Any row whose layer is still in the document — in the results list or in review, including a "Cannot apply" row for a layer that is no longer a text layer — has a "Show" button that centres it in the viewport. It only zooms; it never changes the current selection. A row for a layer that no longer exists has nothing to centre, so it has no "Show".
 
 ## 🚀 How to Use
 
