@@ -16,6 +16,12 @@ All notable changes to MuffinSync will be documented in this file.
   or refused whole.
 - Any row in the results or the review can centre its layer in the viewport.
 - Extract and Find & Replace are now separate tabs.
+- GitHub Actions workflow running type check, tests, and build on every push
+  and PR.
+- `.editorconfig`.
+- A test suite (vitest), where there was none: 65 tests covering CSV and JSON
+  handling, the message contract, layer traversal, scope resolution, and text
+  application. CI runs them on every push and pull request.
 
 ### Changed
 - A review built from a selection now closes when the selection changes,
@@ -79,14 +85,6 @@ All notable changes to MuffinSync will be documented in this file.
   project has no `.css` files; the UI styles are inline in `ui.html`.
 - Dead `src/global.d.ts` and `src/ui.ts`, plus stray macOS `._*` metadata files
   and a 1.3 MB unused `icon.png`.
-
-### Added
-- GitHub Actions workflow running type check, tests, and build on every push
-  and PR.
-- `.editorconfig`.
-- A test suite (vitest), where there was none: 65 tests covering CSV and JSON
-  handling, the message contract, layer traversal, scope resolution, and text
-  application. CI runs them on every push and pull request.
 
 ## [1.0.0] - 2025-08-08
 

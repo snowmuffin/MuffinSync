@@ -98,13 +98,24 @@ the layers that were checked in the results list appear in the review.
 
 ## 7. A layer whose text already equals the replacement is counted as unchanged rather than listed
 
-1. Search for a term matching at least two layers, with **Replace with** set
+The comparison that decides "unchanged" is an exact string equality
+(`node.characters === after` in `src/main/plan.ts`), and `replaceAll`
+(`src/main/search.ts`) only replaces the substring it matched — it does not
+alter the rest of the layer's text. So this check only holds when the text
+`replaceAll` produces is character-for-character identical to what was there
+before, which requires the match itself to be an exact, case-including match
+of the query. **Check Case sensitive** for this check so the default
+case-insensitive matching (which would leave a differing-case match replaced
+with the query's own casing, producing a change) can't interfere.
+
+1. Check **Case sensitive**. Search for a term matching at least two layers
+   **using the exact case those layers contain**, with **Replace with** set
    to the exact same text as **Find** (so replacing changes nothing for any
    matched layer), plus one more layer where you separately confirm the
    replacement would differ (use a second search, or edit **Replace with**
    to something else and repeat step 2 for that one layer only).
-2. With **Find** and **Replace with** set to the same value, select all rows
-   and click **Replace**.
+2. With **Case sensitive** still checked and **Find** and **Replace with**
+   set to the same value, select all rows and click **Replace**.
 
 Expected: the review screen does not list any of these layers as individual
 change rows — every one of them is folded into the unchanged count shown in
@@ -174,15 +185,30 @@ Expected: the review screen stays open and unaffected — an import review has
 no associated scope, and a page-scoped review is not selection-scoped, so
 neither is invalidated by a selection change.
 
-## 12. Switching tabs preserves each tab's inputs
+## 12. Switching tabs preserves each tab's text and matching options; the scope choice is shared
 
-1. On the **Extract** tab, choose a non-default format or scope option (e.g.
-   click **JSON** and/or **Current page**).
+Each tab keeps its own **Find**/**Replace with** text and its own checkboxes.
+The scope choice (**Selection** / **Current page**) is not per-tab — by
+design, per spec 3.1, it is one choice with two visible copies, one in each
+panel — so switching tabs never resets it, and changing it in either panel is
+expected to change what the other panel shows too.
+
+1. On the **Extract** tab, choose a non-default format (e.g. click **JSON**).
+   Note the scope currently selected (**Selection** or **Current page**).
 2. Switch to the **Find & Replace** tab, type something into **Find** and
-   **Replace with**, and check one of the option checkboxes (**Case
-   sensitive** or **Whole word**).
+   **Replace with**, check one of the option checkboxes (**Case sensitive** or
+   **Whole word**), and choose the scope option *different* from the one
+   noted in step 1.
 3. Switch back to the **Extract** tab.
 
-Expected: the **Extract** tab still shows the format and scope you chose in
-step 1. Switching to **Find & Replace** and back does not clear or reset
-either tab's inputs — each panel's state is exactly as you left it.
+Expected: the **Extract** tab still shows the format you chose in step 1, and
+its scope selector now shows the **same** scope you picked on the Find &
+Replace tab in step 2 — not the one you started with. This is the intended
+result of the two panels sharing one scope: they are two views of a single
+choice, and picking a scope in either one is picking it for both.
+
+4. Switch to **Find & Replace** again.
+
+Expected: **Find**, **Replace with**, and both checkboxes still hold what you
+entered in step 2 — text and matching options are per-tab and were never
+touched by switching away and back.
