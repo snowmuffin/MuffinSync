@@ -108,12 +108,13 @@ describe('ReviewScreen', () => {
 
   it('counts the selection in the apply button', () => {
     draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
-    expect(applyButton()?.textContent).toContain('2');
+    expect(applyButton()?.textContent).toBe('Apply 2 changes');
 
     act(() => {
       boxes()[0].click();
     });
-    expect(applyButton()?.textContent).toContain('1');
+    // One change is not "1 changes".
+    expect(applyButton()?.textContent).toBe('Apply 1 change');
   });
 
   it('disables applying when nothing is selected', () => {

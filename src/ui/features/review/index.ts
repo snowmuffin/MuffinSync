@@ -2,7 +2,7 @@ import { h, render } from 'preact';
 import type { ChangeSet, ProposedChange } from '../../../shared/types';
 import { ReviewScreen } from './screen';
 import { post } from '../../post';
-import { showStatus } from '../../status';
+import { clearStatus, showStatus } from '../../status';
 import { byId } from '../../dom';
 
 /**
@@ -15,6 +15,9 @@ import { byId } from '../../dom';
 function handleApply(accepted: ProposedChange[]): void {
   post({ type: 'apply', changes: accepted });
   closeReview();
+  // The review closes at once but the write takes as long as it takes; say so
+  // until `import-complete` replaces this.
+  showStatus('Applying changes...', 'info');
 }
 
 function handleCancel(): void {
@@ -29,6 +32,10 @@ function setMainHidden(hidden: boolean): void {
 export function openReview(changeSet: ChangeSet): void {
   const host = byId('review-host');
   if (!host) return;
+  // "Checking what would change..." is what this screen is the answer to, and
+  // the banner sits outside #main-content, so it would otherwise stay up
+  // underneath the answer.
+  clearStatus();
   setMainHidden(true);
   render(
     h(ReviewScreen, { changeSet, onApply: handleApply, onCancel: handleCancel }),

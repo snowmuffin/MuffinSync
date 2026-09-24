@@ -115,7 +115,7 @@ export function ReviewScreen({ changeSet, onApply, onCancel }: ReviewProps) {
         disabled={selectedCount === 0}
         onClick={handleApply}
       >
-        Apply {selectedCount} changes
+        Apply {selectedCount} {selectedCount === 1 ? 'change' : 'changes'}
       </button>
       <button class="button secondary" data-action="cancel" onClick={onCancel}>
         Cancel
