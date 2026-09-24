@@ -23,14 +23,24 @@ const setOf = (partial: Partial<ChangeSet>): ChangeSet => ({
 });
 
 let host: HTMLElement;
-const draw = (changeSet: ChangeSet, onApply = vi.fn(), onCancel = vi.fn()) => {
+const draw = (
+  changeSet: ChangeSet,
+  onApply = vi.fn(),
+  onCancel = vi.fn(),
+  onNavigate = vi.fn()
+) => {
   act(() => {
     render(
-      <ReviewScreen changeSet={changeSet} onApply={onApply} onCancel={onCancel} />,
+      <ReviewScreen
+        changeSet={changeSet}
+        onApply={onApply}
+        onCancel={onCancel}
+        onNavigate={onNavigate}
+      />,
       host
     );
   });
-  return { onApply, onCancel };
+  return { onApply, onCancel, onNavigate };
 };
 
 // Ruling: `data-change` sits on the checkbox only, `data-change-row` on the
@@ -208,5 +218,28 @@ describe('ReviewScreen', () => {
     draw(setOf({ unchangedCount: 12 }));
     expect(host.textContent).toContain('No changes');
     expect(applyButton()?.disabled).toBe(true);
+  });
+
+  it('reports which layer to centre when a row asks', () => {
+    const { onNavigate } = draw(setOf({ changes: [change('1:1', 'a')] }));
+    act(() => {
+      host.querySelectorAll<HTMLElement>('[data-navigate]')[0].click();
+    });
+    expect(onNavigate).toHaveBeenCalledWith('1:1');
+  });
+
+  it('offers the action on blocked rows too, since they name a node', () => {
+    // A blocked row names a node the document could not take. 'missing' has
+    // nothing to centre, but 'not-text' does, and the user needs to find it.
+    const { onNavigate } = draw(
+      setOf({
+        changes: [],
+        blocked: [{ nodeId: '2:2', layerName: 'Shape', reason: 'not-text' }],
+      })
+    );
+    act(() => {
+      host.querySelectorAll<HTMLElement>('[data-navigate]')[0].click();
+    });
+    expect(onNavigate).toHaveBeenCalledWith('2:2');
   });
 });

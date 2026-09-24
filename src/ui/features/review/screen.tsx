@@ -5,6 +5,7 @@ export interface ReviewProps {
   changeSet: ChangeSet;
   onApply(accepted: ProposedChange[]): void;
   onCancel(): void;
+  onNavigate(nodeId: string): void;
 }
 
 /** Blocked rows never carry a checkbox; this is the only place their reason becomes words. */
@@ -20,7 +21,7 @@ const BLOCKED_REASON: Record<BlockedChange['reason'], string> = {
  * Before/after are stacked, not side by side. The panel is 400px wide, so two
  * columns leave roughly 170px each -- not enough room for ordinary UI copy.
  */
-export function ReviewScreen({ changeSet, onApply, onCancel }: ReviewProps) {
+export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: ReviewProps) {
   const { changes, blocked, unchangedCount } = changeSet;
   const total = changes.length + unchangedCount + blocked.length;
 
@@ -82,15 +83,25 @@ export function ReviewScreen({ changeSet, onApply, onCancel }: ReviewProps) {
 
       {changes.map((change) => (
         <div class="review-row" data-change-row="" key={change.nodeId}>
-          <label class="review-row-header">
-            <input
-              type="checkbox"
-              data-change=""
-              checked={selected.has(change.nodeId)}
-              onClick={toggleChange(change.nodeId)}
-            />
-            <span class="review-row-name">{change.layerName}</span>
-          </label>
+          <div class="review-row-top">
+            <label class="review-row-header">
+              <input
+                type="checkbox"
+                data-change=""
+                checked={selected.has(change.nodeId)}
+                onClick={toggleChange(change.nodeId)}
+              />
+              <span class="review-row-name">{change.layerName}</span>
+            </label>
+            <button
+              type="button"
+              class="results-row-navigate"
+              data-navigate=""
+              onClick={() => onNavigate(change.nodeId)}
+            >
+              Show
+            </button>
+          </div>
           <div class="review-row-diff">
             <div class="review-row-before">− {change.before}</div>
             <div class="review-row-after">+ {change.after}</div>
@@ -103,7 +114,17 @@ export function ReviewScreen({ changeSet, onApply, onCancel }: ReviewProps) {
           <div class="review-blocked-title">Cannot apply ({blocked.length})</div>
           {blocked.map((change) => (
             <div class="review-blocked-row" key={change.nodeId}>
-              {change.layerName} — {BLOCKED_REASON[change.reason]}
+              <span class="review-blocked-row-text">
+                {change.layerName} — {BLOCKED_REASON[change.reason]}
+              </span>
+              <button
+                type="button"
+                class="results-row-navigate"
+                data-navigate=""
+                onClick={() => onNavigate(change.nodeId)}
+              >
+                Show
+              </button>
             </div>
           ))}
         </div>
@@ -117,7 +138,7 @@ export function ReviewScreen({ changeSet, onApply, onCancel }: ReviewProps) {
       >
         Apply {selectedCount} {selectedCount === 1 ? 'change' : 'changes'}
       </button>
-      <button class="button secondary" data-action="cancel" onClick={onCancel}>
+      <button class="button secondary" data-action="cancel" onClick={() => onCancel()}>
         Cancel
       </button>
     </div>

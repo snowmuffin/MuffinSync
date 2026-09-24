@@ -218,6 +218,13 @@
         padding: 10px 0;
       }
 
+      .review-row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
       /* The layer name and the blocked-section heading read as one kind of
          label, so they share a definition. */
       .review-row-name,
@@ -256,8 +263,16 @@
       }
 
       .review-blocked-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .review-blocked-row-text {
         line-height: 1.4;
         overflow-wrap: anywhere;
+        min-width: 0;
       }
 
       /* The actions follow the last row directly, with nothing between them
@@ -341,6 +356,8 @@
         overflow-wrap: anywhere;
       }
 
+      /* Shared by the review screen's rows, so the jump action reads the
+         same on both surfaces -- see review/screen.tsx. */
       .results-row-navigate {
         background: none;
         border: none;
