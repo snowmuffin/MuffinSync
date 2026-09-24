@@ -54,8 +54,33 @@ function isTextLayerRows(value: unknown): value is TextLayerData[] {
   );
 }
 
-const SOURCES = ['import', 'find-replace', 'spellcheck'];
-const BLOCK_REASONS = ['missing', 'not-text'];
+/**
+ * The accepted values of the two enum-shaped fields, keyed by the union rather
+ * than listed in a `string[]`. A `Record` makes the compiler demand one entry
+ * per member, so adding a `source` or a blocked `reason` in `types.ts` cannot
+ * silently start being rejected here — it fails to compile until it is listed.
+ */
+const SOURCES: Record<ProposedChange['source'], true> = {
+  import: true,
+  'find-replace': true,
+  spellcheck: true,
+};
+
+const BLOCK_REASONS: Record<BlockedChange['reason'], true> = {
+  missing: true,
+  'not-text': true,
+};
+
+/**
+ * Membership without trusting the value's type: `key in table` would also
+ * match inherited names like `toString`, and the values arriving here are
+ * `unknown`.
+ */
+function isMember(table: Record<string, true>, key: unknown): boolean {
+  return (
+    typeof key === 'string' && Object.prototype.hasOwnProperty.call(table, key)
+  );
+}
 
 function isProposedChanges(value: unknown): value is ProposedChange[] {
   return (
@@ -68,8 +93,7 @@ function isProposedChanges(value: unknown): value is ProposedChange[] {
         typeof v.layerName === 'string' &&
         typeof v.before === 'string' &&
         typeof v.after === 'string' &&
-        typeof v.source === 'string' &&
-        SOURCES.includes(v.source) &&
+        isMember(SOURCES, v.source) &&
         typeof v.accepted === 'boolean' &&
         (v.reason === undefined || typeof v.reason === 'string')
       );
@@ -86,8 +110,7 @@ function isBlockedChanges(value: unknown): value is BlockedChange[] {
       return (
         typeof v.nodeId === 'string' &&
         typeof v.layerName === 'string' &&
-        typeof v.reason === 'string' &&
-        BLOCK_REASONS.includes(v.reason)
+        isMember(BLOCK_REASONS, v.reason)
       );
     })
   );

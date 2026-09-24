@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { unwrapUiMessage, unwrapMainMessage } from './messages';
 
+/** Drops one field, so a fixture can break exactly one check at a time. */
+function omit(source: Record<string, unknown>, key: string): Record<string, unknown> {
+  const copy = { ...source };
+  delete copy[key];
+  return copy;
+}
+
 describe('unwrapUiMessage', () => {
   it('reads a bare message object', () => {
     expect(unwrapUiMessage({ type: 'cancel' })).toEqual({ type: 'cancel' });
@@ -64,14 +71,42 @@ describe('unwrapUiMessage', () => {
 
   it('rejects plan-import whose rows are not layer records', () => {
     expect(unwrapUiMessage({ type: 'plan-import', rows: [{ id: 1 }] })).toBeNull();
-    expect(unwrapUiMessage({ type: 'plan-import', rows: [{ id: '1:1', name: 'A' }] })).toBeNull();
     expect(unwrapUiMessage({ type: 'plan-import', rows: 'not an array' })).toBeNull();
+  });
+
+  // Each of these omits exactly one field, so the check for that field is the
+  // only thing that can reject the row. A fixture missing two fields at once
+  // would pass even if one of the two checks were deleted.
+  it('rejects a row missing only id', () => {
+    expect(
+      unwrapUiMessage({ type: 'plan-import', rows: [{ name: 'A', characters: 'x' }] })
+    ).toBeNull();
+  });
+
+  it('rejects a row missing only name', () => {
+    expect(
+      unwrapUiMessage({ type: 'plan-import', rows: [{ id: '1:1', characters: 'x' }] })
+    ).toBeNull();
+  });
+
+  it('rejects a row missing only characters', () => {
+    expect(
+      unwrapUiMessage({ type: 'plan-import', rows: [{ id: '1:1', name: 'A' }] })
+    ).toBeNull();
   });
 
   it('accepts apply with well-formed changes', () => {
     expect(unwrapUiMessage({ type: 'apply', changes: [change] })).toEqual({
       type: 'apply',
       changes: [change],
+    });
+  });
+
+  it('accepts a change carrying the optional reason', () => {
+    const withReason = { ...change, reason: 'spelling' };
+    expect(unwrapUiMessage({ type: 'apply', changes: [withReason] })).toEqual({
+      type: 'apply',
+      changes: [withReason],
     });
   });
 
@@ -82,6 +117,26 @@ describe('unwrapUiMessage', () => {
   it('rejects apply without changes', () => {
     expect(unwrapUiMessage({ type: 'apply' })).toBeNull();
   });
+
+  // One case per field, each breaking that field alone on an otherwise valid
+  // change. `{ nodeId: 1 }` fails on the first check, so without these no
+  // later check is ever the deciding factor in any test.
+  const broken: Array<[string, Record<string, unknown>]> = [
+    ['a non-string nodeId', { ...change, nodeId: 1 }],
+    ['a non-string layerName', { ...change, layerName: 7 }],
+    ['no before text', omit(change, 'before')],
+    ['no after text', omit(change, 'after')],
+    ['a source outside the known set', { ...change, source: 'banana' }],
+    ['a non-string source', { ...change, source: 3 }],
+    ['a non-boolean accepted', { ...change, accepted: 'yes' }],
+    ['a non-string reason', { ...change, reason: 5 }],
+  ];
+
+  for (const [label, bad] of broken) {
+    it(`rejects a change with ${label}`, () => {
+      expect(unwrapUiMessage({ type: 'apply', changes: [bad] })).toBeNull();
+    });
+  }
 
   it('no longer recognises the old import message', () => {
     const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
