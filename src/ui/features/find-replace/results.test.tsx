@@ -64,6 +64,9 @@ describe('ResultList', () => {
     mount();
     expect(Array.from(boxes()).every((b) => b.checked)).toBe(true);
     expect(button('Replace').textContent).toContain('2');
+    // The action-bar spacing in src/ui.html keys off this class; a producer
+    // that forgets it gets no spacing and nothing in CI notices otherwise.
+    expect(button('Replace').classList.contains('action')).toBe(true);
   });
 
   it('reports only the selected rows', () => {
@@ -101,6 +104,7 @@ describe('ResultList', () => {
 
   it('reports a cancel without a payload', () => {
     const { onCancel } = mount();
+    expect(button('Close').classList.contains('action')).toBe(true);
     act(() => button('Close').click());
     expect(onCancel).toHaveBeenCalledWith();
   });

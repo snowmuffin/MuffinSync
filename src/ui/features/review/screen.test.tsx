@@ -119,6 +119,9 @@ describe('ReviewScreen', () => {
   it('counts the selection in the apply button', () => {
     draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
     expect(applyButton()?.textContent).toBe('Apply 2 changes');
+    // The action-bar spacing in src/ui.html keys off this class; a producer
+    // that forgets it gets no spacing and nothing in CI notices otherwise.
+    expect(applyButton()?.classList.contains('action')).toBe(true);
 
     act(() => {
       boxes()[0].click();
@@ -207,8 +210,10 @@ describe('ReviewScreen', () => {
 
   it('reports a cancel without applying anything', () => {
     const { onApply, onCancel } = draw(setOf({ changes: [change('1:1', 'a')] }));
+    const cancelButton = host.querySelector<HTMLButtonElement>('[data-action=cancel]');
+    expect(cancelButton?.classList.contains('action')).toBe(true);
     act(() => {
-      host.querySelector<HTMLButtonElement>('[data-action=cancel]')?.click();
+      cancelButton?.click();
     });
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onApply).not.toHaveBeenCalled();
