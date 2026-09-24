@@ -1,4 +1,4 @@
-import type { TextLayerData } from '../shared/types';
+import type { ProposedChange } from '../shared/types';
 
 /** The part of a Figma node this module writes to. */
 export interface ApplicableNode {
@@ -25,9 +25,13 @@ const MAX_REPORTED_ERRORS = 5;
 /**
  * One bad layer must not cost the user the rest of the batch, so every failure
  * is caught per row and collected rather than thrown.
+ *
+ * Only accepted changes are written. Spec 3.2 puts that filter on the apply
+ * path; keeping it here rather than trusting the sender means an unaccepted
+ * row that somehow crosses the boundary still is not applied.
  */
 export async function applyTextChanges(
-  rows: TextLayerData[],
+  changes: ProposedChange[],
   deps: ApplyDeps
 ): Promise<ApplyResult> {
   let updated = 0;
@@ -39,25 +43,38 @@ export async function applyTextChanges(
     if (errors.length < MAX_REPORTED_ERRORS) errors.push(message);
   };
 
-  for (const row of rows) {
+  for (const change of changes) {
+    if (!change.accepted) continue;
+
     try {
-      const node = await deps.getNode(row.id);
+      const node = await deps.getNode(change.nodeId);
       if (!node) {
-        fail(`No layer found with id ${row.id} (${row.name}).`);
+        fail(`No layer found with id ${change.nodeId} (${change.layerName}).`);
         continue;
       }
       if (node.type !== 'TEXT') {
-        fail(`Layer ${row.name} (${row.id}) is not a text layer.`);
+        fail(`Layer ${change.layerName} (${change.nodeId}) is not a text layer.`);
+        continue;
+      }
+      // The canvas stays live while the review panel is open. If the layer no
+      // longer holds the text this change was diffed against, the user has
+      // edited it since, and `after` would silently discard that edit. Beyond
+      // the two re-checks in spec 3.2, by ruling.
+      if (node.characters !== change.before) {
+        fail(
+          `Layer ${change.layerName} (${change.nodeId}) changed since review; ` +
+            `it was not updated.`
+        );
         continue;
       }
 
       // Every font the layer uses must be loaded before its text is replaced.
       await deps.loadFonts(node);
-      node.characters = row.characters;
+      node.characters = change.after;
       updated++;
     } catch (error) {
       fail(
-        `Failed to update ${row.name}: ${
+        `Failed to update ${change.layerName}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

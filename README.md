@@ -18,18 +18,21 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 - **Flexible Editing**: The plugin allows the extracted CSV or JSON files to be opened in any external text editor (like VS Code or Notepad), enabling users to modify text content efficiently.
 - ⚠️ **Important**: Users must avoid altering layer IDs or names to ensure proper functionality during the import phase.
 
-### 3️⃣ Apply Modified Data (Import)
-- **Seamless Importing**: Users can upload their modified CSV or JSON files back into Figma, where the plugin locates existing text layers and updates their content accordingly.
+### 3️⃣ Review, Then Apply (Import)
+- **Nothing changes on file choice.** Selecting a file only parses it and shows what it would do — the plugin compares each row against the current document and presents a review screen before touching anything.
+- **Three kinds of row.** Rows whose text would actually change are listed individually with their before/after text. Rows already matching the document are counted, not listed. Rows the document cannot take are listed under "Cannot apply" — because the layer id no longer exists, or the node is no longer a text layer — before anything is applied.
+- **Uncheck what you don't want.** Each changed row has its own checkbox (plus a "select all"); only checked rows are sent when you click Apply. Cancelling closes the review and applies nothing.
 - **Automatic Font Handling**: Every font a text layer uses is loaded before its content is replaced. Layers with mixed fonts across character ranges are handled too — each range's font is loaded via `getRangeAllFontNames()`, so multi-font layers import without errors.
 
 ## 🚀 How to Use
 
 1. **Run the Plugin**: Access the plugin via Plugins > MuffinSync in your Figma application.
-2. **Extract Text**: 
+2. **Extract Text**:
    - Choose your desired format (CSV or JSON).
+   - Choose the extraction scope: **Selection** (the layers inside what's currently selected) or **Current page** (everything on the page). Selection is disabled when nothing is selected.
    - Click the "Extract Text Layers" button to initiate the export.
 3. **Edit Externally**: Open the saved file in your preferred text editor, make necessary text changes, and save the file.
-4. **Import Changes**: Use the "Select File to Import" button to upload your edited file back into Figma.
+4. **Import Changes**: Use the "Select File to Import" button to choose your edited file. The plugin shows a review screen listing what would change; uncheck anything you don't want and click **Apply** to write the accepted changes, or **Cancel** to close the review without changing anything.
 
 ### 💡 File Saving Tips
 - **Mac Users**: Recommended to use TextEdit.app or Visual Studio Code (VS Code).
@@ -97,9 +100,10 @@ MuffinSync/
 │   ├── main/            # Figma sandbox. No DOM, no network.
 │   │   ├── index.ts     # message router, scope resolution, font loading
 │   │   ├── traverse.ts  # collectTextLayers, resolveRoots
-│   │   └── apply.ts     # applyTextChanges
+│   │   ├── plan.ts      # buildChangeSet: diffs imported rows against the document
+│   │   └── apply.ts     # applyTextChanges (re-checks each node before writing)
 │   ├── shared/          # imported by both sides
-│   │   ├── types.ts     # TextLayerData, Scope, ExportFormat
+│   │   ├── types.ts     # TextLayerData, Scope, ExportFormat, ChangeSet, ProposedChange, BlockedChange
 │   │   └── messages.ts  # UiToMain, MainToUi, unwrapUiMessage, unwrapMainMessage
 │   ├── ui/              # iframe. DOM, no Figma API.
 │   │   ├── index.ts     # mounts the status banner, routes inbound messages
@@ -107,7 +111,13 @@ MuffinSync/
 │   │   ├── status.tsx   # Preact status banner
 │   │   ├── post.ts      # typed postMessage to the sandbox
 │   │   ├── download.ts  # filenameFor, mimeTypeFor, attemptDownload, displayDownloadContent
-│   │   ├── features/    # extract.ts, import.ts
+│   │   ├── features/
+│   │   │   ├── extract.ts        # format selection, extract button, scoped extraction
+│   │   │   ├── import.ts         # parses the chosen file, posts plan-import
+│   │   │   ├── scope.ts          # tracks the chosen extraction scope, disables Selection when nothing is selected
+│   │   │   └── review/
+│   │   │       ├── index.ts      # mounts/unmounts ReviewScreen, turns its decision into apply/cancel
+│   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
 │   │   └── format/      # csv.ts, json.ts
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
 ├── dist/                 # Build output (generated; not committed)

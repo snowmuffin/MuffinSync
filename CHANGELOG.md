@@ -4,21 +4,20 @@ All notable changes to MuffinSync will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-- **Mixed-font import**: text layers using more than one font across character
-  ranges failed to import. Every font in the range is now loaded via
-  `getRangeAllFontNames()` before the text is replaced.
-- **CSV round-trip preserved exactly.** Leading and trailing whitespace, tab
-  indentation, and carriage returns were silently lost or truncated on export
-  and re-import. Values that need protection are now quoted on export, and a
-  field that arrived quoted is never trimmed on the way back in.
-- **Malformed import files are now rejected instead of silently mangled.**
-  `fromCSV` rejects a file whose header is missing a required column, and
-  `fromJSON` rejects entries without string `id`, `name`, and `characters`.
-  Previously both were accepted, blanking layers or reporting "Updated 0 text
-  layers" with no explanation of why.
-
 ### Changed
+- Import now shows what would change and applies only what is accepted,
+  instead of applying to the document the moment a file is chosen.
+- Rows the document cannot take — because the layer id no longer exists, or
+  the node is no longer a text layer — are listed under "Cannot apply" before
+  anything is applied, rather than being reported as errors afterwards.
+- Rows whose text already matches the document are counted, not listed, so
+  the review screen only spells out what would actually change.
+- The extraction scope (current page or selection) is now a visible choice in
+  the UI rather than something inferred from what happens to be selected.
+- **An edit made on the canvas while the review is open is no longer
+  overwritten.** Applying re-reads each layer and skips any whose text no
+  longer matches what the review was built against, reporting that row rather
+  than silently replacing the newer text.
 - Build toolchain updated: webpack 5.111, TypeScript 5.9, ts-loader 9.6,
   html-webpack-plugin 5.6.8, `@figma/plugin-typings` 1.138. This clears all 11
   known advisories previously reported by `npm audit` (all in dev tooling; the
@@ -44,6 +43,20 @@ All notable changes to MuffinSync will be documented in this file.
   component) instead of being concatenated into an HTML string. Those lines
   can include text-layer names read from an imported file, so the old
   approach was an injection path fed by document content.
+
+### Fixed
+- **Mixed-font import**: text layers using more than one font across character
+  ranges failed to import. Every font in the range is now loaded via
+  `getRangeAllFontNames()` before the text is replaced.
+- **CSV round-trip preserved exactly.** Leading and trailing whitespace, tab
+  indentation, and carriage returns were silently lost or truncated on export
+  and re-import. Values that need protection are now quoted on export, and a
+  field that arrived quoted is never trimmed on the way back in.
+- **Malformed import files are now rejected instead of silently mangled.**
+  `fromCSV` rejects a file whose header is missing a required column, and
+  `fromJSON` rejects entries without string `id`, `name`, and `characters`.
+  Previously both were accepted, blanking layers or reporting "Updated 0 text
+  layers" with no explanation of why.
 
 ### Removed
 - Unused `css-loader` / `style-loader` dependencies and their webpack rule — the

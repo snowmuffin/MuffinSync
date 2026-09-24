@@ -1,8 +1,11 @@
 import { unwrapMainMessage } from '../shared/messages';
+import { post } from './post';
 import { byId, debugLog } from './dom';
 import { mountStatus, showStatus } from './status';
 import { initExtract, showExportedData } from './features/extract';
 import { initImport } from './features/import';
+import { openReview, closeReview } from './features/review';
+import { initScope, setSelectionPresent } from './features/scope';
 
 const statusHost = byId('status-host');
 if (statusHost) mountStatus(statusHost);
@@ -23,6 +26,7 @@ setTimeout(() => {
 
 initExtract(document);
 initImport(document);
+initScope(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {
@@ -50,10 +54,20 @@ window.onmessage = (event: MessageEvent) => {
       showStatus('No text layers found.', 'error');
       break;
 
+    case 'change-set':
+      debugLog(
+        `Change set: ${message.changeSet.changes.length} changed, ` +
+          `${message.changeSet.unchangedCount} unchanged, ` +
+          `${message.changeSet.blocked.length} blocked`
+      );
+      openReview(message.changeSet);
+      break;
+
     case 'import-complete': {
       debugLog(
         `Text import complete: ${message.updated} updated, ${message.failed} errors`
       );
+      closeReview();
       let statusMessage = `Updated ${message.updated} text layers.`;
       if (message.failed > 0) {
         statusMessage += ` (${message.failed} errors)`;
@@ -70,5 +84,14 @@ window.onmessage = (event: MessageEvent) => {
       debugLog(`Plugin error: ${message.message}`, 'error');
       showStatus(message.message, 'error');
       break;
+
+    case 'selection':
+      debugLog(`Selection changed: present=${message.present}`);
+      setSelectionPresent(message.present);
+      break;
   }
 };
+
+// Only now can the sandbox's first selection report be received. Sent last on
+// purpose: the handler above must exist before anything is asked for.
+post({ type: 'ui-ready' });

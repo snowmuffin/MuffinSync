@@ -6,6 +6,7 @@ import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
 import { attemptDownload, filenameFor, mimeTypeFor } from '../download';
 import { post } from '../post';
+import { getScope } from './scope';
 
 let selectedFormat: ExportFormat = 'csv';
 
@@ -29,9 +30,7 @@ export function initExtract(root: Document): void {
   byId('extract-btn', root)?.addEventListener('click', () => {
     debugLog('Text extraction started');
     showStatus('Extracting text layers...', 'info');
-    // 'selection' is the plugin's long-standing behaviour: the sandbox falls
-    // back to the whole page when nothing is selected.
-    post({ type: 'extract', scope: 'selection' });
+    post({ type: 'extract', scope: getScope() });
   });
 }
 

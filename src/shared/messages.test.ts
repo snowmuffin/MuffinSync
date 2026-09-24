@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { unwrapUiMessage, unwrapMainMessage } from './messages';
 
+/** Drops one field, so a fixture can break exactly one check at a time. */
+function omit(source: Record<string, unknown>, key: string): Record<string, unknown> {
+  const copy = { ...source };
+  delete copy[key];
+  return copy;
+}
+
 describe('unwrapUiMessage', () => {
   it('reads a bare message object', () => {
     expect(unwrapUiMessage({ type: 'cancel' })).toEqual({ type: 'cancel' });
@@ -41,17 +48,113 @@ describe('unwrapUiMessage', () => {
     expect(unwrapUiMessage({ type: 'extract', scope: 'document' })).toBeNull();
   });
 
-  it('rejects import without rows', () => {
-    expect(unwrapUiMessage({ type: 'import' })).toBeNull();
-  });
+  const change = {
+    nodeId: '1:1',
+    layerName: 'Title',
+    before: 'old',
+    after: 'new',
+    source: 'import',
+    accepted: true,
+  };
 
-  it('rejects import whose rows are not layer records', () => {
-    expect(unwrapUiMessage({ type: 'import', rows: [{ id: 1 }] })).toBeNull();
-  });
-
-  it('accepts import with well-formed rows', () => {
+  it('accepts plan-import with well-formed rows', () => {
     const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
-    expect(unwrapUiMessage({ type: 'import', rows })).toEqual({ type: 'import', rows });
+    expect(unwrapUiMessage({ type: 'plan-import', rows })).toEqual({
+      type: 'plan-import',
+      rows,
+    });
+  });
+
+  it('rejects plan-import without rows', () => {
+    expect(unwrapUiMessage({ type: 'plan-import' })).toBeNull();
+  });
+
+  it('rejects plan-import whose rows are not layer records', () => {
+    expect(unwrapUiMessage({ type: 'plan-import', rows: [{ id: 1 }] })).toBeNull();
+    expect(unwrapUiMessage({ type: 'plan-import', rows: 'not an array' })).toBeNull();
+  });
+
+  // Each of these omits exactly one field, so the check for that field is the
+  // only thing that can reject the row. A fixture missing two fields at once
+  // would pass even if one of the two checks were deleted.
+  it('rejects a row missing only id', () => {
+    expect(
+      unwrapUiMessage({ type: 'plan-import', rows: [{ name: 'A', characters: 'x' }] })
+    ).toBeNull();
+  });
+
+  it('rejects a row missing only name', () => {
+    expect(
+      unwrapUiMessage({ type: 'plan-import', rows: [{ id: '1:1', characters: 'x' }] })
+    ).toBeNull();
+  });
+
+  it('rejects a row missing only characters', () => {
+    expect(
+      unwrapUiMessage({ type: 'plan-import', rows: [{ id: '1:1', name: 'A' }] })
+    ).toBeNull();
+  });
+
+  it('accepts apply with well-formed changes', () => {
+    expect(unwrapUiMessage({ type: 'apply', changes: [change] })).toEqual({
+      type: 'apply',
+      changes: [change],
+    });
+  });
+
+  it('accepts a change carrying the optional reason', () => {
+    const withReason = { ...change, reason: 'spelling' };
+    expect(unwrapUiMessage({ type: 'apply', changes: [withReason] })).toEqual({
+      type: 'apply',
+      changes: [withReason],
+    });
+  });
+
+  it('rejects apply whose changes are not proposals', () => {
+    expect(unwrapUiMessage({ type: 'apply', changes: [{ nodeId: 1 }] })).toBeNull();
+  });
+
+  it('rejects apply without changes', () => {
+    expect(unwrapUiMessage({ type: 'apply' })).toBeNull();
+  });
+
+  // One case per field, each breaking that field alone on an otherwise valid
+  // change. `{ nodeId: 1 }` fails on the first check, so without these no
+  // later check is ever the deciding factor in any test.
+  const broken: Array<[string, Record<string, unknown>]> = [
+    ['a non-string nodeId', { ...change, nodeId: 1 }],
+    ['a non-string layerName', { ...change, layerName: 7 }],
+    ['no before text', omit(change, 'before')],
+    ['no after text', omit(change, 'after')],
+    ['a source outside the known set', { ...change, source: 'banana' }],
+    ['a non-string source', { ...change, source: 3 }],
+    ['a non-boolean accepted', { ...change, accepted: 'yes' }],
+    ['a non-string reason', { ...change, reason: 5 }],
+  ];
+
+  for (const [label, bad] of broken) {
+    it(`rejects a change with ${label}`, () => {
+      expect(unwrapUiMessage({ type: 'apply', changes: [bad] })).toBeNull();
+    });
+  }
+
+  it('accepts ui-ready in either envelope', () => {
+    expect(unwrapUiMessage({ type: 'ui-ready' })).toEqual({ type: 'ui-ready' });
+    expect(unwrapUiMessage({ pluginMessage: { type: 'ui-ready' } })).toEqual({
+      type: 'ui-ready',
+    });
+  });
+
+  it('rejects a ui-ready that is not a message at all', () => {
+    // The type is the entire payload, so the only way to get it wrong is to
+    // send something that never reaches the discriminant.
+    expect(unwrapUiMessage({ type: 'ui-readyy' })).toBeNull();
+    expect(unwrapUiMessage({ pluginMessage: { type: 42 } })).toBeNull();
+  });
+
+  it('no longer recognises the old import message', () => {
+    const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
+    expect(unwrapUiMessage({ type: 'import', rows })).toBeNull();
   });
 });
 
@@ -63,6 +166,7 @@ describe('unwrapMainMessage', () => {
 
   it('returns null for a UI-bound type', () => {
     expect(unwrapMainMessage({ type: 'cancel' })).toBeNull();
+    expect(unwrapMainMessage({ type: 'ui-ready' })).toBeNull();
   });
 
   it('rejects import-complete with missing counts', () => {
@@ -79,6 +183,15 @@ describe('unwrapMainMessage', () => {
       type: 'extracted',
       rows,
     });
+  });
+
+  it('rejects extracted whose rows are not layer records', () => {
+    expect(
+      unwrapMainMessage({ pluginMessage: { type: 'extracted', rows: [{ id: 1 }] } })
+    ).toBeNull();
+    expect(
+      unwrapMainMessage({ pluginMessage: { type: 'extracted', rows: [{ characters: 'x' }] } })
+    ).toBeNull();
   });
 
   it('accepts an import-complete message and keeps its counts', () => {
@@ -106,5 +219,75 @@ describe('unwrapMainMessage', () => {
     expect(
       unwrapMainMessage({ data: { pluginMessage: { type: 'extracted', rows } } })
     ).toEqual({ type: 'extracted', rows });
+  });
+
+  const change = {
+    nodeId: '1:1',
+    layerName: 'Title',
+    before: 'old',
+    after: 'new',
+    source: 'import',
+    accepted: true,
+  };
+
+  it('accepts a change-set and keeps its contents', () => {
+    const changeSet = {
+      changes: [change],
+      blocked: [{ nodeId: '1:2', layerName: 'Gone', reason: 'missing' }],
+      unchangedCount: 7,
+      createdAt: 1700000000000,
+    };
+    expect(unwrapMainMessage({ pluginMessage: { type: 'change-set', changeSet } })).toEqual(
+      { type: 'change-set', changeSet }
+    );
+  });
+
+  it('rejects a change-set missing its counts', () => {
+    expect(
+      unwrapMainMessage({
+        pluginMessage: {
+          type: 'change-set',
+          changeSet: { changes: [], blocked: [] },
+        },
+      })
+    ).toBeNull();
+  });
+
+  it('rejects a change-set whose blocked reason is unknown', () => {
+    expect(
+      unwrapMainMessage({
+        pluginMessage: {
+          type: 'change-set',
+          changeSet: {
+            changes: [],
+            blocked: [{ nodeId: '1:1', layerName: 'x', reason: 'banana' }],
+            unchangedCount: 0,
+            createdAt: 1,
+          },
+        },
+      })
+    ).toBeNull();
+  });
+
+  it('accepts a selection message reporting a present selection', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'selection', present: true } })).toEqual(
+      { type: 'selection', present: true }
+    );
+  });
+
+  it('accepts a selection message reporting no selection', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'selection', present: false } })).toEqual(
+      { type: 'selection', present: false }
+    );
+  });
+
+  it('rejects a selection message missing present', () => {
+    expect(unwrapMainMessage({ pluginMessage: { type: 'selection' } })).toBeNull();
+  });
+
+  it('rejects a selection message whose present is not a boolean', () => {
+    expect(
+      unwrapMainMessage({ pluginMessage: { type: 'selection', present: 'yes' } })
+    ).toBeNull();
   });
 });

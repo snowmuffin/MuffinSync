@@ -3,12 +3,29 @@ import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
+import { buildChangeSet } from './plan';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
 function send(message: MainToUi): void {
   figma.ui.postMessage(message);
 }
+
+/**
+ * The UI cannot ask Figma what is selected, so the sandbox tells it: once the
+ * iframe says it is listening, and again on every change. This only feeds the
+ * visible choice in the scope control -- it does not affect what `rootsFor`
+ * resolves.
+ *
+ * The first report cannot be sent in the `showUI` tick: the iframe has not
+ * loaded and its `window.onmessage` is not installed yet, so that message is
+ * dropped and the plugin opens showing Selection as chosen and enabled with
+ * nothing selected. It waits for `ui-ready` instead.
+ */
+const reportSelection = () =>
+  send({ type: 'selection', present: figma.currentPage.selection.length > 0 });
+
+figma.on('selectionchange', reportSelection);
 
 /**
  * Resolve a scope to the roots a walk starts from. See spec section 3.1.
@@ -46,6 +63,9 @@ figma.ui.onmessage = async (event: unknown) => {
 
   try {
     switch (message.type) {
+      case 'ui-ready':
+        reportSelection();
+        break;
       case 'extract': {
         try {
           const rows = collectTextLayers(rootsFor(message.scope));
@@ -59,9 +79,25 @@ figma.ui.onmessage = async (event: unknown) => {
         }
         break;
       }
-      case 'import': {
+      case 'plan-import': {
         try {
-          const result = await applyTextChanges(message.rows, {
+          const changeSet = await buildChangeSet(message.rows, {
+            getNode: async (id) =>
+              (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
+          });
+          send({ type: 'change-set', changeSet });
+        } catch (error) {
+          throw new Error(
+            `Error occurred while planning the import: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        break;
+      }
+      case 'apply': {
+        try {
+          const result = await applyTextChanges(message.changes, {
             getNode: async (id) =>
               (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
             loadFonts,

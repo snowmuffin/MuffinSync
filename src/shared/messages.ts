@@ -1,15 +1,27 @@
-import type { TextLayerData, Scope } from './types';
+import type {
+  TextLayerData,
+  Scope,
+  ProposedChange,
+  BlockedChange,
+  ChangeSet,
+} from './types';
 
 export type UiToMain =
+  // Sent once the iframe's message handler is installed. Anything the sandbox
+  // pushes before this would arrive at nothing and be dropped.
+  | { type: 'ui-ready' }
   | { type: 'extract'; scope: Scope }
-  | { type: 'import'; rows: TextLayerData[] }
+  | { type: 'plan-import'; rows: TextLayerData[] }
+  | { type: 'apply'; changes: ProposedChange[] }
   | { type: 'cancel' };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
   | { type: 'no-text-found' }
+  | { type: 'change-set'; changeSet: ChangeSet }
   | { type: 'import-complete'; updated: number; failed: number; errors: string[] }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'selection'; present: boolean };
 
 /**
  * Figma delivers plugin messages under more than one envelope depending on
@@ -45,17 +57,95 @@ function isTextLayerRows(value: unknown): value is TextLayerData[] {
   );
 }
 
+/**
+ * The accepted values of the two enum-shaped fields, keyed by the union rather
+ * than listed in a `string[]`. A `Record` makes the compiler demand one entry
+ * per member, so adding a `source` or a blocked `reason` in `types.ts` cannot
+ * silently start being rejected here — it fails to compile until it is listed.
+ */
+const SOURCES: Record<ProposedChange['source'], true> = {
+  import: true,
+  'find-replace': true,
+  spellcheck: true,
+};
+
+const BLOCK_REASONS: Record<BlockedChange['reason'], true> = {
+  missing: true,
+  'not-text': true,
+};
+
+/**
+ * Membership without trusting the value's type: `key in table` would also
+ * match inherited names like `toString`, and the values arriving here are
+ * `unknown`.
+ */
+function isMember(table: Record<string, true>, key: unknown): boolean {
+  return (
+    typeof key === 'string' && Object.prototype.hasOwnProperty.call(table, key)
+  );
+}
+
+function isProposedChanges(value: unknown): value is ProposedChange[] {
+  return (
+    Array.isArray(value) &&
+    value.every((c) => {
+      if (typeof c !== 'object' || c === null) return false;
+      const v = c as Record<string, unknown>;
+      return (
+        typeof v.nodeId === 'string' &&
+        typeof v.layerName === 'string' &&
+        typeof v.before === 'string' &&
+        typeof v.after === 'string' &&
+        isMember(SOURCES, v.source) &&
+        typeof v.accepted === 'boolean' &&
+        (v.reason === undefined || typeof v.reason === 'string')
+      );
+    })
+  );
+}
+
+function isBlockedChanges(value: unknown): value is BlockedChange[] {
+  return (
+    Array.isArray(value) &&
+    value.every((b) => {
+      if (typeof b !== 'object' || b === null) return false;
+      const v = b as Record<string, unknown>;
+      return (
+        typeof v.nodeId === 'string' &&
+        typeof v.layerName === 'string' &&
+        isMember(BLOCK_REASONS, v.reason)
+      );
+    })
+  );
+}
+
+function isChangeSet(value: unknown): value is ChangeSet {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isProposedChanges(v.changes) &&
+    isBlockedChanges(v.blocked) &&
+    typeof v.unchangedCount === 'number' &&
+    typeof v.createdAt === 'number'
+  );
+}
+
 export function unwrapUiMessage(event: unknown): UiToMain | null {
   const p = peel(event);
   if (!p || typeof p.type !== 'string') return null;
 
   switch (p.type) {
+    case 'ui-ready':
+      // No payload: the discriminant is the whole message.
+      return { type: 'ui-ready' };
     case 'extract':
       return p.scope === 'selection' || p.scope === 'page'
         ? { type: 'extract', scope: p.scope }
         : null;
-    case 'import':
-      return isTextLayerRows(p.rows) ? { type: 'import', rows: p.rows } : null;
+    case 'plan-import':
+      return isTextLayerRows(p.rows) ? { type: 'plan-import', rows: p.rows } : null;
+    case 'apply':
+      return isProposedChanges(p.changes) ? { type: 'apply', changes: p.changes } : null;
     case 'cancel':
       return { type: 'cancel' };
     default:
@@ -72,6 +162,8 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
       return isTextLayerRows(p.rows) ? { type: 'extracted', rows: p.rows } : null;
     case 'no-text-found':
       return { type: 'no-text-found' };
+    case 'change-set':
+      return isChangeSet(p.changeSet) ? { type: 'change-set', changeSet: p.changeSet } : null;
     case 'import-complete':
       return typeof p.updated === 'number' &&
         typeof p.failed === 'number' &&
@@ -87,6 +179,10 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
     case 'error':
       return typeof p.message === 'string'
         ? { type: 'error', message: p.message }
+        : null;
+    case 'selection':
+      return typeof p.present === 'boolean'
+        ? { type: 'selection', present: p.present }
         : null;
     default:
       return null;

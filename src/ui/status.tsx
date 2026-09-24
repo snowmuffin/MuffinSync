@@ -58,3 +58,11 @@ export function showStatus(
 ): void {
   publish({ message, kind, details, seq: seq++ });
 }
+
+/**
+ * The banner lives outside `#main-content`, so it stays on screen when a
+ * screen that answers it takes over. Whoever does that takes the banner down.
+ */
+export function clearStatus(): void {
+  publish(null);
+}

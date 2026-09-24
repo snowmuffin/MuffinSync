@@ -40,8 +40,8 @@ export function initImport(root: Document): void {
             return;
           }
 
-          showStatus('Importing file...', 'info');
-          post({ type: 'import', rows: data });
+          showStatus('Checking what would change...', 'info');
+          post({ type: 'plan-import', rows: data });
         } catch (error) {
           showStatus(`File reading error: ${messageOf(error)}`, 'error');
         }
