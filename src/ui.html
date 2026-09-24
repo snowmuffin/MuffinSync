@@ -261,9 +261,10 @@
       }
 
       /* The actions follow the last row directly, with nothing between them
-         and the text they act on. Scoped to the host rather than given a
+         and the text they act on. Scoped to each host rather than given a
          class of its own, so the shared .button rules stay untouched. */
-      #review-host .button.primary {
+      #review-host .button.primary,
+      #results-host .button.primary {
         margin-top: 16px;
       }
 
@@ -347,10 +348,6 @@
         color: #3b82f6;
         font-size: 13px;
         cursor: pointer;
-      }
-
-      #results-host .button.primary {
-        margin-top: 16px;
       }
 
       .hidden {
