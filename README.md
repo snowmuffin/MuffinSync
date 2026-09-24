@@ -28,8 +28,8 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 
 1. **Run the Plugin**: Access the plugin via Plugins > MuffinSync in your Figma application.
 2. **Extract Text**:
-   - Choose the extraction scope: **Selection** (the layers inside what's currently selected) or **Current page** (everything on the page). Selection is disabled when nothing is selected.
    - Choose your desired format (CSV or JSON).
+   - Choose the extraction scope: **Selection** (the layers inside what's currently selected) or **Current page** (everything on the page). Selection is disabled when nothing is selected.
    - Click the "Extract Text Layers" button to initiate the export.
 3. **Edit Externally**: Open the saved file in your preferred text editor, make necessary text changes, and save the file.
 4. **Import Changes**: Use the "Select File to Import" button to choose your edited file. The plugin shows a review screen listing what would change; uncheck anything you don't want and click **Apply** to write the accepted changes, or **Cancel** to close the review without changing anything.

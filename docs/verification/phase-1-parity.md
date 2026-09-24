@@ -19,12 +19,14 @@ least one other text layer outside any frame.
 
 Expected: the main screen is replaced by a "Review changes" screen before
 anything is written to the document. Only the rows you edited appear as
-individual rows, each showing a before line (prefixed `−`) and an after line
-(prefixed `+`) with the layer name above them. The instruction line above the
-list reads `N of T layers changed` where N is the number of edited rows and T
-is the total row count in the file. A line beneath the toolbar reads
-`M unchanged`, where M is the count of rows whose text you left alone — those
-rows are never listed individually.
+individual rows, each separated from the one above by a horizontal rule and
+showing a before line (prefixed `−`, in red) and an after line (prefixed `+`,
+in green) in a monospace face, with the layer name in bold above them. The
+instruction line above the list reads `N of T layers changed` where N is the
+number of edited rows and T is the total row count in the file. `M unchanged`
+reads on the right of the toolbar row, on the same line as the **Select all**
+checkbox and greyed, where M is the count of rows whose text you left alone —
+those rows are never listed individually.
 
 ## 2. Unchecking a row leaves that layer untouched while the others apply
 
@@ -34,10 +36,11 @@ rows are never listed individually.
 3. Click **Apply**.
 
 Expected: the button label before clicking reads `Apply N changes`, where N
-excludes the row you unchecked. After clicking, the review screen closes and
-the status banner reports the smaller count as updated. In Figma, the
-unchecked layer's text is unchanged from before the import; the still-checked
-layers show their new text.
+excludes the row you unchecked (`Apply 1 change` when one row is left). After
+clicking, the review screen closes, the status banner says it is applying,
+and then reports the smaller count as updated. In Figma, the unchecked
+layer's text is unchanged from before the import; the still-checked layers
+show their new text.
 
 ## 3. Cancelling applies nothing
 
@@ -110,3 +113,30 @@ clicked. If **Selection** was the chosen option, the control's chosen option
 switches to **Current page** on its own. Clicking **Extract Text Layers** now
 extracts the whole page. Selecting something again re-enables **Selection**,
 but does not by itself change which option is currently chosen.
+
+## 8. Opening the plugin with nothing selected starts on Current page
+
+1. Click on empty canvas (or press Escape) so that nothing is selected.
+2. Open the plugin — a cold open, not a reload of an already-open panel.
+3. Look at the scope control **without clicking anything**.
+
+Expected: **Selection** is disabled and **Current page** is the chosen
+option, from the first frame the panel is visible. It must not show
+**Selection** as chosen and only correct itself once you click on the canvas:
+that state would send `scope: 'selection'` on Extract, which resolves to the
+whole page anyway, and the file would not match what the control said.
+
+Repeat with something selected: **Selection** is enabled and chosen.
+
+## 9. A layer edited during the review is not overwritten
+
+1. Import an edited file so the review screen opens with at least two changed
+   rows, and note the layer name on one of them.
+2. Leave the review open. In the Figma canvas, edit that layer's text by hand
+   to something different from both its before and its after text.
+3. Return to the plugin panel, leave every row checked, and click **Apply**.
+
+Expected: the layer you edited by hand keeps the text you typed — it is not
+replaced by the file's version. The status banner reports one error naming
+that layer and saying it changed since review, and the other rows apply
+normally.
