@@ -7,6 +7,9 @@ import type {
 } from './types';
 
 export type UiToMain =
+  // Sent once the iframe's message handler is installed. Anything the sandbox
+  // pushes before this would arrive at nothing and be dropped.
+  | { type: 'ui-ready' }
   | { type: 'extract'; scope: Scope }
   | { type: 'plan-import'; rows: TextLayerData[] }
   | { type: 'apply'; changes: ProposedChange[] }
@@ -132,6 +135,9 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
   if (!p || typeof p.type !== 'string') return null;
 
   switch (p.type) {
+    case 'ui-ready':
+      // No payload: the discriminant is the whole message.
+      return { type: 'ui-ready' };
     case 'extract':
       return p.scope === 'selection' || p.scope === 'page'
         ? { type: 'extract', scope: p.scope }

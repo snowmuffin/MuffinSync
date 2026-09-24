@@ -12,15 +12,20 @@ function send(message: MainToUi): void {
 }
 
 /**
- * The UI cannot ask Figma what is selected, so the sandbox tells it: once at
- * startup, and again on every change. This only feeds the visible choice in
- * the scope control -- it does not affect what `rootsFor` resolves.
+ * The UI cannot ask Figma what is selected, so the sandbox tells it: once the
+ * iframe says it is listening, and again on every change. This only feeds the
+ * visible choice in the scope control -- it does not affect what `rootsFor`
+ * resolves.
+ *
+ * The first report cannot be sent in the `showUI` tick: the iframe has not
+ * loaded and its `window.onmessage` is not installed yet, so that message is
+ * dropped and the plugin opens showing Selection as chosen and enabled with
+ * nothing selected. It waits for `ui-ready` instead.
  */
 const reportSelection = () =>
   send({ type: 'selection', present: figma.currentPage.selection.length > 0 });
 
 figma.on('selectionchange', reportSelection);
-reportSelection();
 
 /**
  * Resolve a scope to the roots a walk starts from. See spec section 3.1.
@@ -58,6 +63,9 @@ figma.ui.onmessage = async (event: unknown) => {
 
   try {
     switch (message.type) {
+      case 'ui-ready':
+        reportSelection();
+        break;
       case 'extract': {
         try {
           const rows = collectTextLayers(rootsFor(message.scope));

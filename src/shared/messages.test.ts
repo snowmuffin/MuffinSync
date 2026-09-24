@@ -138,6 +138,20 @@ describe('unwrapUiMessage', () => {
     });
   }
 
+  it('accepts ui-ready in either envelope', () => {
+    expect(unwrapUiMessage({ type: 'ui-ready' })).toEqual({ type: 'ui-ready' });
+    expect(unwrapUiMessage({ pluginMessage: { type: 'ui-ready' } })).toEqual({
+      type: 'ui-ready',
+    });
+  });
+
+  it('rejects a ui-ready that is not a message at all', () => {
+    // The type is the entire payload, so the only way to get it wrong is to
+    // send something that never reaches the discriminant.
+    expect(unwrapUiMessage({ type: 'ui-readyy' })).toBeNull();
+    expect(unwrapUiMessage({ pluginMessage: { type: 42 } })).toBeNull();
+  });
+
   it('no longer recognises the old import message', () => {
     const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
     expect(unwrapUiMessage({ type: 'import', rows })).toBeNull();
@@ -152,6 +166,7 @@ describe('unwrapMainMessage', () => {
 
   it('returns null for a UI-bound type', () => {
     expect(unwrapMainMessage({ type: 'cancel' })).toBeNull();
+    expect(unwrapMainMessage({ type: 'ui-ready' })).toBeNull();
   });
 
   it('rejects import-complete with missing counts', () => {

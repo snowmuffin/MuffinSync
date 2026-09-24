@@ -1,4 +1,5 @@
 import { unwrapMainMessage } from '../shared/messages';
+import { post } from './post';
 import { byId, debugLog } from './dom';
 import { mountStatus, showStatus } from './status';
 import { initExtract, showExportedData } from './features/extract';
@@ -90,3 +91,7 @@ window.onmessage = (event: MessageEvent) => {
       break;
   }
 };
+
+// Only now can the sandbox's first selection report be received. Sent last on
+// purpose: the handler above must exist before anything is asked for.
+post({ type: 'ui-ready' });
