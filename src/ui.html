@@ -248,6 +248,11 @@
         line-height: 1.4;
         /* Layer text is arbitrary and often has no spaces to break at. */
         overflow-wrap: anywhere;
+        /* A whitespace-only edit (e.g. double space -> single space) must be
+           visible here: HTML collapses runs of spaces by default, which would
+           render the before/after lines identically for exactly the case a
+           whitespace-only query exists to serve. */
+        white-space: pre-wrap;
       }
 
       .review-row-before {
@@ -358,6 +363,9 @@
         font-size: 13px;
         color: #64748b;
         overflow-wrap: anywhere;
+        /* See .review-row-diff: preserve whitespace runs so the user can see
+           what a whitespace-only replacement actually changes. */
+        white-space: pre-wrap;
       }
 
       /* Shared by the review screen's rows, so the jump action reads the
