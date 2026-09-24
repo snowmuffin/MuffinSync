@@ -121,4 +121,44 @@ describe('buildChangeSet', () => {
     expect(set.blocked).toHaveLength(1);
     expect(set.changes).toHaveLength(1);
   });
+
+  it('treats a whitespace-only difference as a real change', async () => {
+    // The comparison is strict equality on purpose. Phase 0 fixed CSV
+    // round-tripping to preserve leading and trailing whitespace; if anything
+    // normalised here, a user who edited only whitespace would have that edit
+    // counted as unchanged and silently never written.
+    const set = await buildChangeSet(
+      [fromFile('1:1', 'Title', '  spaced  ')],
+      'import',
+      deps([node('1:1', 'Title', 'spaced')])
+    );
+    expect(set.changes).toHaveLength(1);
+    expect(set.changes[0].after).toBe('  spaced  ');
+    expect(set.unchangedCount).toBe(0);
+  });
+
+  it('returns an empty set for no targets', async () => {
+    const set = await buildChangeSet([], 'import', deps([]), 7);
+    expect(set).toEqual({
+      changes: [],
+      blocked: [],
+      unchangedCount: 0,
+      createdAt: 7,
+    });
+  });
+
+  it('fills all three buckets from one pass', async () => {
+    const set = await buildChangeSet(
+      [
+        fromFile('1:1', 'Changed', 'new'),
+        fromFile('1:2', 'Same', 'same'),
+        fromFile('9:9', 'Gone', 'x'),
+      ],
+      'import',
+      deps([node('1:1', 'Changed', 'old'), node('1:2', 'Same', 'same')])
+    );
+    expect(set.changes.map((c) => c.nodeId)).toEqual(['1:1']);
+    expect(set.unchangedCount).toBe(1);
+    expect(set.blocked.map((b) => b.nodeId)).toEqual(['9:9']);
+  });
 });
