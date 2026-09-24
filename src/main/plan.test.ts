@@ -139,7 +139,10 @@ describe('buildChangeSet', () => {
 
   it('returns an empty set for no targets', async () => {
     const set = await buildChangeSet([], 'import', deps([]), 7);
-    expect(set).toEqual({
+    // toStrictEqual, not toEqual: vitest treats a key holding `undefined` as
+    // absent, so toEqual would pass against `scope: undefined` and stop pinning
+    // the deliberate omission an import set depends on.
+    expect(set).toStrictEqual({
       changes: [],
       blocked: [],
       unchangedCount: 0,

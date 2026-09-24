@@ -103,6 +103,20 @@ describe('scope control with two panels sharing one scope', () => {
     });
   });
 
+  it('shows the choice made in one panel in the other panel too', () => {
+    // The user-visible half of sharing one scope (spec 3.1): picking a scope in
+    // either panel changes what the other panel shows, because they are two
+    // views of one choice rather than two settings.
+    const secondPanelPage = document.querySelector('#find-replace-scope [data-scope="page"]');
+    click(secondPanelPage);
+
+    expect(getScope()).toBe('page');
+    const first = document.querySelector('#extract-scope [data-scope="page"]');
+    const firstSelection = document.querySelector('#extract-scope [data-scope="selection"]');
+    expect(first?.classList.contains('selected')).toBe(true);
+    expect(firstSelection?.classList.contains('selected')).toBe(false);
+  });
+
   it('ignores a click on the second panel\'s disabled Selection option', () => {
     setSelectionPresent(false);
 
