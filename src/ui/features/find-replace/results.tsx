@@ -82,7 +82,7 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
 
       {canReplace && (
         <button
-          class="button primary"
+          class="button primary action"
           data-action="replace"
           disabled={selectedCount === 0}
           onClick={handleReplace}
@@ -90,7 +90,10 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
           Replace {selectedCount} {selectedCount === 1 ? 'layer' : 'layers'}
         </button>
       )}
-      <button class="button secondary" data-action="cancel" onClick={() => onCancel()}>
+      {/* `action` carries the spacing that sets the actions off from the last
+          row -- on Close too, which is the only action in the search-only
+          flow. */}
+      <button class="button secondary action" data-action="cancel" onClick={() => onCancel()}>
         Close
       </button>
     </div>

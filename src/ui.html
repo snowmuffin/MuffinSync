@@ -273,11 +273,18 @@
       }
 
       /* The actions follow the last row directly, with nothing between them
-         and the text they act on. Scoped to each host rather than given a
-         class of its own, so the shared .button rules stay untouched. */
-      #review-host .button.primary,
-      #results-host .button.primary {
+         and the text they act on. The spacing belongs to a class the action
+         markup opts into, never to a list of host ids that grows by one per
+         producer: the host-id version keyed on .primary and so missed the
+         search-only flow, whose single action is the .secondary Close.
+         Only the first action of a run is pushed off the rows; the ones after
+         it keep the shared .button spacing. */
+      .button.action {
         margin-top: 16px;
+      }
+
+      .button.action + .button.action {
+        margin-top: 0;
       }
 
       .field-label {

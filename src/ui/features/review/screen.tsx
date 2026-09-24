@@ -130,15 +130,17 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
         </div>
       )}
 
+      {/* `action` carries the spacing that sets the actions off from the last
+          row; see ui.html. */}
       <button
-        class="button primary"
+        class="button primary action"
         data-action="apply"
         disabled={selectedCount === 0}
         onClick={handleApply}
       >
         Apply {selectedCount} {selectedCount === 1 ? 'change' : 'changes'}
       </button>
-      <button class="button secondary" data-action="cancel" onClick={() => onCancel()}>
+      <button class="button secondary action" data-action="cancel" onClick={() => onCancel()}>
         Cancel
       </button>
     </div>
