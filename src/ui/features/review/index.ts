@@ -25,7 +25,10 @@ function handleApply(accepted: ProposedChange[]): void {
 
 function handleCancel(): void {
   closeReview();
-  showStatus('Import cancelled. Nothing was changed.', 'info');
+  // Producer-agnostic: two producers open this screen now, and a find &
+  // replace whose targets already hold the replacement opens it with Cancel as
+  // the only way out -- reporting an import the user never ran.
+  showStatus('Review cancelled. Nothing was changed.', 'info');
 }
 
 function handleNavigate(nodeId: string): void {

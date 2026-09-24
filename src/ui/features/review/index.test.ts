@@ -131,9 +131,10 @@ describe('review decisions', () => {
     });
     click('[data-action=cancel]');
 
-    // Parity check 3 asserts against this sentence.
+    // Parity check 3 asserts against this sentence. It names the screen, not
+    // the producer: find & replace cancels here too.
     expect(statusHost()?.textContent).toContain(
-      'Import cancelled. Nothing was changed.'
+      'Review cancelled. Nothing was changed.'
     );
   });
 

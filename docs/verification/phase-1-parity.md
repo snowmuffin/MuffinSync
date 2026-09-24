@@ -48,7 +48,7 @@ show their new text.
 2. Click **Cancel** instead of **Apply**.
 
 Expected: the review screen closes, the status banner reads something like
-"Import cancelled. Nothing was changed.", and every text layer in the
+"Review cancelled. Nothing was changed.", and every text layer in the
 document is exactly as it was before you chose the file — including the rows
 that were checked when you cancelled.
 
