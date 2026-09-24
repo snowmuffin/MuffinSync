@@ -14,7 +14,12 @@ export type NavigateResult = 'centred' | 'not-found' | 'other-page';
  * `figma.currentPage` -- reachable here because a change set (unlike a search
  * result) can name nodes from any page in the file. Walking up to find the
  * node's page distinguishes that case from a genuinely missing node, without
- * calling the expensive `figma.loadAllPagesAsync()`.
+ * calling the expensive `figma.loadAllPagesAsync()`. That walk is trustworthy
+ * for a node on *any* page, not only one already loaded: under this plugin's
+ * `documentAccess: dynamic-page` manifest setting, `getNodeByIdAsync` implicitly
+ * loads the node's containing page as part of resolving it, so by the time the
+ * node is in hand its whole ancestor chain -- up to and including that page --
+ * is synchronously walkable.
  *
  * A thin Figma wrapper by design; spec section 6 excludes these from unit tests.
  */

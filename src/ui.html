@@ -218,7 +218,11 @@
         padding: 10px 0;
       }
 
-      .review-row-top {
+      /* A row's label/text on one side and its "Show" button on the other --
+         the same layout whether the row is an applicable change or a blocked
+         one. */
+      .review-row-top,
+      .review-blocked-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -260,13 +264,6 @@
         padding-top: 12px;
         font-size: 13px;
         color: #64748b;
-      }
-
-      .review-blocked-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
       }
 
       .review-blocked-row-text {
