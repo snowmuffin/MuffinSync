@@ -354,14 +354,40 @@ tidier and costs the feature its other half: **searching with no replacement.**
 flow that demands a replacement before it will show anything cannot answer it.
 The result list is also where Layer Navigation belongs (3.5).
 
-**The sandbox owns matching.** `main/search.ts` holds two pure functions:
+**The sandbox owns matching.** `main/search.ts` holds pure functions:
 
 ```ts
-findMatches(text: string, query: string, opts: MatchOptions): Match[]
-replaceAll(text: string, query: string, replacement: string, opts: MatchOptions): string
-
 type MatchOptions = { caseSensitive: boolean; wholeWord: boolean };
+
+countMatches(text: string, query: string, opts: MatchOptions): number
+replaceAll(text: string, query: string, replacement: string, opts: MatchOptions): string
+matchingLayers(rows: TextLayerData[], query: string, opts: MatchOptions): SearchMatch[]
+
+type SearchMatch = {
+  nodeId: string;
+  layerName: string;
+  characters: string;   // the layer's current text
+  matchCount: number;
+};
 ```
+
+Counts, not positions. Offsets would only earn their keep if the result list
+highlighted matches inside the text, and it does not — it shows the layer's text
+as it stands and says how many times the query occurs in it.
+
+**Matching is implemented by scanning, not by building a regular expression.**
+Compiling an escaped query would work, and it would put a regex engine on the
+path of every search for no gain — including its backtracking behaviour, which
+is the thing excluded below. `indexOf` plus a boundary check has neither
+problem.
+
+A word boundary is the absence of a word character on either side, where a word
+character is `\p{L}`, `\p{N}`, or `_`. Treating letters by Unicode category
+rather than as `[A-Za-z]` keeps the rule meaningful in scripts other than Latin.
+It also means whole-word matching is close to useless for Chinese, Japanese, and
+Korean, which do not delimit words with spaces: `회원` will not match inside
+`회원가입` with whole word on. That is the correct reading of the option rather
+than a defect — the escape is to turn it off.
 
 The UI sends the query and, later, the chosen node ids; it never computes the
 replacement itself. Two reasons. The matching rule stays defined once — the UI
