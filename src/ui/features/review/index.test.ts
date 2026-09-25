@@ -8,7 +8,7 @@ vi.mock('../../post', () => ({ post: vi.fn() }));
 
 import { post } from '../../post';
 import { mountStatus, showStatus } from '../../status';
-import { openReview, closeReview } from './index';
+import { openReview, closeReview, invalidateOnSelectionChange } from './index';
 
 const posted = vi.mocked(post);
 
@@ -131,9 +131,98 @@ describe('review decisions', () => {
     });
     click('[data-action=cancel]');
 
-    // Parity check 3 asserts against this sentence.
+    // Parity check 3 asserts against this sentence. It names the screen, not
+    // the producer: find & replace cancels here too.
     expect(statusHost()?.textContent).toContain(
-      'Import cancelled. Nothing was changed.'
+      'Review cancelled. Nothing was changed.'
     );
+  });
+
+  it('posts a navigate when a review row asks to be centred', () => {
+    act(() => {
+      openReview(setOf([change('1:1')]));
+    });
+    act(() => {
+      reviewHost()?.querySelector<HTMLElement>('[data-navigate]')?.click();
+    });
+    expect(posted).toHaveBeenCalledWith({ type: 'navigate', nodeId: '1:1' });
+  });
+
+  it('does not inherit the previous selection when a second set opens', () => {
+    // Two producers exist now, so a set can follow a set. Without a remount the
+    // component keeps the state it initialised with and the new rows arrive
+    // carrying the old decisions.
+    act(() => {
+      openReview({
+        changes: [change('1:1'), change('1:2')],
+        blocked: [],
+        unchangedCount: 0,
+        createdAt: 1,
+      });
+    });
+    const boxes = () =>
+      reviewHost()!.querySelectorAll<HTMLInputElement>('[data-change]');
+    act(() => {
+      boxes()[0].click();
+    });
+    expect(boxes()[0].checked).toBe(false);
+
+    act(() => {
+      openReview({
+        changes: [change('9:1'), change('9:2')],
+        blocked: [],
+        unchangedCount: 0,
+        createdAt: 2,
+      });
+    });
+    expect(Array.from(boxes()).every((b) => b.checked)).toBe(true);
+  });
+
+  it('closes a selection-scoped review when the selection changes, and says why', () => {
+    act(() => {
+      openReview({
+        changes: [change('1:1')],
+        blocked: [],
+        unchangedCount: 0,
+        createdAt: 1,
+        scope: 'selection',
+      });
+    });
+    act(() => {
+      invalidateOnSelectionChange();
+    });
+    expect(reviewHost()?.innerHTML).toBe('');
+    expect(main()?.classList.contains('hidden')).toBe(false);
+    expect(statusHost()?.textContent).toContain('selection changed');
+  });
+
+  it('leaves a page-scoped review alone when the selection changes', () => {
+    act(() => {
+      openReview({
+        changes: [change('1:1')],
+        blocked: [],
+        unchangedCount: 0,
+        createdAt: 1,
+        scope: 'page',
+      });
+    });
+    act(() => {
+      invalidateOnSelectionChange();
+    });
+    expect(reviewHost()?.innerHTML).not.toBe('');
+  });
+
+  it('leaves an import review alone, which has no scope at all', () => {
+    act(() => {
+      openReview(setOf([change('1:1')]));
+    });
+    act(() => {
+      invalidateOnSelectionChange();
+    });
+    expect(reviewHost()?.innerHTML).not.toBe('');
+  });
+
+  it('is safe to call with no review open', () => {
+    expect(() => invalidateOnSelectionChange()).not.toThrow();
   });
 });

@@ -1,5 +1,5 @@
 import { h, render } from 'preact';
-import type { ChangeSet, ProposedChange } from '../../../shared/types';
+import type { ChangeSet, ProposedChange, Scope } from '../../../shared/types';
 import { ReviewScreen } from './screen';
 import { post } from '../../post';
 import { clearStatus, showStatus } from '../../status';
@@ -12,6 +12,9 @@ import { byId } from '../../dom';
  * the `.ts` extension, and JSX syntax requires `.tsx`.
  */
 
+/** The scope of the set currently under review, if any. */
+let openScope: Scope | undefined;
+
 function handleApply(accepted: ProposedChange[]): void {
   post({ type: 'apply', changes: accepted });
   closeReview();
@@ -22,7 +25,14 @@ function handleApply(accepted: ProposedChange[]): void {
 
 function handleCancel(): void {
   closeReview();
-  showStatus('Import cancelled. Nothing was changed.', 'info');
+  // Producer-agnostic: two producers open this screen now, and a find &
+  // replace whose targets already hold the replacement opens it with Cancel as
+  // the only way out -- reporting an import the user never ran.
+  showStatus('Review cancelled. Nothing was changed.', 'info');
+}
+
+function handleNavigate(nodeId: string): void {
+  post({ type: 'navigate', nodeId });
 }
 
 function setMainHidden(hidden: boolean): void {
@@ -37,8 +47,19 @@ export function openReview(changeSet: ChangeSet): void {
   // underneath the answer.
   clearStatus();
   setMainHidden(true);
+  openScope = changeSet.scope;
   render(
-    h(ReviewScreen, { changeSet, onApply: handleApply, onCancel: handleCancel }),
+    h(ReviewScreen, {
+      changeSet,
+      onApply: handleApply,
+      onCancel: handleCancel,
+      onNavigate: handleNavigate,
+      // `createdAt` is otherwise unused past validation. Keying on it forces
+      // Preact to mount a fresh component per change set, rather than
+      // reconciling one holding the previous selection -- unreachable with a
+      // single producer, reachable now that two exist.
+      key: changeSet.createdAt,
+    }),
     host
   );
 }
@@ -48,4 +69,18 @@ export function closeReview(): void {
   if (!host) return;
   render(null, host);
   setMainHidden(false);
+  openScope = undefined;
+}
+
+/**
+ * A selection-scoped set names nodes that were in the selection when it was
+ * built. Changes apply by nodeId, so applying it against a different selection
+ * would write to layers the user never reviewed. Spec 3.1 requires the set be
+ * invalidated; it closes with a reason rather than vanishing, because a screen
+ * that disappears unexplained reads as a crash.
+ */
+export function invalidateOnSelectionChange(): void {
+  if (openScope !== 'selection') return;
+  closeReview();
+  showStatus('Review closed: the selection changed. Search again.', 'info');
 }

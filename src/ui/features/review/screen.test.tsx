@@ -23,14 +23,24 @@ const setOf = (partial: Partial<ChangeSet>): ChangeSet => ({
 });
 
 let host: HTMLElement;
-const draw = (changeSet: ChangeSet, onApply = vi.fn(), onCancel = vi.fn()) => {
+const draw = (
+  changeSet: ChangeSet,
+  onApply = vi.fn(),
+  onCancel = vi.fn(),
+  onNavigate = vi.fn()
+) => {
   act(() => {
     render(
-      <ReviewScreen changeSet={changeSet} onApply={onApply} onCancel={onCancel} />,
+      <ReviewScreen
+        changeSet={changeSet}
+        onApply={onApply}
+        onCancel={onCancel}
+        onNavigate={onNavigate}
+      />,
       host
     );
   });
-  return { onApply, onCancel };
+  return { onApply, onCancel, onNavigate };
 };
 
 // Ruling: `data-change` sits on the checkbox only, `data-change-row` on the
@@ -109,6 +119,9 @@ describe('ReviewScreen', () => {
   it('counts the selection in the apply button', () => {
     draw(setOf({ changes: [change('1:1', 'a'), change('1:2', 'b')] }));
     expect(applyButton()?.textContent).toBe('Apply 2 changes');
+    // The action-bar spacing in src/ui.html keys off this class; a producer
+    // that forgets it gets no spacing and nothing in CI notices otherwise.
+    expect(applyButton()?.classList.contains('action')).toBe(true);
 
     act(() => {
       boxes()[0].click();
@@ -197,8 +210,10 @@ describe('ReviewScreen', () => {
 
   it('reports a cancel without applying anything', () => {
     const { onApply, onCancel } = draw(setOf({ changes: [change('1:1', 'a')] }));
+    const cancelButton = host.querySelector<HTMLButtonElement>('[data-action=cancel]');
+    expect(cancelButton?.classList.contains('action')).toBe(true);
     act(() => {
-      host.querySelector<HTMLButtonElement>('[data-action=cancel]')?.click();
+      cancelButton?.click();
     });
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onApply).not.toHaveBeenCalled();
@@ -208,5 +223,47 @@ describe('ReviewScreen', () => {
     draw(setOf({ unchangedCount: 12 }));
     expect(host.textContent).toContain('No changes');
     expect(applyButton()?.disabled).toBe(true);
+  });
+
+  it('reports which layer to centre when a row asks', () => {
+    const { onNavigate } = draw(setOf({ changes: [change('1:1', 'a')] }));
+    act(() => {
+      host.querySelectorAll<HTMLElement>('[data-navigate]')[0].click();
+    });
+    expect(onNavigate).toHaveBeenCalledWith('1:1');
+  });
+
+  it('offers the action on a not-text blocked row, which still names a node', () => {
+    // A blocked row names a node the document could not take. 'not-text' is
+    // still in the document and the user needs to find it.
+    const { onNavigate } = draw(
+      setOf({
+        changes: [],
+        blocked: [{ nodeId: '2:2', layerName: 'Shape', reason: 'not-text' }],
+      })
+    );
+    act(() => {
+      host.querySelectorAll<HTMLElement>('[data-navigate]')[0].click();
+    });
+    expect(onNavigate).toHaveBeenCalledWith('2:2');
+  });
+
+  it('offers no action on a missing blocked row, where it could only fail', () => {
+    // 'missing' means the node is gone, so Show would always come back with
+    // "That layer no longer exists."
+    draw(
+      setOf({
+        changes: [],
+        blocked: [
+          { nodeId: '2:1', layerName: 'Gone', reason: 'missing' },
+          { nodeId: '2:2', layerName: 'Shape', reason: 'not-text' },
+        ],
+      })
+    );
+
+    const blockedRows = Array.from(host.querySelectorAll('.review-blocked-row'));
+    expect(blockedRows).toHaveLength(2);
+    expect(blockedRows[0].querySelector('[data-navigate]')).toBeNull();
+    expect(blockedRows[1].querySelector('[data-navigate]')).not.toBeNull();
   });
 });

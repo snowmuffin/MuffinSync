@@ -1,4 +1,9 @@
-import type { TextLayerData, ChangeSet, ProposedChange, BlockedChange } from '../shared/types';
+import type {
+  ChangeSet,
+  ProposedChange,
+  BlockedChange,
+  Scope,
+} from '../shared/types';
 import type { ApplicableNode } from './apply';
 
 export interface PlanDeps {
@@ -6,51 +11,73 @@ export interface PlanDeps {
 }
 
 /**
- * Compare what a file says against what the document currently holds.
+ * One node a producer wants to write to, and what it wants written.
  *
- * The UI cannot read the document, so it cannot know the "before" text; this
- * runs in the sandbox and hands back a complete set. `now` is injectable so
- * the result is deterministic under test.
+ * `after` receives the node's current text so a producer can derive from it --
+ * find & replace does; import ignores it and returns the file's text. That is
+ * the whole difference between the producers, which is why there is one
+ * builder rather than one per producer. See spec section 3.
+ */
+export interface ChangeTarget {
+  id: string;
+  /** Used only when the node is gone; a missing node cannot be asked its name. */
+  fallbackName: string;
+  after(current: string): string;
+}
+
+/**
+ * Classify every target against what the document currently holds: the node is
+ * gone, it is not text, its text already matches, or it differs.
+ *
+ * This runs in the sandbox because the UI cannot read the document and so
+ * cannot know the "before" text. `now` is injectable so `createdAt` is
+ * deterministic under test. `scope` is set only by producers that walked the
+ * document -- import's targets come from a file, so it has none (spec 3.1).
  */
 export async function buildChangeSet(
-  rows: TextLayerData[],
+  targets: ReadonlyArray<ChangeTarget>,
+  source: ProposedChange['source'],
   deps: PlanDeps,
-  now: number = Date.now()
+  now: number = Date.now(),
+  scope?: Scope
 ): Promise<ChangeSet> {
   const changes: ProposedChange[] = [];
   const blocked: BlockedChange[] = [];
   let unchangedCount = 0;
 
-  for (const row of rows) {
-    const node = await deps.getNode(row.id);
+  for (const target of targets) {
+    const node = await deps.getNode(target.id);
 
     if (!node) {
-      // The document has no node to ask, so the file's name is all we have.
-      blocked.push({ nodeId: row.id, layerName: row.name, reason: 'missing' });
+      blocked.push({ nodeId: target.id, layerName: target.fallbackName, reason: 'missing' });
       continue;
     }
     if (node.type !== 'TEXT') {
-      blocked.push({ nodeId: row.id, layerName: node.name, reason: 'not-text' });
+      blocked.push({ nodeId: target.id, layerName: node.name, reason: 'not-text' });
       continue;
     }
-    if (node.characters === row.characters) {
+
+    const after = target.after(node.characters);
+    if (node.characters === after) {
       unchangedCount++;
       continue;
     }
 
     changes.push({
-      nodeId: row.id,
-      // The document is the authority on what a layer is called; a file can
-      // carry a name that was edited or has gone stale.
+      nodeId: target.id,
+      // The document is the authority on what a layer is called; a file, or a
+      // search result a moment stale, can carry a name since edited.
       layerName: node.name,
       before: node.characters,
-      after: row.characters,
-      source: 'import',
+      after,
+      source,
       // Checked by default: review is for vetoing, not for re-approving every
-      // line of a file the user just edited on purpose.
+      // row the user just asked for.
       accepted: true,
     });
   }
 
-  return { changes, blocked, unchangedCount, createdAt: now };
+  return scope === undefined
+    ? { changes, blocked, unchangedCount, createdAt: now }
+    : { changes, blocked, unchangedCount, createdAt: now, scope };
 }

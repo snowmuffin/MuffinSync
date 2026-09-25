@@ -13,8 +13,8 @@ function options(root: Document): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>('.scope-option'));
 }
 
-function selectionOption(root: Document): HTMLElement | undefined {
-  return options(root).find((option) => option.dataset.scope === 'selection');
+function selectionOptions(root: Document): HTMLElement[] {
+  return options(root).filter((option) => option.dataset.scope === 'selection');
 }
 
 function applySelection(root: Document, next: Scope): void {
@@ -51,13 +51,19 @@ export function getScope(): Scope {
  * Figma itself. When nothing is selected, "Selection" is not a real choice:
  * disable it, and if it was the chosen scope, fall the visible choice back to
  * "Current page" so the control never shows something the user can't have.
+ *
+ * The control is rendered once per panel (Extract and Find & Replace each
+ * have their own `.scope-selector` markup, sharing one scope per spec 3.1),
+ * so every copy of the "Selection" option must be disabled together -- an
+ * un-disabled copy elsewhere in the document would let a click set the scope
+ * to `selection` while presenting itself as choosable with nothing selected.
  */
 export function setSelectionPresent(present: boolean): void {
   if (!host) return;
-  const option = selectionOption(host);
-  if (!option) return;
+  const matches = selectionOptions(host);
+  if (matches.length === 0) return;
 
-  option.classList.toggle('disabled', !present);
+  matches.forEach((option) => option.classList.toggle('disabled', !present));
   if (!present && chosen === 'selection') {
     applySelection(host, 'page');
   }

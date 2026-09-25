@@ -8,6 +8,20 @@ export interface TextLayerData {
 /** Which roots a document walk starts from. See spec section 3.1. */
 export type Scope = 'selection' | 'page';
 
+/** How a query is compared against a layer's text. See spec section 3.4. */
+export interface MatchOptions {
+  caseSensitive: boolean;
+  wholeWord: boolean;
+}
+
+/** One layer the query occurs in. See spec section 3.4. */
+export interface SearchMatch {
+  nodeId: string;
+  layerName: string;
+  characters: string;   // the layer's current text
+  matchCount: number;
+}
+
 export type ExportFormat = 'csv' | 'json';
 
 const EXPORT_FORMATS: readonly string[] = ['csv', 'json'];
@@ -34,9 +48,25 @@ export interface BlockedChange {
   reason: 'missing' | 'not-text';
 }
 
+/** One node the user chose to replace in. See spec section 3.4. */
+export interface ReplaceTarget {
+  nodeId: string;
+  /**
+   * Carried so a node deleted between searching and replacing can still be
+   * named in the blocked row; a missing node cannot be asked its name.
+   */
+  layerName: string;
+}
+
 export interface ChangeSet {
   changes: ProposedChange[];   // only rows whose text actually differs
   blocked: BlockedChange[];    // shown in review, never selectable
   unchangedCount: number;      // counted, not listed
   createdAt: number;
+  /**
+   * Set when a traversal produced this set, so the UI can tell whether a
+   * selection change invalidates it. Absent for 'import', whose targets come
+   * from a file. See spec section 3.1.
+   */
+  scope?: Scope;
 }

@@ -4,8 +4,10 @@ import { byId, debugLog } from './dom';
 import { mountStatus, showStatus } from './status';
 import { initExtract, showExportedData } from './features/extract';
 import { initImport } from './features/import';
-import { openReview, closeReview } from './features/review';
+import { openReview, closeReview, invalidateOnSelectionChange } from './features/review';
+import { initFindReplace, showResults } from './features/find-replace';
 import { initScope, setSelectionPresent } from './features/scope';
+import { initTabs } from './features/tabs';
 
 const statusHost = byId('status-host');
 if (statusHost) mountStatus(statusHost);
@@ -26,7 +28,9 @@ setTimeout(() => {
 
 initExtract(document);
 initImport(document);
+initFindReplace(document);
 initScope(document);
+initTabs(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {
@@ -88,6 +92,12 @@ window.onmessage = (event: MessageEvent) => {
     case 'selection':
       debugLog(`Selection changed: present=${message.present}`);
       setSelectionPresent(message.present);
+      invalidateOnSelectionChange();
+      break;
+
+    case 'search-results':
+      debugLog(`Search results: ${message.matches.length} layers matched`);
+      showResults(message.matches);
       break;
   }
 };

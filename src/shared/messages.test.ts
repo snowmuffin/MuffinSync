@@ -156,6 +156,149 @@ describe('unwrapUiMessage', () => {
     const rows = [{ id: '1:1', name: 'A', characters: 'x' }];
     expect(unwrapUiMessage({ type: 'import', rows })).toBeNull();
   });
+
+  it('accepts a search message', () => {
+    expect(
+      unwrapUiMessage({
+        type: 'search',
+        query: 'Sign up',
+        scope: 'page',
+        caseSensitive: false,
+        wholeWord: true,
+      })
+    ).toEqual({
+      type: 'search',
+      query: 'Sign up',
+      scope: 'page',
+      caseSensitive: false,
+      wholeWord: true,
+    });
+  });
+
+  it('rejects a search message whose query is not a string', () => {
+    expect(
+      unwrapUiMessage({ type: 'search', query: 5, scope: 'page', caseSensitive: false, wholeWord: false })
+    ).toBeNull();
+  });
+
+  it('rejects a search message whose scope is not a known scope', () => {
+    expect(
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'document', caseSensitive: false, wholeWord: false })
+    ).toBeNull();
+  });
+
+  it('rejects a search message whose caseSensitive is not a boolean', () => {
+    expect(
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: 'yes', wholeWord: false })
+    ).toBeNull();
+  });
+
+  it('rejects a search message whose wholeWord is not a boolean', () => {
+    expect(
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: false, wholeWord: 1 })
+    ).toBeNull();
+  });
+
+  it('accepts a plan-replace message', () => {
+    expect(
+      unwrapUiMessage({
+        type: 'plan-replace',
+        query: 'Sign up',
+        replacement: 'Get started',
+        targets: [{ nodeId: '1:1', layerName: 'Hero' }],
+        scope: 'selection',
+        caseSensitive: true,
+        wholeWord: false,
+      })
+    ).toEqual({
+      type: 'plan-replace',
+      query: 'Sign up',
+      replacement: 'Get started',
+      targets: [{ nodeId: '1:1', layerName: 'Hero' }],
+      scope: 'selection',
+      caseSensitive: true,
+      wholeWord: false,
+    });
+  });
+
+  it('rejects a plan-replace message whose replacement is missing', () => {
+    expect(
+      unwrapUiMessage({
+        type: 'plan-replace',
+        query: 'x',
+        targets: [],
+        scope: 'page',
+        caseSensitive: false,
+        wholeWord: false,
+      })
+    ).toBeNull();
+  });
+
+  it('rejects a plan-replace target without a nodeId', () => {
+    expect(
+      unwrapUiMessage({
+        type: 'plan-replace',
+        query: 'x',
+        replacement: 'y',
+        targets: [{ layerName: 'Hero' }],
+        scope: 'page',
+        caseSensitive: false,
+        wholeWord: false,
+      })
+    ).toBeNull();
+  });
+
+  it('rejects a plan-replace target without a layerName', () => {
+    expect(
+      unwrapUiMessage({
+        type: 'plan-replace',
+        query: 'x',
+        replacement: 'y',
+        targets: [{ nodeId: '1:1' }],
+        scope: 'page',
+        caseSensitive: false,
+        wholeWord: false,
+      })
+    ).toBeNull();
+  });
+
+  // One case per remaining plan-replace check, each breaking that field alone
+  // on an otherwise valid message. Without these, deleting any of the four
+  // leaves the suite green -- `search` has its own fixtures, but they exercise
+  // a different case of the switch.
+  const replaceMessage = {
+    type: 'plan-replace',
+    query: 'Sign up',
+    replacement: 'Get started',
+    targets: [{ nodeId: '1:1', layerName: 'Hero' }],
+    scope: 'page',
+    caseSensitive: false,
+    wholeWord: false,
+  };
+
+  const badReplace: Array<[string, Record<string, unknown>]> = [
+    ['query is not a string', { ...replaceMessage, query: 5 }],
+    ['scope is not a known scope', { ...replaceMessage, scope: 'document' }],
+    ['caseSensitive is not a boolean', { ...replaceMessage, caseSensitive: 'yes' }],
+    ['wholeWord is not a boolean', { ...replaceMessage, wholeWord: 1 }],
+  ];
+
+  for (const [label, bad] of badReplace) {
+    it(`rejects a plan-replace message whose ${label}`, () => {
+      expect(unwrapUiMessage(bad)).toBeNull();
+    });
+  }
+
+  it('accepts a navigate message', () => {
+    expect(unwrapUiMessage({ type: 'navigate', nodeId: '1:1' })).toEqual({
+      type: 'navigate',
+      nodeId: '1:1',
+    });
+  });
+
+  it('rejects a navigate message whose nodeId is not a string', () => {
+    expect(unwrapUiMessage({ type: 'navigate', nodeId: null })).toBeNull();
+  });
 });
 
 describe('unwrapMainMessage', () => {
@@ -288,6 +431,80 @@ describe('unwrapMainMessage', () => {
   it('rejects a selection message whose present is not a boolean', () => {
     expect(
       unwrapMainMessage({ pluginMessage: { type: 'selection', present: 'yes' } })
+    ).toBeNull();
+  });
+
+  it('accepts search results', () => {
+    const matches = [
+      { nodeId: '1:1', layerName: 'Hero', characters: 'Sign up free', matchCount: 1 },
+    ];
+    expect(unwrapMainMessage({ type: 'search-results', matches, scope: 'page' })).toEqual({
+      type: 'search-results',
+      matches,
+      scope: 'page',
+    });
+  });
+
+  it('rejects search results whose matchCount is not a number', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'search-results',
+        matches: [{ nodeId: '1:1', layerName: 'Hero', characters: 'x', matchCount: 'one' }],
+        scope: 'page',
+      })
+    ).toBeNull();
+  });
+
+  it('rejects search results whose characters field is missing', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'search-results',
+        matches: [{ nodeId: '1:1', layerName: 'Hero', matchCount: 1 }],
+        scope: 'page',
+      })
+    ).toBeNull();
+  });
+
+  // The other two fields of a match, each broken alone on an otherwise valid
+  // row -- `characters` and `matchCount` are pinned above, these were not.
+  it('rejects search results whose nodeId is not a string', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'search-results',
+        matches: [{ nodeId: 1, layerName: 'Hero', characters: 'x', matchCount: 1 }],
+        scope: 'page',
+      })
+    ).toBeNull();
+  });
+
+  it('rejects search results whose layerName is missing', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'search-results',
+        matches: [{ nodeId: '1:1', characters: 'x', matchCount: 1 }],
+        scope: 'page',
+      })
+    ).toBeNull();
+  });
+
+  it('rejects search results whose scope is unknown', () => {
+    expect(unwrapMainMessage({ type: 'search-results', matches: [], scope: 'all' })).toBeNull();
+  });
+
+  it('accepts a change set carrying a scope', () => {
+    const changeSet = { changes: [], blocked: [], unchangedCount: 0, createdAt: 1, scope: 'page' };
+    expect(unwrapMainMessage({ type: 'change-set', changeSet })).toEqual({
+      type: 'change-set',
+      changeSet,
+    });
+  });
+
+  it('rejects a change set whose scope is unknown', () => {
+    expect(
+      unwrapMainMessage({
+        type: 'change-set',
+        changeSet: { changes: [], blocked: [], unchangedCount: 0, createdAt: 1, scope: 'all' },
+      })
     ).toBeNull();
   });
 });
