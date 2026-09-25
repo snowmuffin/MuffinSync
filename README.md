@@ -164,6 +164,12 @@ Tests sit beside the code they cover, as `*.test.ts`.
 - **Performance Consideration**: Processing a large number of text layers may take some time, so patience is advised.
 - **Font Issues**: If fonts are not loaded when importing, errors may occur, so ensure fonts are available in your Figma project.
 
+## 📊 Project Status
+
+[`docs/status.md`](docs/status.md) tracks which phases have merged, how far the
+manual verification in [`docs/verification/`](docs/verification/) has got, and the
+known items deferred with their reasons.
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
