@@ -71,7 +71,7 @@
         color: white;
       }
 
-      .button.primary:hover {
+      .button.primary:hover:not(:disabled) {
         background: #2563eb;
       }
 
@@ -81,8 +81,19 @@
         border: 1px solid #e2e8f0;
       }
 
-      .button.secondary:hover {
+      .button.secondary:hover:not(:disabled) {
         background: #e2e8f0;
+      }
+
+      /* A disabled button is inert but looked identical to a live one. Search
+         sits disabled until a query is typed, so it read as pressable and its
+         silence read as a hang. Matches `.scope-option.disabled`'s treatment,
+         without its `pointer-events: none` -- the disabled attribute already
+         blocks the click, and suppressing pointer events would hide the
+         cursor that says so. */
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
       }
 
       .file-input {
