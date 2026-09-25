@@ -53,3 +53,7 @@ temp/
 # Agent scratch: worktrees and execution ledgers. Local state, never committed.
 /.claude/worktrees/
 /.superpowers/
+
+# Playwright MCP scratch: console logs and page snapshots from browser checks
+# (the review screen's spacing was verified this way). Regenerated on demand.
+/.playwright-mcp/
