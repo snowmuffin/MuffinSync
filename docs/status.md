@@ -79,6 +79,27 @@ outside the test suite's reach, and the parity documents are the only net.
 
 ---
 
+## Stage C0 measurements
+
+Design: `docs/superpowers/specs/2026-09-26-large-documents-design.md`.
+
+**List rendering** (measured here, headless Chromium, no stylesheet — a lower
+bound):
+
+| Rows | Result list | Review |
+|---|---|---|
+| 1,000 | 234 ms | 197 ms |
+| 5,000 | 817 ms | 920 ms |
+| 20,000 | 2,415 ms | 4,050 ms |
+
+Over the ~200 ms budget from about 1,000 rows, so the list cap (C4) is in scope.
+
+**Sandbox paths** (walk, find, read, postMessage, lookup, apply): pending — they
+need the Figma desktop app. Run `tools/fixture/` per its README and record the
+JSON here.
+
+---
+
 ## Resolved in Stage A (2026-09-26)
 
 Eight items this list used to carry, closed on `claude/zen-sagan-zay4p6` per

@@ -1,7 +1,7 @@
 # Large Documents — Design
 
 **Date:** 2026-09-26
-**Status:** Draft — decisions in §9 pending
+**Status:** Approved 2026-09-26 — §9 decided as recommended
 **Scope:** Stage C of `docs/superpowers/plans/2026-09-26-remaining-roadmap.md`.
 Spec `2026-09-19-copy-qa-design.md` §8 assigned this its own spec and plan cycle.
 
@@ -179,6 +179,11 @@ largest apply win; §3 confirms.
 
 ## 7. Long lists in the UI
 
+> **Measured 2026-09-26 — the cap is needed.** Rendering in headless Chromium
+> (Preact production build, no stylesheet, so a lower bound): result list
+> 234 / 817 / 2,415 ms and review 197 / 920 / 4,050 ms at 1k / 5k / 20k rows.
+> Both are over the ~200 ms budget from about 1,000 rows. C4 is in scope.
+
 The result list and the review render every row. If §3 shows a render over
 ~200 ms, both render the first 200 rows with a "Show N more" button.
 Select-all and the Replace/Apply counts must still cover every row, rendered or
@@ -213,7 +218,9 @@ fast enough, this section is dropped.
 
 ---
 
-## 9. Decisions needed
+## 9. Decisions
+
+All three decided 2026-09-26 as recommended below.
 
 1. **Hidden layers and instance children.** Today every text layer is
    collected, visible or not. Setting `skipInvisibleInstanceChildren` would be
