@@ -178,6 +178,31 @@ describe('review decisions', () => {
     expect(Array.from(boxes()).every((b) => b.checked)).toBe(true);
   });
 
+  it('does not inherit the previous selection even when both sets share a timestamp', () => {
+    // Two sets built in the same millisecond carry the same createdAt, so the
+    // remount cannot rest on it.
+    const set = (id: string) => ({
+      changes: [change(`${id}:1`), change(`${id}:2`)],
+      blocked: [],
+      unchangedCount: 0,
+      createdAt: 7,
+    });
+    act(() => {
+      openReview(set('1'));
+    });
+    const boxes = () =>
+      reviewHost()!.querySelectorAll<HTMLInputElement>('[data-change]');
+    act(() => {
+      boxes()[0].click();
+    });
+    expect(boxes()[0].checked).toBe(false);
+
+    act(() => {
+      openReview(set('9'));
+    });
+    expect(Array.from(boxes()).every((b) => b.checked)).toBe(true);
+  });
+
   it('closes a selection-scoped review when the selection changes, and says why', () => {
     act(() => {
       openReview({

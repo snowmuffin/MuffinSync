@@ -15,6 +15,14 @@ import { byId } from '../../dom';
 /** The scope of the set currently under review, if any. */
 let openScope: Scope | undefined;
 
+/**
+ * One per `openReview` call, used as the screen's key so Preact mounts a
+ * fresh component for every change set instead of reconciling one that holds
+ * the previous set's checkbox state. Counted rather than taken from
+ * `createdAt`: two sets built in the same millisecond would share a timestamp.
+ */
+let reviewCount = 0;
+
 function handleApply(accepted: ProposedChange[]): void {
   post({ type: 'apply', changes: accepted });
   closeReview();
@@ -54,11 +62,7 @@ export function openReview(changeSet: ChangeSet): void {
       onApply: handleApply,
       onCancel: handleCancel,
       onNavigate: handleNavigate,
-      // `createdAt` is otherwise unused past validation. Keying on it forces
-      // Preact to mount a fresh component per change set, rather than
-      // reconciling one holding the previous selection -- unreachable with a
-      // single producer, reachable now that two exist.
-      key: changeSet.createdAt,
+      key: ++reviewCount,
     }),
     host
   );
