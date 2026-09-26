@@ -76,6 +76,10 @@ thousands of layers does not freeze the panel. It changes the contract for
 extract and search at once. Needs a generated test document with
 thousands of text nodes.
 
+**Design:** `docs/superpowers/specs/2026-09-26-large-documents-design.md`
+(draft, 2026-09-26). It widens the stage to plan, apply and long lists, and
+starts with measurement (C0) before any of it is built.
+
 ---
 
 ## Decisions needed before starting
