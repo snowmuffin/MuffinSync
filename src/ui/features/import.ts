@@ -1,6 +1,7 @@
 import type { TextLayerData } from '../../shared/types';
 import { fromCSV } from '../format/csv';
 import { fromJSON } from '../format/json';
+import { assertUniqueIds } from '../format/rows';
 import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
 import { post } from '../post';
@@ -39,6 +40,7 @@ export function initImport(root: Document): void {
             );
             return;
           }
+          assertUniqueIds(data);
 
           showStatus('Checking what would change...', 'info');
           post({ type: 'plan-import', rows: data });

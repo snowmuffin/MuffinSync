@@ -82,6 +82,9 @@ All notable changes to MuffinSync will be documented in this file.
   `fromJSON` rejects entries without string `id`, `name`, and `characters`.
   Previously both were accepted, blanking layers or reporting "Updated 0 text
   layers" with no explanation of why.
+- **An import file naming the same layer twice is rejected**, listing the
+  repeated ids. Both rows used to become review entries sharing one
+  checkbox, and whichever was applied last silently won.
 
 ### Removed
 - Unused `css-loader` / `style-loader` dependencies and their webpack rule — the

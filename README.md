@@ -21,6 +21,7 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 ### 3️⃣ Review, Then Apply (Import)
 - **Nothing changes on file choice.** Selecting a file only parses it and shows what it would do — the plugin compares each row against the current document and presents a review screen before touching anything.
 - **Three kinds of row.** Rows whose text would actually change are listed individually with their before/after text. Rows already matching the document are counted, not listed. Rows the document cannot take are listed under "Cannot apply" — because the layer id no longer exists, or the node is no longer a text layer — before anything is applied.
+- **One row per layer.** A file that names the same layer id twice is rejected, listing the repeated ids, rather than guessing which row to keep.
 - **Uncheck what you don't want.** Each changed row has its own checkbox (plus a "select all"); only checked rows are sent when you click Apply. Cancelling closes the review and applies nothing.
 - **Automatic Font Handling**: Every font a text layer uses is loaded before its content is replaced. Layers with mixed fonts across character ranges are handled too — each range's font is loaded via `getRangeAllFontNames()`, so multi-font layers import without errors.
 
@@ -133,7 +134,7 @@ MuffinSync/
 │   │   │   └── review/
 │   │   │       ├── index.ts      # mounts/unmounts ReviewScreen, turns its decision into apply/cancel, invalidates on selection change
 │   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
-│   │   └── format/      # csv.ts, json.ts
+│   │   └── format/      # csv.ts, json.ts, rows.ts (rejects a file naming one layer twice)
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
 ├── dist/                 # Build output (generated; not committed)
 ├── manifest.json         # Figma plugin manifest file
