@@ -1,0 +1,9 @@
+{
+  "name": "Copydesk Self-Test (dev only)",
+  "id": "copydesk-self-test-dev",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] }
+}

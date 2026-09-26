@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2020"],
+    "typeRoots": ["./node_modules/@figma", "./node_modules/@types"],
+    "types": ["plugin-typings"]
+  },
+  "include": ["tools/self-test/src/**/*", "src/main/**/*", "src/shared/**/*"]
+}

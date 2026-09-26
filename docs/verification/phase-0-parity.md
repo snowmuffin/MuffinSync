@@ -1,5 +1,10 @@
 # Phase 0 manual parity checks
 
+> **Superseded.** Before a release, run `tools/self-test` and
+> `docs/verification/manual-checklist.md` instead. This document is kept as the
+> record of what was checked for its phase; some steps describe behaviour that
+> has since changed.
+
 These checks exercise behavior that only exists inside the Figma desktop
 app — the plugin sandbox (`figma.*`), a real document, and a real UI iframe.
 None of them can run in CI or under vitest; run them by hand after

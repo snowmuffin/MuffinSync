@@ -1,5 +1,10 @@
 # Stage A manual checks
 
+> **Superseded.** Before a release, run `tools/self-test` and
+> `docs/verification/manual-checklist.md` instead. This document is kept as the
+> record of what was checked for its phase; some steps describe behaviour that
+> has since changed.
+
 The Stage A cleanups (`docs/superpowers/plans/2026-09-26-remaining-roadmap.md`)
 that only show up in a running plugin. Everything else in Stage A is covered by
 unit tests. Run these in the Figma desktop app after `npm run build`, alongside

@@ -1,5 +1,10 @@
 # Stage C manual checks
 
+> **Superseded.** Before a release, run `tools/self-test` and
+> `docs/verification/manual-checklist.md` instead. This document is kept as the
+> record of what was checked for its phase; some steps describe behaviour that
+> has since changed.
+
 Large-document behaviour from `docs/superpowers/specs/2026-09-26-large-documents-design.md`
 that only a running plugin shows. The slicing, stop, busy and paging rules are
 unit tested; these check that Figma actually stays responsive.

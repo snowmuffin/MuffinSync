@@ -1,5 +1,10 @@
 # Copy tools manual checks
 
+> **Superseded.** Before a release, run `tools/self-test` and
+> `docs/verification/manual-checklist.md` instead. This document is kept as the
+> record of what was checked for its phase; some steps describe behaviour that
+> has since changed.
+
 What `docs/superpowers/specs/2026-09-26-copy-tools-design.md` (1.3.0) added that
 only a running plugin shows. Rules, parsing, path matching, settings parsing and
 messages are unit tested.

@@ -130,6 +130,9 @@ npm test
 
 # Re-run on change
 npm run test:watch
+
+# Build the development-only self-test plugin (tools/self-test)
+npm run build:self-test
 ```
 
 ### Project Structure
@@ -137,7 +140,8 @@ npm run test:watch
 Copydesk/
 ├── src/
 │   ├── main/            # Figma sandbox. No DOM, no network.
-│   │   ├── index.ts     # message router, scope resolution, the one-task-at-a-time guard
+│   │   ├── index.ts     # opens the UI and wires figma.ui to the handler
+│   │   ├── handler.ts   # createHandler: every UI message, scope resolution, the one-task-at-a-time guard
 │   │   ├── chunked.ts   # runChunked: time-sliced loops with progress and stop
 │   │   ├── fonts.ts     # createFontCache: each font loaded once per apply
 │   │   ├── traverse.ts  # collectTextLayers (findAllWithCriteria, sliced; hidden filter, frame names), resolveRoots, isWithin, pageOf
@@ -186,6 +190,7 @@ Copydesk/
 │   │                    # documents (XLSX, DOCX, Markdown, EPUB), stats, read-zip (test support)
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
 ├── tools/fixture/        # Dev-only Figma plugin that builds pages of thousands of text layers
+├── tools/self-test/      # Dev-only Figma plugin that runs Copydesk's sandbox handler against a real document
 ├── dist/                 # Build output (generated; not committed)
 ├── manifest.json         # Figma plugin manifest file
 ├── package.json          # Project metadata and dependencies

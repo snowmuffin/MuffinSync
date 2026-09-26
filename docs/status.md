@@ -221,9 +221,9 @@ Manual checks: `docs/verification/copy-tools-parity.md`.
 `package.json` and `CHANGELOG.md` are at **1.3.0** (1.2.0 plus the copy tools).
 Publish whichever the Community listing is behind on. What remains is below.
 
-- Run the three phase parity documents, `stage-a-parity.md`,
-  `stage-c-parity.md`, `local-features-parity.md` and `copy-tools-parity.md` in
-  Figma desktop and record the results.
+- Run `tools/self-test` in Figma desktop (all ✓), then
+  `docs/verification/manual-checklist.md`. The per-phase parity documents are
+  superseded by these two.
 - ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
   repository was renamed to `snowmuffin/Copydesk` the same day; GitHub redirects
   the old URL, so an existing clone keeps working without changing its remote.

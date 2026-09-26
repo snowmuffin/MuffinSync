@@ -10,7 +10,8 @@
     "build": "npx webpack --mode=production",
     "build:watch": "npx webpack --mode=development --watch",
     "dev": "npx webpack --mode=development",
-    "typecheck": "tsc -p tsconfig.main.json && tsc -p tsconfig.ui.json",
+    "typecheck": "tsc -p tsconfig.main.json && tsc -p tsconfig.ui.json && tsc -p tsconfig.selftest.json",
+    "build:self-test": "npx webpack --config webpack.self-test.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

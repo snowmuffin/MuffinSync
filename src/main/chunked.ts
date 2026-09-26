@@ -43,7 +43,9 @@ export async function runChunked<T>(
   let sliceStart = control.now();
   for (let index = 0; index < total; index++) {
     const result = work(items[index], index);
-    if (result instanceof Promise) await result;
+    // A `then` check rather than `instanceof Promise`, which fails for a
+    // promise made in another realm (a test harness running the bundle in a vm).
+    if (result && typeof (result as Promise<void>).then === 'function') await result;
 
     const done = index + 1;
     if (done < total && control.now() - sliceStart >= budgetMs) {

@@ -1,5 +1,10 @@
 # Local features manual checks
 
+> **Superseded.** Before a release, run `tools/self-test` and
+> `docs/verification/manual-checklist.md` instead. This document is kept as the
+> record of what was checked for its phase; some steps describe behaviour that
+> has since changed.
+
 What `docs/superpowers/specs/2026-09-26-local-features-design.md` added that only
 a running plugin shows. Matching, file building, parsing and message rules are
 unit tested.
