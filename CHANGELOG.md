@@ -21,6 +21,15 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
 - A test suite (vitest), where there was none, covering CSV and JSON handling,
   the message contract, layer traversal, scope resolution, and text
   application. Run it with `npm test`.
+- **Large pages stay responsive.** Extract, search, planning and apply run in
+  short time slices and hand control back to Figma between them, with a
+  running count in the status line ("Searching text layers... 4,200 of
+  20,000").
+- A **Stop** button on extract, search and planning; stopping produces
+  nothing. Apply reports progress but always runs to the end.
+- Result and review lists show 200 rows at a time with "Show more"; counts,
+  select-all, Replace and Apply cover every row. Rendering 20,000 rows went
+  from about 4 seconds to about 20 ms.
 
 ### Changed
 - A review built from a selection now closes when the selection changes,
@@ -71,6 +80,11 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
 - **Renamed from MuffinSync to Copydesk.** The plugin does more than sync
   text now, and "Copydesk" leaves room for what comes next. The Figma plugin
   id is unchanged, so existing installations carry over.
+- Text layers are found with Figma's native `findAllWithCriteria` instead of
+  a recursive walk in the plugin, and apply loads each font once per run
+  instead of once per layer.
+- Only one long task runs at a time; Extract, Import and Search are
+  unavailable until it finishes.
 
 ### Fixed
 - **Mixed-font import**: text layers using more than one font across character

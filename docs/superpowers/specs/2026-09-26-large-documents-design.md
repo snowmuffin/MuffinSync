@@ -1,7 +1,12 @@
 # Large Documents — Design
 
 **Date:** 2026-09-26
-**Status:** Approved 2026-09-26 — §9 decided as recommended
+**Status:** Implemented 2026-09-26 (C1–C4). Two departures from the text below:
+the Figma-side C0 timings were skipped by decision, and slices are bounded by
+time (~25 ms, `SLICE_BUDGET_MS` in `src/main/chunked.ts`) rather than by an item
+count, so no chunk size had to be measured. The progress message's names are
+`stop-task` / `task-stopped` and `isStopped`, not `cancel-*`: `cancel` already
+closes the plugin.
 **Scope:** Stage C of `docs/superpowers/plans/2026-09-26-remaining-roadmap.md`.
 Spec `2026-09-19-copy-qa-design.md` §8 assigned this its own spec and plan cycle.
 

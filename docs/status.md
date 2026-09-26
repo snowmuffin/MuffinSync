@@ -1,6 +1,6 @@
 # Project status
 
-**As of 2026-09-26, after Stage A.** 255 tests across 16 files; typecheck clean
+**As of 2026-09-26, after Stage C.** 308 tests across 19 files; typecheck clean
 on both configs; build green; `npm audit` clean.
 
 This is a snapshot, not a plan. The plan for each phase lives in
@@ -94,9 +94,26 @@ bound):
 
 Over the ~200 ms budget from about 1,000 rows, so the list cap (C4) is in scope.
 
-**Sandbox paths** (walk, find, read, postMessage, lookup, apply): pending — they
-need the Figma desktop app. Run `tools/fixture/` per its README and record the
-JSON here.
+**Sandbox paths** (walk, find, read, postMessage, lookup, apply): not measured —
+skipped by decision on 2026-09-26. The design was built so it does not depend
+on them: slices are bounded by time, not by a measured chunk size. The fixture
+under `tools/fixture/` can still produce them.
+
+**After paging (C4)**, the same benchmark renders 20,000 rows in about 17 ms
+(results) and 20 ms (review).
+
+## Stage C (large documents) — implemented 2026-09-26
+
+- Extract, search, plan and apply run through `runChunked` in ~25 ms slices,
+  yielding to Figma between them, with progress in the status line.
+- Text layers are found with `findAllWithCriteria`; a layer deleted mid-walk is
+  skipped.
+- Stop on extract, search and plan; apply always runs to the end.
+- One long task at a time, enforced in the sandbox and the UI.
+- Apply loads each font once per run.
+- Result and review lists render 200 rows per page.
+
+Manual checks: `docs/verification/stage-c-parity.md`.
 
 ---
 
@@ -124,11 +141,10 @@ Each was found in review, judged non-blocking, and left deliberately.
 
 **Correctness and robustness**
 
-- **Traversal does not chunk or yield.** `collectTextLayers` is synchronous
-  recursion, so a page with thousands of text layers can freeze the panel during an
-  extract or a search. Pre-existing; the fix changes the contract for all three
-  producers at once, so spec section 8 assigns it its own cycle. The in-progress
-  status messages make a freeze legible, but do not prevent it.
+- **Figma-side performance is unmeasured.** Stage C slices by time, so it holds
+  whatever the per-layer cost is, but whether the native `findAllWithCriteria`
+  call itself stalls on a 20,000-layer page has not been observed. Check 1 of
+  `stage-c-parity.md` is where it would show.
 
 **Contract and tests**
 
@@ -181,8 +197,8 @@ all-pages search.
 
 ## Before a release
 
-- Run the three phase parity documents and `stage-a-parity.md` in Figma desktop
-  and record the results.
+- Run the three phase parity documents, `stage-a-parity.md` and
+  `stage-c-parity.md` in Figma desktop and record the results.
 - ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
   repository was renamed to `snowmuffin/Copydesk` the same day; GitHub redirects
   the old URL, so an existing clone keeps working without changing its remote.

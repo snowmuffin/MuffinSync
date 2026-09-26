@@ -31,7 +31,14 @@ Copydesk (formerly MuffinSync) is a powerful and user-friendly plugin for Figma,
 - **Leave "Replace with" empty to search without replacing.** The results list still shows where the query occurs, but with no checkboxes and no Replace button — only a Close button and each row's jump action.
 - **Case sensitivity and whole word, not regular expressions.** A query is matched literally. Whole word treats letters by Unicode category rather than by script-specific word rules, so it is close to useless for languages that don't delimit words with spaces (e.g. Korean).
 - **Replacement is per layer.** A layer with several matches is one row in the results, accepted or refused as a whole; the match count is shown, but replacing only one occurrence within a layer isn't offered.
+- **Long lists are paged.** Results and review show 200 rows at a time with a "Show more" button. Counts, "select all", Replace and Apply always cover every row, shown or not.
 - **Jump to a layer without selecting it.** Any row whose layer is still in the document — in the results list or in review, including a "Cannot apply" row for a layer that is no longer a text layer — has a "Show" button that centres it in the viewport. It only zooms; it never changes the current selection. A row for a layer that no longer exists has nothing to centre, so it has no "Show".
+
+### 5️⃣ Large Documents
+- **Work runs in slices.** Extracting, searching, checking what would change, and applying hand control back to Figma every few milliseconds, so the canvas keeps repainting on pages with thousands of text layers.
+- **Progress you can see.** The status line counts up while a task runs, e.g. "Searching text layers... 4,200 of 20,000".
+- **Stop.** Extract, search and the "checking what would change" step have a **Stop** button; stopping produces nothing and changes nothing. Applying has no Stop — a half-applied batch would no longer match what you reviewed — but it reports progress.
+- **One task at a time.** Extract, Import and Search are unavailable while a task runs.
 
 ## 🚀 How to Use
 
@@ -108,8 +115,10 @@ npm run test:watch
 Copydesk/
 ├── src/
 │   ├── main/            # Figma sandbox. No DOM, no network.
-│   │   ├── index.ts     # message router, scope resolution, font loading
-│   │   ├── traverse.ts  # collectTextLayers, resolveRoots, isWithin
+│   │   ├── index.ts     # message router, scope resolution, the one-task-at-a-time guard
+│   │   ├── chunked.ts   # runChunked: time-sliced loops with progress and stop
+│   │   ├── fonts.ts     # createFontCache: each font loaded once per apply
+│   │   ├── traverse.ts  # collectTextLayers (findAllWithCriteria, sliced), resolveRoots, isWithin
 │   │   ├── plan.ts      # buildChangeSet: diffs imported/proposed rows against the document
 │   │   ├── apply.ts     # applyTextChanges (re-checks each node before writing)
 │   │   ├── search.ts    # countMatches, replaceAll, matchingLayers (literal matching, case/whole-word options)
@@ -120,7 +129,7 @@ Copydesk/
 │   ├── ui/              # iframe. DOM, no Figma API.
 │   │   ├── index.ts     # mounts the status banner, routes inbound messages
 │   │   ├── dom.ts       # byId, debugLog, messageOf
-│   │   ├── status.tsx   # Preact status banner
+│   │   ├── status.tsx   # Preact status banner, with an optional action button
 │   │   ├── post.ts      # typed postMessage to the sandbox
 │   │   ├── download.ts  # filenameFor, mimeTypeFor, attemptDownload, displayDownloadContent
 │   │   ├── features/
@@ -128,6 +137,8 @@ Copydesk/
 │   │   │   ├── import.ts         # parses the chosen file, posts plan-import
 │   │   │   ├── scope.ts          # tracks the chosen extraction/search scope, disables Selection when nothing is selected
 │   │   │   ├── tabs.ts           # switches the Extract / Find & Replace panels by class toggle
+│   │   │   ├── task.ts           # the running task: busy state, progress text, Stop
+│   │   │   ├── show-more.tsx     # paging for long lists
 │   │   │   ├── find-replace/
 │   │   │   │   ├── index.ts      # owns the remembered search, posts search/plan-replace, mounts ResultList
 │   │   │   │   └── results.tsx   # ResultList: pure Preact component rendering search results
@@ -136,6 +147,7 @@ Copydesk/
 │   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
 │   │   └── format/      # csv.ts, json.ts, rows.ts (rejects a file naming one layer twice)
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
+├── tools/fixture/        # Dev-only Figma plugin that builds pages of thousands of text layers
 ├── dist/                 # Build output (generated; not committed)
 ├── manifest.json         # Figma plugin manifest file
 ├── package.json          # Project metadata and dependencies
@@ -166,7 +178,7 @@ Tests sit beside the code they cover, as `*.test.ts`.
 ## ⚠️ Important Notes
 
 - **Editing Guidance**: Always modify only the `characters` field in your external files. Changing the `id` or `name` fields will disrupt the matching process during import.
-- **Performance Consideration**: Processing a large number of text layers may take some time, so patience is advised.
+- **Performance Consideration**: Large pages take longer, but the plugin shows progress and extract, search and planning can be stopped.
 - **Font Issues**: If fonts are not loaded when importing, errors may occur, so ensure fonts are available in your Figma project.
 
 ## 📊 Project Status
