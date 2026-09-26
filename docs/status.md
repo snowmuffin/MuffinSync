@@ -162,8 +162,9 @@ all-pages search.
 
 - Run the three phase parity documents and `stage-a-parity.md` in Figma desktop
   and record the results.
-- Decide the plugin's name. Spec section 9 notes that "Sync" stops describing the
-  product at Tier 2, where document generation begins, and that Figma preserves the
-  plugin id and existing installations across a rename — so there is no cost to
-  deciding later, but it should be decided before the Community release.
-- Settle the format selector.
+- ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
+  repository is still `snowmuffin/MuffinSync`; renaming it is optional, as GitHub
+  redirects the old URL.
+- ~~Settle the format selector.~~ Removed in Stage A.
+- Upload `icon-128.png` as the Community icon when publishing: it was redrawn for
+  the rename, and the listing still shows the old muffin until it is replaced.

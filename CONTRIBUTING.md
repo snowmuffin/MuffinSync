@@ -1,6 +1,6 @@
-# Contributing to MuffinSync
+# Contributing to Copydesk
 
-Thank you for your interest in contributing to MuffinSync! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Copydesk! This document provides guidelines for contributing to the project.
 
 ## Getting Started
 
@@ -52,4 +52,4 @@ We welcome feature requests! Please:
 - Explain the use case
 - Consider implementation complexity
 
-Thank you for contributing to MuffinSync! 🧁
+Thank you for contributing to Copydesk! 📝

@@ -619,6 +619,12 @@ safe: any regression is unambiguous.
 
 ## 9. Naming
 
+> **Decided 2026-09-26: the plugin is renamed Copydesk.** A copy desk is where
+> a newspaper's copy is edited and checked before print, which covers extract,
+> find & replace and review, and leaves room for later tiers. The plugin id is
+> unchanged, so installations carry over. The text below is the original
+> reasoning for deferring the decision.
+
 The plugin is called MuffinSync. "Sync" describes the round-trip extract/import
 workflow accurately, and Tier 1 does not strain it. It stops fitting at Tier 2,
 where document generation is publishing, not syncing.

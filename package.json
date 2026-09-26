@@ -1,5 +1,5 @@
 {
-  "name": "muffinsync",
+  "name": "copydesk",
   "version": "1.0.0",
   "description": "Figma plugin for extracting, editing, and importing text layers",
   "main": "code.js",

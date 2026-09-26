@@ -1,5 +1,5 @@
 {
-  "name": "MuffinSync",
+  "name": "Copydesk",
   "id": "1532367827686665905",
   "api": "1.0.0",
   "main": "dist/code.js",
@@ -17,7 +17,7 @@
   "documentAccess": "dynamic-page",
   "menu": [
     {
-      "name": "MuffinSync - Text Extract & Import",
+      "name": "Open Copydesk",
       "command": "open-plugin"
     }
   ]

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to MuffinSync will be documented in this file.
+All notable changes to Copydesk (formerly MuffinSync) will be documented in this file.
 
 ## [Unreleased]
 
@@ -68,6 +68,9 @@ All notable changes to MuffinSync will be documented in this file.
   read: the format has always been decided by which download button is
   pressed after extracting, so the user chose twice and only the second
   choice counted.
+- **Renamed from MuffinSync to Copydesk.** The plugin does more than sync
+  text now, and "Copydesk" leaves room for what comes next. The Figma plugin
+  id is unchanged, so existing installations carry over.
 
 ### Fixed
 - **Mixed-font import**: text layers using more than one font across character

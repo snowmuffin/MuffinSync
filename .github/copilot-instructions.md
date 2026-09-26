@@ -1,6 +1,6 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
 
-# MuffinSync - Figma Plugin Development Instructions
+# Copydesk - Figma Plugin Development Instructions
 
 This is a Figma plugin project for extracting, editing, and importing text layers.
 

@@ -1,13 +1,13 @@
-# 🧁 MuffinSync
+# 📝 Copydesk
 
-**Figma Text Layer Extract and Import Plugin**
+**Extract, edit, find & replace, and review text layers in Figma**
 
-MuffinSync is a powerful and user-friendly plugin for Figma, designed to streamline the workflow of extracting, editing, and importing text layers directly from your design files. This plugin facilitates efficient collaboration by allowing designers and content creators to modify text content externally and seamlessly integrate those changes back into their Figma projects.
+Copydesk (formerly MuffinSync) is a powerful and user-friendly plugin for Figma, designed to streamline the workflow of extracting, editing, and importing text layers directly from your design files. This plugin facilitates efficient collaboration by allowing designers and content creators to modify text content externally and seamlessly integrate those changes back into their Figma projects.
 
 ## ✨ Key Features
 
 ### 1️⃣ Text Layer Extraction (Export)
-- **Comprehensive Traversal**: MuffinSync can navigate through all text layers within selected frames or an entire page.
+- **Comprehensive Traversal**: Copydesk can navigate through all text layers within selected frames or an entire page.
 - **Detailed Extraction**: Extracts essential text layer information including:
   - `id`: Unique Figma Node ID
   - `name`: Descriptive layer name
@@ -35,7 +35,7 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 
 ## 🚀 How to Use
 
-1. **Run the Plugin**: Access the plugin via Plugins > MuffinSync in your Figma application.
+1. **Run the Plugin**: Access the plugin via Plugins > Copydesk in your Figma application.
 2. **Extract Text**:
    - Choose the extraction scope: **Selection** (the layers inside what's currently selected) or **Current page** (everything on the page). Selection is disabled when nothing is selected.
    - Click the "Extract Text Layers" button to initiate the export.
@@ -181,6 +181,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## 🤝 Contributing
 
-We welcome contributions to MuffinSync! To get started, please refer to our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to fork, clone, and submit changes to the project. 
+We welcome contributions to Copydesk! To get started, please refer to our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to fork, clone, and submit changes to the project. 
 
-Bug reports and feature suggestions are always welcome and can be submitted through GitHub issues. Thank you for your interest in making MuffinSync better! 🧁
+Bug reports and feature suggestions are always welcome and can be submitted through GitHub issues. Thank you for your interest in making Copydesk better! 📝
