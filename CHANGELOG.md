@@ -90,6 +90,10 @@ All notable changes to MuffinSync will be documented in this file.
 - The tab bar is a proper ARIA tab list: the selected tab is announced as
   selected rather than shown by colour and weight alone, and the arrow keys,
   Home and End switch tabs.
+- "Searching…", "Checking what would change…", "Extracting…" and
+  "Applying changes…" now stay on screen until the result replaces them.
+  They used to disappear after 3 seconds, so a slow run on a large page went
+  silent and looked stalled.
 
 ### Removed
 - Unused `css-loader` / `style-loader` dependencies and their webpack rule — the

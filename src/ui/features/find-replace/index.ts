@@ -48,7 +48,7 @@ function handleReplace(targets: ReplaceTarget[]): void {
   // The results are already gone but the sandbox is still re-reading every
   // target; say so until `change-set` opens the review, whose `openReview`
   // clears this. Same sentence as the import producer: it is the same wait.
-  showStatus('Checking what would change...', 'info');
+  showStatus('Checking what would change...', 'progress');
 }
 
 function handleNavigate(nodeId: string): void {
@@ -141,7 +141,7 @@ export function initFindReplace(root: Document): void {
     // the panel for seconds. Silence there reads as a crash. `showResults`
     // takes this down either way -- with `clearStatus` when rows arrive, or by
     // replacing it with "No layers matched your search."
-    showStatus('Searching text layers...', 'info');
+    showStatus('Searching text layers...', 'progress');
     post({
       type: 'search',
       query,

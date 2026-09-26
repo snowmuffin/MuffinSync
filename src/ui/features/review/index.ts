@@ -20,7 +20,7 @@ function handleApply(accepted: ProposedChange[]): void {
   closeReview();
   // The review closes at once but the write takes as long as it takes; say so
   // until `import-complete` replaces this.
-  showStatus('Applying changes...', 'info');
+  showStatus('Applying changes...', 'progress');
 }
 
 function handleCancel(): void {

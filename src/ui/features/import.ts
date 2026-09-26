@@ -42,7 +42,7 @@ export function initImport(root: Document): void {
           }
           assertUniqueIds(data);
 
-          showStatus('Checking what would change...', 'info');
+          showStatus('Checking what would change...', 'progress');
           post({ type: 'plan-import', rows: data });
         } catch (error) {
           showStatus(`File reading error: ${messageOf(error)}`, 'error');

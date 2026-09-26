@@ -16,7 +16,7 @@ import { getScope } from './scope';
 export function initExtract(root: Document): void {
   byId('extract-btn', root)?.addEventListener('click', () => {
     debugLog('Text extraction started');
-    showStatus('Extracting text layers...', 'info');
+    showStatus('Extracting text layers...', 'progress');
     post({ type: 'extract', scope: getScope() });
   });
 }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'preact/test-utils';
 import { mountStatus, showStatus } from './status';
 
@@ -42,5 +42,58 @@ describe('status banner', () => {
       showStatus('plain', 'info');
     });
     expect(host.innerHTML).toBe('<div class="status info">plain</div>');
+  });
+
+  describe('lifetime', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('takes an info message down after a few seconds', () => {
+      act(() => {
+        showStatus('Review cancelled.', 'info');
+      });
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(host.innerHTML).toBe('');
+    });
+
+    it('keeps a progress message up however long the work takes', () => {
+      act(() => {
+        showStatus('Searching text layers...', 'progress');
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(host.innerHTML).toBe('<div class="status info">Searching text layers...</div>');
+    });
+
+    it('lets the answer replace a progress message', () => {
+      act(() => {
+        showStatus('Searching text layers...', 'progress');
+      });
+      act(() => {
+        showStatus('No layers matched your search.', 'info');
+      });
+      expect(host.textContent).toBe('No layers matched your search.');
+    });
+
+    it('does not let an earlier info timer take down a later progress message', () => {
+      act(() => {
+        showStatus('Review cancelled.', 'info');
+      });
+      act(() => {
+        vi.advanceTimersByTime(2000);
+        showStatus('Applying changes...', 'progress');
+      });
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(host.textContent).toBe('Applying changes...');
+    });
   });
 });

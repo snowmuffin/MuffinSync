@@ -1,7 +1,13 @@
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
-export type StatusKind = 'success' | 'error' | 'info';
+/**
+ * `progress` is work still running: it stays until whatever answers it
+ * replaces it, because a search or plan can outlast any fixed delay and a
+ * banner that vanishes mid-wait reads as the work having stopped. It looks
+ * like `info`; only its lifetime differs.
+ */
+export type StatusKind = 'success' | 'error' | 'info' | 'progress';
 
 interface Status {
   message: string;
@@ -10,7 +16,7 @@ interface Status {
   seq: number;
 }
 
-/** Info messages are transient; success and error stay until replaced. */
+/** Info messages are transient; every other kind stays until replaced. */
 const AUTO_HIDE_MS = 3000;
 
 let publish: (status: Status | null) => void = () => {};
@@ -28,7 +34,7 @@ function StatusBanner() {
 
   if (!status) return null;
   return (
-    <div class={`status ${status.kind}`}>
+    <div class={`status ${status.kind === 'progress' ? 'info' : status.kind}`}>
       {status.message}
       {status.details.length > 0 && (
         <>
