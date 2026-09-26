@@ -5,6 +5,7 @@ import { assertUniqueIds } from '../format/rows';
 import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
 import { post } from '../post';
+import { beginTask, isBusy } from './task';
 
 export function initImport(root: Document): void {
   const fileInputElement = byId('file-input', root);
@@ -13,6 +14,7 @@ export function initImport(root: Document): void {
 
   // Import button
   byId('import-btn', root)?.addEventListener('click', () => {
+    if (isBusy()) return;
     debugLog('File selection dialog opened');
     fileInput?.click();
   });
@@ -42,7 +44,7 @@ export function initImport(root: Document): void {
           }
           assertUniqueIds(data);
 
-          showStatus('Checking what would change...', 'progress');
+          beginTask('plan');
           post({ type: 'plan-import', rows: data });
         } catch (error) {
           showStatus(`File reading error: ${messageOf(error)}`, 'error');

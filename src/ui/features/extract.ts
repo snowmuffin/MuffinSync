@@ -6,6 +6,7 @@ import { showStatus } from '../status';
 import { attemptDownload, filenameFor, mimeTypeFor } from '../download';
 import { post } from '../post';
 import { getScope } from './scope';
+import { beginTask, isBusy } from './task';
 
 /**
  * There is no format choice before extracting: the format is picked by which
@@ -15,8 +16,9 @@ import { getScope } from './scope';
  */
 export function initExtract(root: Document): void {
   byId('extract-btn', root)?.addEventListener('click', () => {
+    if (isBusy()) return;
     debugLog('Text extraction started');
-    showStatus('Extracting text layers...', 'progress');
+    beginTask('extract');
     post({ type: 'extract', scope: getScope() });
   });
 }

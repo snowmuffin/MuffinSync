@@ -9,10 +9,17 @@ import { useEffect, useState } from 'preact/hooks';
  */
 export type StatusKind = 'success' | 'error' | 'info' | 'progress';
 
+/** A button in the banner, such as Stop on a running task. */
+export interface StatusAction {
+  label: string;
+  onClick(): void;
+}
+
 interface Status {
   message: string;
   kind: StatusKind;
   details: string[];
+  action?: StatusAction;
   seq: number;
 }
 
@@ -49,6 +56,11 @@ function StatusBanner() {
           </small>
         </>
       )}
+      {status.action && (
+        <button type="button" class="status-action" onClick={status.action.onClick}>
+          {status.action.label}
+        </button>
+      )}
     </div>
   );
 }
@@ -60,9 +72,10 @@ export function mountStatus(host: HTMLElement): void {
 export function showStatus(
   message: string,
   kind: StatusKind,
-  details: string[] = []
+  details: string[] = [],
+  action?: StatusAction
 ): void {
-  publish({ message, kind, details, seq: seq++ });
+  publish({ message, kind, details, action, seq: seq++ });
 }
 
 /**

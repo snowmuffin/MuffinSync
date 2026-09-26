@@ -44,6 +44,17 @@ describe('status banner', () => {
     expect(host.innerHTML).toBe('<div class="status info">plain</div>');
   });
 
+  it('renders an action as a button that calls back when pressed', () => {
+    let pressed = 0;
+    act(() => {
+      showStatus('Searching...', 'progress', [], { label: 'Stop', onClick: () => pressed++ });
+    });
+    const button = host.querySelector<HTMLButtonElement>('button.status-action');
+    expect(button?.textContent).toBe('Stop');
+    act(() => button!.click());
+    expect(pressed).toBe(1);
+  });
+
   describe('lifetime', () => {
     beforeEach(() => {
       vi.useFakeTimers();

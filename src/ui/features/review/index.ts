@@ -4,6 +4,7 @@ import { ReviewScreen } from './screen';
 import { post } from '../../post';
 import { clearStatus, showStatus } from '../../status';
 import { byId } from '../../dom';
+import { beginTask } from '../task';
 
 /**
  * `ReviewScreen` is pure -- it reports a decision, it sends nothing. This
@@ -28,7 +29,7 @@ function handleApply(accepted: ProposedChange[]): void {
   closeReview();
   // The review closes at once but the write takes as long as it takes; say so
   // until `import-complete` replaces this.
-  showStatus('Applying changes...', 'progress');
+  beginTask('apply');
 }
 
 function handleCancel(): void {

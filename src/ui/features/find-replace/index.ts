@@ -5,6 +5,7 @@ import { post } from '../../post';
 import { clearStatus, showStatus } from '../../status';
 import { byId } from '../../dom';
 import { getScope } from '../scope';
+import { beginTask, isBusy } from '../task';
 
 /**
  * `ResultList` is pure -- it reports a decision, it sends nothing. This
@@ -47,8 +48,8 @@ function handleReplace(targets: ReplaceTarget[]): void {
   closeResults();
   // The results are already gone but the sandbox is still re-reading every
   // target; say so until `change-set` opens the review, whose `openReview`
-  // clears this. Same sentence as the import producer: it is the same wait.
-  showStatus('Checking what would change...', 'progress');
+  // clears this. Same task as the import producer: it is the same wait.
+  beginTask('plan');
 }
 
 function handleNavigate(nodeId: string): void {
@@ -126,7 +127,7 @@ export function initFindReplace(root: Document): void {
     // field shows: " Pro" typed to avoid matching "Product" would search
     // "Pro" and then rewrite it, on the path that writes to the document.
     const query = findInput.value;
-    if (query.length === 0) return;
+    if (query.length === 0 || isBusy()) return;
 
     const options: MatchOptions = {
       caseSensitive: caseSensitive.checked,
@@ -141,7 +142,7 @@ export function initFindReplace(root: Document): void {
     // the panel for seconds. Silence there reads as a crash. `showResults`
     // takes this down either way -- with `clearStatus` when rows arrive, or by
     // replacing it with "No layers matched your search."
-    showStatus('Searching text layers...', 'progress');
+    beginTask('search');
     post({
       type: 'search',
       query,

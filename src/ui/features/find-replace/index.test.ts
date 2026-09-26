@@ -7,6 +7,7 @@ vi.mock('../../post', () => ({ post: vi.fn() }));
 import { post } from '../../post';
 import { mountStatus } from '../../status';
 import { initFindReplace, showResults } from './index';
+import { beginTask, endTask } from '../task';
 import type { SearchMatch } from '../../../shared/types';
 
 const matches: SearchMatch[] = [
@@ -42,6 +43,9 @@ const form = () => document.getElementById('find-form') as HTMLFormElement;
 describe('find & replace wiring', () => {
   beforeEach(() => {
     vi.mocked(post).mockClear();
+    // The router ends a task before handing its answer to `showResults`;
+    // tests call `showResults` directly, so each starts from idle.
+    endTask();
     markup();
     const host = document.getElementById('status-host');
     if (host) mountStatus(host);
@@ -120,6 +124,14 @@ describe('find & replace wiring', () => {
     const event = new Event('submit', { cancelable: true });
     form().dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('refuses to start a search while another task is running', () => {
+    beginTask('extract');
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    searchBtn().click();
+    expect(post).not.toHaveBeenCalled();
   });
 
   it('posts the query, the scope, and both options', () => {

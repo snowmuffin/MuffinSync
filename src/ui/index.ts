@@ -8,6 +8,7 @@ import { openReview, closeReview, invalidateOnSelectionChange } from './features
 import { initFindReplace, showResults } from './features/find-replace';
 import { initScope, setSelectionPresent } from './features/scope';
 import { initTabs } from './features/tabs';
+import { endTask, reportProgress, taskStopped } from './features/task';
 
 const statusHost = byId('status-host');
 if (statusHost) mountStatus(statusHost);
@@ -41,6 +42,10 @@ window.onmessage = (event: MessageEvent) => {
   }
 
   debugLog(`Message received from plugin: ${message.type}`);
+
+  // Every answer to a long task ends it, whichever answer it is. Progress and
+  // selection reports are not answers.
+  if (message.type !== 'progress' && message.type !== 'selection') endTask();
 
   switch (message.type) {
     case 'extracted':
@@ -93,6 +98,14 @@ window.onmessage = (event: MessageEvent) => {
       debugLog(`Selection changed: present=${message.present}`);
       setSelectionPresent(message.present);
       invalidateOnSelectionChange();
+      break;
+
+    case 'progress':
+      reportProgress(message.task, message.done, message.total);
+      break;
+
+    case 'task-stopped':
+      taskStopped();
       break;
 
     case 'search-results':
