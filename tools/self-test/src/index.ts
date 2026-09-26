@@ -9,6 +9,9 @@ import { performanceSuite, suite } from './suite';
  * tools/self-test/README.md.
  */
 
+/** Set by webpack.self-test.js when the bundle is built. */
+declare const __BUILT_AT__: number;
+
 const UI = `
 <style>
   body { font: 12px/1.45 -apple-system, system-ui, sans-serif; margin: 12px; color: #1e293b; }
@@ -25,14 +28,37 @@ const UI = `
 </style>
 <button class="primary" id="run">Run tests</button><button id="perf">Performance (5,000 layers)</button>
 <div id="summary">Adds one temporary page, runs every test, then removes it. Needs room for one more page in this file.</div>
+<div id="remote" style="color:#64748b;margin-bottom:6px">Remote: not connected (run npm run self-test:remote)</div>
 <ul id="list"></ul>
 <textarea id="report" readonly placeholder="The report appears here when a run ends."></textarea>
 <script>
   const list = document.getElementById('list');
   const buttons = [...document.querySelectorAll('button')];
-  const post = (type) => { buttons.forEach((b) => (b.disabled = true)); list.innerHTML = ''; parent.postMessage({ pluginMessage: { type } }, '*'); };
-  document.getElementById('run').onclick = () => post('run');
-  document.getElementById('perf').onclick = () => post('perf');
+  const SERVER = 'http://localhost:3847';
+  let remoteRun = false;
+  const post = (type, remote) => {
+    remoteRun = remote;
+    buttons.forEach((b) => (b.disabled = true));
+    list.innerHTML = '';
+    parent.postMessage({ pluginMessage: { type } }, '*');
+  };
+  document.getElementById('run').onclick = () => post('run', false);
+  document.getElementById('perf').onclick = () => post('perf', false);
+  // text/plain keeps these "simple" requests: no CORS preflight.
+  const tell = (route, body) =>
+    fetch(SERVER + route, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) }).catch(() => {});
+  // Poll the terminal runner (npm run self-test:remote) for a command.
+  async function poll() {
+    try {
+      const reply = await (await fetch(SERVER + '/command')).json();
+      document.getElementById('remote').textContent = 'Remote: connected';
+      if (reply.command && !buttons[0].disabled) post(reply.command, true);
+    } catch {
+      document.getElementById('remote').textContent = 'Remote: not connected (run npm run self-test:remote)';
+    }
+    setTimeout(poll, 1500);
+  }
+  poll();
   onmessage = (event) => {
     const msg = event.data.pluginMessage;
     if (!msg) return;
@@ -48,11 +74,14 @@ const UI = `
         li.appendChild(d);
       }
       list.appendChild(li);
+      if (remoteRun) tell('/outcome', { outcome: msg.outcome });
     }
     if (msg.type === 'done') {
       document.getElementById('summary').textContent = msg.summary;
       document.getElementById('report').value = msg.report;
       buttons.forEach((b) => (b.disabled = false));
+      if (remoteRun) tell('/report', { summary: msg.summary, report: msg.report, failed: msg.failed, builtAt: msg.builtAt });
+      remoteRun = false;
     }
   };
 </script>`;
@@ -75,13 +104,14 @@ async function snapshot(): Promise<() => Promise<void>> {
   };
 }
 
-function report(outcomes: TestOutcome[]): { summary: string; report: string } {
+function report(outcomes: TestOutcome[]): { summary: string; report: string; failed: number; builtAt: number } {
   const failed = outcomes.filter((o) => !o.ok);
   const summary = failed.length === 0
     ? `All ${outcomes.length} tests passed.`
     : `${failed.length} of ${outcomes.length} tests failed.`;
   const lines = outcomes.map((o) => `${o.ok ? 'PASS' : 'FAIL'}  ${o.name}${o.detail ? ` — ${o.detail}` : ''}`);
-  return { summary, report: [`Copydesk self-test, ${new Date().toISOString()}`, summary, '', ...lines].join('\n') };
+  const header = `Copydesk self-test, ${new Date().toISOString()} (build ${new Date(__BUILT_AT__).toISOString()})`;
+  return { summary, report: [header, summary, '', ...lines].join('\n'), failed: failed.length, builtAt: __BUILT_AT__ };
 }
 
 async function run(kind: 'run' | 'perf'): Promise<void> {

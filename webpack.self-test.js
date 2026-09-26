@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 /**
  * The development-only self-test plugin (tools/self-test). Built separately
@@ -28,5 +29,8 @@ module.exports = {
     ],
   },
   resolve: { extensions: ['.ts', '.js'] },
+  // Stamped into the bundle so a remote run can tell a stale window from a
+  // current one.
+  plugins: [new webpack.DefinePlugin({ __BUILT_AT__: JSON.stringify(Date.now()) })],
   output: { filename: '[name].js', path: path.resolve(__dirname, 'tools/self-test/dist') },
 };

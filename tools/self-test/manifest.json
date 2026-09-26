@@ -5,5 +5,9 @@
   "main": "dist/code.js",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
-  "networkAccess": { "allowedDomains": ["none"] }
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "devAllowedDomains": ["http://localhost:3847"],
+    "reasoning": "Development only: lets `npm run self-test:remote` start a run and read its report."
+  }
 }
