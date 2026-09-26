@@ -87,6 +87,9 @@ All notable changes to MuffinSync will be documented in this file.
   checkbox, and whichever was applied last silently won.
 - Pressing Enter in the Find or Replace field now searches, as the Search
   button does.
+- The tab bar is a proper ARIA tab list: the selected tab is announced as
+  selected rather than shown by colour and weight alone, and the arrow keys,
+  Home and End switch tabs.
 
 ### Removed
 - Unused `css-loader` / `style-loader` dependencies and their webpack rule — the

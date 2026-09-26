@@ -399,12 +399,14 @@
       </div>
 
       <div id="main-content">
-        <div class="tab-bar">
-          <button class="tab selected" data-tab="extract" type="button">Extract</button>
-          <button class="tab" data-tab="find-replace" type="button">Find &amp; Replace</button>
+        <div class="tab-bar" role="tablist" aria-label="Mode">
+          <button class="tab selected" id="extract-tab" data-tab="extract" type="button"
+            role="tab" aria-selected="true" aria-controls="extract-panel">Extract</button>
+          <button class="tab" id="find-replace-tab" data-tab="find-replace" type="button"
+            role="tab" aria-selected="false" aria-controls="find-replace-panel" tabindex="-1">Find &amp; Replace</button>
         </div>
 
-        <div id="extract-panel" class="tab-panel">
+        <div id="extract-panel" class="tab-panel" role="tabpanel" aria-labelledby="extract-tab">
           <div class="section">
             <div class="section-title">1️⃣ Extract Text</div>
             <div class="instruction">
@@ -459,7 +461,7 @@
           </div>
         </div>
 
-        <div id="find-replace-panel" class="tab-panel hidden">
+        <div id="find-replace-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="find-replace-tab">
           <form id="find-form" class="section">
             <label class="field-label" for="find-input">Find</label>
             <input id="find-input" type="text" class="text-input" placeholder="Text to find" />
