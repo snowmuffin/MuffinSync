@@ -9,6 +9,9 @@ import type { Scope } from '../../shared/types';
 let chosen: Scope = 'selection';
 let host: Document | null = null;
 
+/** Aborting it removes every listener the previous `initScope` added. */
+let listeners: AbortController | null = null;
+
 function options(root: Document): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>('.scope-option'));
 }
@@ -30,6 +33,9 @@ export function initScope(root: Document): void {
   // -- reasserting it here, rather than trusting leftover markup or state
   // from a previous init, keeps the module and the DOM from drifting apart.
   applySelection(root, 'selection');
+  listeners?.abort();
+  listeners = new AbortController();
+  const { signal } = listeners;
   options(root).forEach((option) => {
     option.classList.remove('disabled');
     option.addEventListener('click', () => {
@@ -38,7 +44,7 @@ export function initScope(root: Document): void {
       if (next === 'selection' || next === 'page') {
         applySelection(root, next);
       }
-    });
+    }, { signal });
   });
 }
 

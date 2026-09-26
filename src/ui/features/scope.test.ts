@@ -126,3 +126,21 @@ describe('scope control with two panels sharing one scope', () => {
     expect(getScope()).toBe('page');
   });
 });
+
+describe('re-initialising', () => {
+  it('detaches the previous init\'s listeners', () => {
+    // A second init against another document stands in for any re-init: the
+    // controls from the first must stop driving the shared scope.
+    const first = document;
+    const second = document.implementation.createHTMLDocument();
+    second.body.innerHTML = markup;
+    initScope(second);
+
+    click(first.querySelector('[data-scope="page"]'));
+    expect(getScope()).toBe('selection');
+
+    const secondPage = second.querySelector('[data-scope="page"]');
+    if (secondPage instanceof HTMLElement) secondPage.click();
+    expect(getScope()).toBe('page');
+  });
+});

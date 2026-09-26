@@ -12,6 +12,9 @@ const TABS: readonly TabName[] = ['extract', 'find-replace'];
 
 let host: Document | null = null;
 
+/** Aborting it removes every listener the previous `initTabs` added. */
+let listeners: AbortController | null = null;
+
 function tabElement(root: Document, name: TabName): HTMLElement | null {
   return root.querySelector<HTMLElement>(`.tab[data-tab="${name}"]`);
 }
@@ -62,11 +65,14 @@ export function initTabs(root: Document): void {
   // trusting whatever class the markup carries keeps module and DOM in step --
   // the same reason `initScope` reasserts its default.
   showTab('extract');
+  listeners?.abort();
+  listeners = new AbortController();
+  const { signal } = listeners;
   root.querySelectorAll<HTMLElement>('.tab').forEach((element) => {
     element.addEventListener('click', () => {
       const name = element.dataset.tab;
       if (isTabName(name)) showTab(name);
-    });
+    }, { signal });
     element.addEventListener('keydown', (event) => {
       const current = element.dataset.tab;
       if (!isTabName(current)) return;
@@ -75,6 +81,6 @@ export function initTabs(root: Document): void {
       event.preventDefault();
       showTab(next);
       tabElement(root, next)?.focus();
-    });
+    }, { signal });
   });
 }

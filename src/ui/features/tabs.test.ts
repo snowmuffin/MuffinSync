@@ -102,6 +102,16 @@ describe('tabs', () => {
     expect(tab('extract').getAttribute('aria-selected')).toBe('true');
   });
 
+  it('detaches the previous init\'s listeners on re-init', () => {
+    const second = document.implementation.createHTMLDocument();
+    second.body.innerHTML = document.body.innerHTML;
+    initTabs(second);
+
+    tab('find-replace').click();
+    const secondPanel = (name: string) => second.getElementById(`${name}-panel`)!;
+    expect(secondPanel('find-replace').classList.contains('hidden')).toBe(true);
+  });
+
   it('re-initialising resets to Extract rather than trusting leftover markup', () => {
     showTab('find-replace');
     initTabs(document);
