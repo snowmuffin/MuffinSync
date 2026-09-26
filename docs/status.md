@@ -38,6 +38,18 @@ Any row naming a layer still in the document can centre it in the viewport.
 
 ---
 
+## Figma self-test
+
+**2026-09-26, 08:30 UTC, at `3dc950c`: all 24 tests passed** in Figma desktop
+(`tools/self-test`). Covered: extract scopes and hidden layers; import with a
+mixed-font layer and an edit during review; missing, path-matched and ambiguous
+rows; search, regex replacement and chosen occurrences; check and fix; data
+merge; localized copies; the task guard and Stop rollback; PDF export (35,762
+bytes); cross-page navigation; snippets, glossary and settings storage; and all
+67 messages sent passed the UI's validator.
+
+Still to do before publishing: `docs/verification/manual-checklist.md` (the UI).
+
 ## Manual verification
 
 `docs/verification/` holds the parity checks for each phase: 7 for Phase 0, 9 for
