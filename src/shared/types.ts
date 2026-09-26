@@ -51,7 +51,7 @@ export interface ProposedChange {
   layerName: string;
   before: string;
   after: string;
-  source: 'import' | 'find-replace';
+  source: 'import' | 'find-replace' | 'snippet';
   accepted: boolean;      // the user's decision in review
 }
 

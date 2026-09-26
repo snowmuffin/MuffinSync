@@ -8,6 +8,8 @@ import { matchingLayers, replaceMatches } from '../shared/match';
 import { centreOnNode } from './navigate';
 import { runChunked, type TaskControl } from './chunked';
 import { createFontCache, type FontRef } from './fonts';
+import { localizeFrames, mergeRows, type GenerateResult, type SetText } from './generate';
+import { isSnippets, type Snippet } from '../shared/generate';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
@@ -112,6 +114,37 @@ async function collectFor(
   } finally {
     figma.skipInvisibleInstanceChildren = false;
   }
+}
+
+/** A text writer that loads each font once for the run it belongs to. */
+function textWriter(): SetText {
+  const ensureFonts = createFontCache((font) => figma.loadFontAsync(font));
+  return async (node, text) => {
+    await ensureFonts(fontsOf(node as unknown as ApplicableNode));
+    node.characters = text;
+  };
+}
+
+const SNIPPETS_KEY = 'snippets';
+
+async function loadSnippets(): Promise<Snippet[]> {
+  const stored: unknown = await figma.clientStorage.getAsync(SNIPPETS_KEY);
+  return isSnippets(stored) ? stored : [];
+}
+
+/** Sends a finished generate run: a stop, or a summary. */
+function sendGenerated(kind: 'merge' | 'localize', result: GenerateResult): void {
+  send(
+    result.outcome === 'stopped'
+      ? { type: 'task-stopped', task: 'generate' }
+      : {
+          type: 'generated',
+          kind,
+          count: result.count,
+          missingTags: result.missingTags,
+          untranslated: result.untranslated,
+        }
+  );
 }
 
 /** Top-level layer types worth exporting when nothing is selected. */
@@ -335,6 +368,95 @@ figma.ui.onmessage = async (event: unknown) => {
             }`
           );
         }
+        break;
+      }
+      case 'get-snippets':
+        send({ type: 'snippets', snippets: await loadSnippets() });
+        break;
+      case 'save-snippets':
+        await figma.clientStorage.setAsync(SNIPPETS_KEY, message.snippets);
+        send({ type: 'snippets', snippets: await loadSnippets() });
+        break;
+      case 'plan-snippet': {
+        const selection = figma.currentPage.selection;
+        if (selection.length === 0) {
+          send({ type: 'error', message: 'Select the text layers to put the snippet in.' });
+          break;
+        }
+        await runTask('plan', async (control) => {
+          const rows = await collectTextLayers(
+            selection as unknown as ReadonlyArray<TraversableNode>,
+            control
+          );
+          if (rows === 'stopped') {
+            send({ type: 'task-stopped', task: 'plan' });
+            return;
+          }
+          if (rows.length === 0) {
+            send({ type: 'error', message: 'The selection has no text layers.' });
+            return;
+          }
+          const changeSet = await buildChangeSet(
+            rows.map((row) => ({ id: row.id, fallbackName: row.name, after: () => message.text })),
+            'snippet',
+            { getNode, control },
+            Date.now(),
+            // Built from the selection, so a selection change invalidates it.
+            'selection'
+          );
+          send(
+            changeSet === 'stopped'
+              ? { type: 'task-stopped', task: 'plan' }
+              : { type: 'change-set', changeSet }
+          );
+        });
+        break;
+      }
+      case 'add-snippet-layer': {
+        const font = { family: 'Inter', style: 'Regular' };
+        await figma.loadFontAsync(font);
+        const node = figma.createText();
+        node.fontName = font;
+        node.characters = message.text;
+        node.name = message.name || 'Snippet';
+        const centre = figma.viewport.center;
+        node.x = centre.x - node.width / 2;
+        node.y = centre.y - node.height / 2;
+        figma.currentPage.appendChild(node);
+        send({ type: 'notice', message: `Added "${node.name}" as a new text layer.` });
+        break;
+      }
+      case 'merge': {
+        const selection = figma.currentPage.selection;
+        if (selection.length !== 1) {
+          send({ type: 'error', message: 'Select exactly one template frame to merge into.' });
+          break;
+        }
+        if (message.rows.length === 0) {
+          send({ type: 'error', message: 'The data file has no rows.' });
+          break;
+        }
+        await runTask('generate', async (control) => {
+          sendGenerated('merge', await mergeRows(selection[0], message.rows, control, textWriter()));
+        });
+        break;
+      }
+      case 'localize': {
+        const frames = [...figma.currentPage.selection];
+        if (frames.length === 0) {
+          send({ type: 'error', message: 'Select the frames to localize.' });
+          break;
+        }
+        if (message.locales.length === 0) {
+          send({ type: 'error', message: 'The file has no language columns besides id, name and characters.' });
+          break;
+        }
+        await runTask('generate', async (control) => {
+          sendGenerated(
+            'localize',
+            await localizeFrames(frames, message.locales, message.translations, control, textWriter())
+          );
+        });
         break;
       }
       case 'stop-task':

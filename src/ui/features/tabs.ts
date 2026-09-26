@@ -6,9 +6,9 @@
  * component tree buys nothing the user can see. Preact is here for the review
  * table and the results list. See spec section 3.3.
  */
-export type TabName = 'extract' | 'find-replace';
+export type TabName = 'extract' | 'find-replace' | 'generate' | 'snippets';
 
-const TABS: readonly TabName[] = ['extract', 'find-replace'];
+const TABS: readonly TabName[] = ['extract', 'find-replace', 'generate', 'snippets'];
 
 let host: Document | null = null;
 
@@ -38,25 +38,28 @@ export function showTab(name: TabName): void {
   }
 }
 
-/** Which tab an arrow, Home or End key moves to from `current`, if any. */
-function tabForKey(current: TabName, key: string): TabName | null {
-  const index = TABS.indexOf(current);
+/**
+ * Which tab an arrow, Home or End key moves to from `current`, if any, among
+ * the tabs actually in the markup.
+ */
+function tabForKey(tabs: readonly TabName[], current: TabName, key: string): TabName | null {
+  const index = tabs.indexOf(current);
   switch (key) {
     case 'ArrowRight':
-      return TABS[(index + 1) % TABS.length];
+      return tabs[(index + 1) % tabs.length];
     case 'ArrowLeft':
-      return TABS[(index - 1 + TABS.length) % TABS.length];
+      return tabs[(index - 1 + tabs.length) % tabs.length];
     case 'Home':
-      return TABS[0];
+      return tabs[0];
     case 'End':
-      return TABS[TABS.length - 1];
+      return tabs[tabs.length - 1];
     default:
       return null;
   }
 }
 
 function isTabName(value: string | undefined): value is TabName {
-  return value === 'extract' || value === 'find-replace';
+  return (TABS as readonly (string | undefined)[]).includes(value);
 }
 
 export function initTabs(root: Document): void {
@@ -76,7 +79,8 @@ export function initTabs(root: Document): void {
     element.addEventListener('keydown', (event) => {
       const current = element.dataset.tab;
       if (!isTabName(current)) return;
-      const next = tabForKey(current, event.key);
+      const present = TABS.filter((tab) => tabElement(root, tab) !== null);
+      const next = tabForKey(present, current, event.key);
       if (!next) return;
       event.preventDefault();
       showTab(next);

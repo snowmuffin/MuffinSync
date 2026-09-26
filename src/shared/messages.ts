@@ -8,6 +8,7 @@ import type {
   ReplaceTarget,
   TaskKind,
 } from './types';
+import { isSnippets, isStringRecord, type Snippet, type Translations } from './generate';
 
 export type UiToMain =
   // Sent once the iframe's message handler is installed. Anything the sandbox
@@ -44,7 +45,15 @@ export type UiToMain =
   // which closes the plugin. Apply cannot be stopped (spec 2026-09-26 §6).
   | { type: 'stop-task' }
   // Export the selected frames, or every top-level frame on the page, as PDF.
-  | { type: 'export-pdf' };
+  | { type: 'export-pdf' }
+  // Snippet library (local features spec §5).
+  | { type: 'get-snippets' }
+  | { type: 'save-snippets'; snippets: Snippet[] }
+  | { type: 'plan-snippet'; text: string }
+  | { type: 'add-snippet-layer'; name: string; text: string }
+  // Generate tab (local features spec §6). `rows` are the data file's rows.
+  | { type: 'merge'; rows: Array<Record<string, string>> }
+  | { type: 'localize'; locales: string[]; translations: Translations };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
@@ -58,7 +67,19 @@ export type MainToUi =
   | { type: 'progress'; task: TaskKind; done: number; total: number }
   // The task ended at the user's request and produced nothing.
   | { type: 'task-stopped'; task: TaskKind }
-  | { type: 'pdf-exported'; files: ExportedFile[] };
+  | { type: 'pdf-exported'; files: ExportedFile[] }
+  | { type: 'snippets'; snippets: Snippet[] }
+  // A short confirmation that is not the answer to a long task.
+  | { type: 'notice'; message: string }
+  | {
+      type: 'generated';
+      kind: 'merge' | 'localize';
+      count: number;
+      /** Tags that named no column (merge). */
+      missingTags: string[];
+      /** Layers left in the source language for want of a translation (localize). */
+      untranslated: number;
+    };
 
 /** One exported file, named after its layer. */
 export interface ExportedFile {
@@ -111,6 +132,7 @@ function isTextLayerRows(value: unknown): value is TextLayerData[] {
 const SOURCES: Record<ProposedChange['source'], true> = {
   import: true,
   'find-replace': true,
+  snippet: true,
 };
 
 const BLOCK_REASONS: Record<BlockedChange['reason'], true> = {
@@ -288,6 +310,30 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return { type: 'stop-task' };
     case 'export-pdf':
       return { type: 'export-pdf' };
+    case 'get-snippets':
+      return { type: 'get-snippets' };
+    case 'save-snippets':
+      return isSnippets(p.snippets) ? { type: 'save-snippets', snippets: p.snippets } : null;
+    case 'plan-snippet':
+      return typeof p.text === 'string' ? { type: 'plan-snippet', text: p.text } : null;
+    case 'add-snippet-layer':
+      return typeof p.name === 'string' && typeof p.text === 'string'
+        ? { type: 'add-snippet-layer', name: p.name, text: p.text }
+        : null;
+    case 'merge':
+      return Array.isArray(p.rows) && p.rows.every(isStringRecord)
+        ? { type: 'merge', rows: p.rows as Array<Record<string, string>> }
+        : null;
+    case 'localize': {
+      if (!Array.isArray(p.locales) || !p.locales.every((l) => typeof l === 'string')) return null;
+      const locales = p.locales as string[];
+      const t = p.translations;
+      if (typeof t !== 'object' || t === null || Array.isArray(t)) return null;
+      const translations = t as Record<string, unknown>;
+      return locales.every((locale) => isStringRecord(translations[locale]))
+        ? { type: 'localize', locales, translations: translations as Translations }
+        : null;
+    }
     default:
       return null;
   }
@@ -345,6 +391,24 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
             (f as Record<string, unknown>).data instanceof Uint8Array
         )
         ? { type: 'pdf-exported', files: p.files as ExportedFile[] }
+        : null;
+    case 'snippets':
+      return isSnippets(p.snippets) ? { type: 'snippets', snippets: p.snippets } : null;
+    case 'notice':
+      return typeof p.message === 'string' ? { type: 'notice', message: p.message } : null;
+    case 'generated':
+      return (p.kind === 'merge' || p.kind === 'localize') &&
+        isCount(p.count) &&
+        Array.isArray(p.missingTags) &&
+        p.missingTags.every((t) => typeof t === 'string') &&
+        isCount(p.untranslated)
+        ? {
+            type: 'generated',
+            kind: p.kind,
+            count: p.count,
+            missingTags: p.missingTags as string[],
+            untranslated: p.untranslated,
+          }
         : null;
     case 'task-stopped':
       return isMember(TASK_KINDS, p.task)

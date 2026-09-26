@@ -156,6 +156,50 @@
         margin-top: 8px;
       }
 
+      .generate-summary {
+        font-size: 13px;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+        white-space: pre-line;
+      }
+
+      .snippet-text {
+        font-family: inherit;
+        resize: vertical;
+      }
+
+      .snippet-row {
+        border-top: 1px solid #e2e8f0;
+        padding: 10px 0;
+      }
+
+      .snippet-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #1e293b;
+      }
+
+      .snippet-preview {
+        font-size: 13px;
+        color: #475569;
+        white-space: pre-wrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin: 4px 0 6px;
+      }
+
+      .snippet-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
       .list-more {
         display: block;
         width: 100%;
@@ -500,7 +544,7 @@
           </svg>
           Copydesk
         </div>
-        <div class="subtitle">Extract, edit, find &amp; replace text layers</div>
+        <div class="subtitle">Extract, find, generate and reuse text layers</div>
       </div>
 
       <div id="main-content">
@@ -508,7 +552,11 @@
           <button class="tab selected" id="extract-tab" data-tab="extract" type="button"
             role="tab" aria-selected="true" aria-controls="extract-panel">Extract</button>
           <button class="tab" id="find-replace-tab" data-tab="find-replace" type="button"
-            role="tab" aria-selected="false" aria-controls="find-replace-panel" tabindex="-1">Find &amp; Replace</button>
+            role="tab" aria-selected="false" aria-controls="find-replace-panel" tabindex="-1">Find</button>
+          <button class="tab" id="generate-tab" data-tab="generate" type="button"
+            role="tab" aria-selected="false" aria-controls="generate-panel" tabindex="-1">Generate</button>
+          <button class="tab" id="snippets-tab" data-tab="snippets" type="button"
+            role="tab" aria-selected="false" aria-controls="snippets-panel" tabindex="-1">Snippets</button>
         </div>
 
         <div id="extract-panel" class="tab-panel" role="tabpanel" aria-labelledby="extract-tab">
@@ -605,6 +653,38 @@
               Search
             </button>
           </form>
+        </div>
+
+        <div id="generate-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="generate-tab">
+          <div class="section">
+            <div class="section-title">Data merge</div>
+            <div class="instruction">
+              Select one template frame whose text uses <code>{{Column}}</code> tags,
+              then choose a CSV or JSON file. One copy is made per row, beside the
+              template.
+            </div>
+            <input type="file" id="merge-file" class="file-input" accept=".csv,.json" />
+            <button class="button secondary" id="merge-pick-btn" type="button">Choose data file</button>
+            <div id="merge-summary" class="generate-summary hidden"></div>
+            <button class="button primary hidden" id="merge-btn" type="button">Generate copies</button>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Localized copies</div>
+            <div class="instruction">
+              Select one or more frames, then choose a file with an <code>id</code>
+              column plus one column per language (an extracted CSV with columns
+              added). One copy is made per frame and language.
+            </div>
+            <input type="file" id="localize-file" class="file-input" accept=".csv,.json" />
+            <button class="button secondary" id="localize-pick-btn" type="button">Choose translation file</button>
+            <div id="localize-summary" class="generate-summary hidden"></div>
+            <button class="button primary hidden" id="localize-btn" type="button">Generate localized copies</button>
+          </div>
+        </div>
+
+        <div id="snippets-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="snippets-tab">
+          <div id="snippets-host"></div>
         </div>
       </div>
 

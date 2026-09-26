@@ -8,6 +8,8 @@ import { openReview, closeReview, invalidateOnSelectionChange } from './features
 import { initFindReplace, showResults } from './features/find-replace';
 import { initScope, setSelectionPresent } from './features/scope';
 import { initTabs } from './features/tabs';
+import { initGenerate, generatedMessage } from './features/generate';
+import { initSnippets, showSnippets } from './features/snippets';
 import { endTask, reportProgress, taskStopped } from './features/task';
 
 const statusHost = byId('status-host');
@@ -32,6 +34,7 @@ initImport(document);
 initFindReplace(document);
 initScope(document);
 initTabs(document);
+initGenerate(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {
@@ -43,9 +46,16 @@ window.onmessage = (event: MessageEvent) => {
 
   debugLog(`Message received from plugin: ${message.type}`);
 
-  // Every answer to a long task ends it, whichever answer it is. Progress and
-  // selection reports are not answers.
-  if (message.type !== 'progress' && message.type !== 'selection') endTask();
+  // Every answer to a long task ends it, whichever answer it is. Progress,
+  // selection reports, the snippet list and notices are not answers.
+  if (
+    message.type !== 'progress' &&
+    message.type !== 'selection' &&
+    message.type !== 'snippets' &&
+    message.type !== 'notice'
+  ) {
+    endTask();
+  }
 
   switch (message.type) {
     case 'extracted':
@@ -107,6 +117,21 @@ window.onmessage = (event: MessageEvent) => {
       break;
     }
 
+    case 'snippets':
+      showSnippets(message.snippets);
+      break;
+
+    case 'notice':
+      showStatus(message.message, 'success');
+      break;
+
+    case 'generated':
+      showStatus(
+        generatedMessage(message.kind, message.count, message.missingTags, message.untranslated),
+        message.missingTags.length > 0 || message.untranslated > 0 ? 'info' : 'success'
+      );
+      break;
+
     case 'progress':
       reportProgress(message.task, message.done, message.total);
       break;
@@ -125,3 +150,4 @@ window.onmessage = (event: MessageEvent) => {
 // Only now can the sandbox's first selection report be received. Sent last on
 // purpose: the handler above must exist before anything is asked for.
 post({ type: 'ui-ready' });
+initSnippets();

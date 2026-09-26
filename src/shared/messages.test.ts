@@ -625,3 +625,75 @@ describe('PDF export messages', () => {
     }
   });
 });
+
+describe('snippet and generate messages', () => {
+  const snippet = { id: 'a', name: 'Footer', text: '© 2026' };
+
+  it('accepts the snippet requests', () => {
+    expect(unwrapUiMessage({ type: 'get-snippets' })).toEqual({ type: 'get-snippets' });
+    expect(unwrapUiMessage({ type: 'save-snippets', snippets: [snippet] })).toEqual({
+      type: 'save-snippets',
+      snippets: [snippet],
+    });
+    expect(unwrapUiMessage({ type: 'plan-snippet', text: 'x' })).toEqual({ type: 'plan-snippet', text: 'x' });
+    expect(unwrapUiMessage({ type: 'add-snippet-layer', name: 'n', text: 't' })).toEqual({
+      type: 'add-snippet-layer',
+      name: 'n',
+      text: 't',
+    });
+  });
+
+  it('rejects malformed snippet requests', () => {
+    expect(unwrapUiMessage({ type: 'save-snippets', snippets: [{ id: 'a' }] })).toBeNull();
+    expect(unwrapUiMessage({ type: 'plan-snippet' })).toBeNull();
+    expect(unwrapUiMessage({ type: 'add-snippet-layer', text: 't' })).toBeNull();
+  });
+
+  it('accepts merge rows of text', () => {
+    const rows = [{ Name: 'Ana' }];
+    expect(unwrapUiMessage({ type: 'merge', rows })).toEqual({ type: 'merge', rows });
+  });
+
+  it('rejects merge rows holding anything but text', () => {
+    expect(unwrapUiMessage({ type: 'merge', rows: [{ n: 1 }] })).toBeNull();
+    expect(unwrapUiMessage({ type: 'merge', rows: 'x' })).toBeNull();
+  });
+
+  it('accepts localize with a translation map per locale', () => {
+    const msg = { type: 'localize', locales: ['ko'], translations: { ko: { '1:1': '안녕' } } };
+    expect(unwrapUiMessage(msg)).toEqual(msg);
+  });
+
+  it('rejects localize missing a locale\'s map, or with a non-text translation', () => {
+    expect(unwrapUiMessage({ type: 'localize', locales: ['ko'], translations: {} })).toBeNull();
+    expect(
+      unwrapUiMessage({ type: 'localize', locales: ['ko'], translations: { ko: { '1:1': 5 } } })
+    ).toBeNull();
+    expect(unwrapUiMessage({ type: 'localize', locales: 'ko', translations: {} })).toBeNull();
+  });
+
+  it('accepts the stored snippet list, a notice and a generate summary', () => {
+    expect(unwrapMainMessage({ type: 'snippets', snippets: [snippet] })).not.toBeNull();
+    expect(unwrapMainMessage({ type: 'notice', message: 'Added' })).toEqual({ type: 'notice', message: 'Added' });
+    const summary = { type: 'generated', kind: 'merge', count: 3, missingTags: ['x'], untranslated: 0 };
+    expect(unwrapMainMessage(summary)).toEqual(summary);
+  });
+
+  const summary = { type: 'generated', kind: 'localize', count: 2, missingTags: [], untranslated: 1 };
+  const badSummaries: Array<[string, Record<string, unknown>]> = [
+    ['an unknown kind', { ...summary, kind: 'print' }],
+    ['a negative count', { ...summary, count: -1 }],
+    ['non-text missing tags', { ...summary, missingTags: [1] }],
+    ['a fractional untranslated count', { ...summary, untranslated: 0.5 }],
+  ];
+  for (const [label, bad] of badSummaries) {
+    it(`rejects a generate summary with ${label}`, () => {
+      expect(unwrapMainMessage(bad)).toBeNull();
+    });
+  }
+
+  it('accepts a snippet as a change source', () => {
+    const change = { nodeId: '1:1', layerName: 'A', before: 'a', after: 'b', source: 'snippet', accepted: true };
+    expect(unwrapUiMessage({ type: 'apply', changes: [change] })).not.toBeNull();
+  });
+});

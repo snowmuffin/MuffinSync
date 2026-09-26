@@ -33,7 +33,7 @@ export function toCSV(rows: TextLayerData[]): string {
 }
 
 /** Character-by-character so that quoted fields may contain , " \n and \r. */
-function parseRows(text: string): string[][] {
+export function parseRows(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
