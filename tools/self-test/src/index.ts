@@ -24,7 +24,7 @@ const UI = `
   textarea { width: 100%; height: 90px; font: 11px ui-monospace, monospace; margin-top: 8px; }
 </style>
 <button class="primary" id="run">Run tests</button><button id="perf">Performance (5,000 layers)</button>
-<div id="summary">Builds two temporary pages, runs every test, then removes them.</div>
+<div id="summary">Adds one temporary page, runs every test, then removes it. Needs room for one more page in this file.</div>
 <ul id="list"></ul>
 <textarea id="report" readonly placeholder="The report appears here when a run ends."></textarea>
 <script>
@@ -99,7 +99,7 @@ async function run(kind: 'run' | 'perf'): Promise<void> {
       outcomes = await runAll(performanceSuite(session, 5000), onEach);
     } else {
       status('Building the test pages…');
-      const fixture = await buildFixture();
+      const fixture = await buildFixture(returnTo);
       try {
         status('Running…');
         outcomes = await runAll(suite(session, fixture), onEach);

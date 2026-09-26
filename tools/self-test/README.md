@@ -22,9 +22,12 @@ npm run build:self-test      # writes tools/self-test/dist/code.js
    `tools/self-test/manifest.json` (once).
 2. Open any file you can edit — a scratch file is best — and run **Copydesk
    Self-Test (dev only)**.
-3. Press **Run tests**. It builds two temporary pages ("Copydesk self-test",
-   "Copydesk self-test 2"), runs 24 tests, and removes both pages. Takes about
-   a minute.
+3. Press **Run tests**. It adds one temporary page ("Copydesk self-test") and a
+   temporary frame far off-canvas on the page you started from, runs 24 tests,
+   and removes both. Takes about a minute.
+
+   Figma's Starter plan allows **3 pages per file**, so the file needs room for
+   one more page — a new file is simplest.
 4. Every line should read ✓. If any read ✗, copy the report from the text box
    at the bottom and send it along.
 

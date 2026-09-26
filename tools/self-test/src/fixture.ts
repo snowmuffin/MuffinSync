@@ -1,7 +1,9 @@
 /**
- * The test document: two pages of frames, texts, a hidden frame, a component
- * instance with a hidden child, a mixed-font layer, twins that share a path,
- * and a merge template. Built fresh for every run and removed afterwards.
+ * The test document: one new page of frames, texts, a hidden frame, a
+ * component instance with a hidden child, a mixed-font layer, twins that share
+ * a path, and a merge template -- plus one frame on the page the run started
+ * from, so there is a layer on another page. Only one page is created: Figma's
+ * Starter plan allows three per file. Everything is removed afterwards.
  */
 
 export const REGULAR: FontName = { family: 'Inter', style: 'Regular' };
@@ -9,7 +11,9 @@ export const BOLD: FontName = { family: 'Inter', style: 'Bold' };
 
 export interface Fixture {
   page: PageNode;
+  /** The page the run started from; holds `otherFrame` during the run. */
   otherPage: PageNode;
+  otherFrame: FrameNode;
   home: FrameNode;
   title: TextNode;
   body: TextNode;
@@ -44,13 +48,42 @@ export function frame(parent: BaseNode & ChildrenMixin, name: string, x: number,
   return node;
 }
 
-export async function buildFixture(): Promise<Fixture> {
+/** Figma refuses a page beyond the plan's limit; say what to do about it. */
+export function newPage(name: string): PageNode {
+  try {
+    const page = figma.createPage();
+    page.name = name;
+    return page;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Could not add a test page (${reason}). The self-test needs room for one more page: ` +
+        'run it in a new file, or one with fewer pages than your plan allows.'
+    );
+  }
+}
+
+export async function buildFixture(otherPage: PageNode): Promise<Fixture> {
   await Promise.all([figma.loadFontAsync(REGULAR), figma.loadFontAsync(BOLD)]);
 
-  const page = figma.createPage();
-  page.name = 'Copydesk self-test';
-  const otherPage = figma.createPage();
-  otherPage.name = 'Copydesk self-test 2';
+  const page = newPage('Copydesk self-test');
+  let otherFrame: FrameNode | null = null;
+  try {
+    return await populate(page, otherPage, (made) => (otherFrame = made));
+  } catch (error) {
+    // Half a fixture is still the user's clutter: take it away before failing.
+    await figma.setCurrentPageAsync(otherPage);
+    if (otherFrame && !(otherFrame as FrameNode).removed) (otherFrame as FrameNode).remove();
+    if (!page.removed) page.remove();
+    throw error;
+  }
+}
+
+async function populate(
+  page: PageNode,
+  otherPage: PageNode,
+  onOtherFrame: (frame: FrameNode) => void
+): Promise<Fixture> {
   await figma.setCurrentPageAsync(page);
 
   const home = frame(page, 'Home', 0);
@@ -89,15 +122,16 @@ export async function buildFixture(): Promise<Fixture> {
   const loose = text(page, 'Loose', 'Loose text');
   loose.x = 2000;
 
-  const other = frame(otherPage, 'Other', 0);
-  const elsewhere = text(other, 'Elsewhere', 'Sign up elsewhere');
+  // Far from anything the user has on that page, and removed afterwards.
+  const otherFrame = frame(otherPage, 'Copydesk self-test (temporary)', -100000, -100000);
+  onOtherFrame(otherFrame);
+  const elsewhere = text(otherFrame, 'Elsewhere', 'Sign up elsewhere');
 
-  return { page, otherPage, home, title, body, mixed, quote, hiddenFrame, secret, instance, twins, template, loose, elsewhere };
+  return { page, otherPage, otherFrame, home, title, body, mixed, quote, hiddenFrame, secret, instance, twins, template, loose, elsewhere };
 }
 
 export async function removeFixture(fixture: Fixture, returnTo: PageNode): Promise<void> {
   await figma.setCurrentPageAsync(returnTo);
-  for (const page of [fixture.page, fixture.otherPage]) {
-    if (!page.removed) page.remove();
-  }
+  if (!fixture.otherFrame.removed) fixture.otherFrame.remove();
+  if (!fixture.page.removed) fixture.page.remove();
 }

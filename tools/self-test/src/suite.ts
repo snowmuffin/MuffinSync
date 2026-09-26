@@ -1,7 +1,7 @@
 import type { TextLayerData } from '../../../src/shared/types';
 import type { MainToUi } from '../../../src/shared/messages';
 import { check, pick, same, type Session, type TestCase } from './harness';
-import { frame, REGULAR, text, type Fixture } from './fixture';
+import { frame, newPage, REGULAR, text, type Fixture } from './fixture';
 
 /**
  * Every test sends the messages Copydesk's UI would send and checks both what
@@ -310,8 +310,7 @@ export function performanceSuite(s: Session, count: number): TestCase[] {
       name: `Performance: extract, search and check on ${count.toLocaleString('en-US')} layers`,
       async run() {
         await figma.loadFontAsync(REGULAR);
-        const page = figma.createPage();
-        page.name = 'Copydesk self-test (performance)';
+        const page = newPage('Copydesk self-test (performance)');
         await figma.setCurrentPageAsync(page);
         try {
           for (let i = 0; i < count; i += 20) {
