@@ -140,12 +140,14 @@ const SOURCES: Record<ProposedChange['source'], true> = {
   import: true,
   'find-replace': true,
   snippet: true,
+  check: true,
 };
 
 const BLOCK_REASONS: Record<BlockedChange['reason'], true> = {
   missing: true,
   'not-text': true,
   changed: true,
+  ambiguous: true,
 };
 
 /**
@@ -171,7 +173,8 @@ function isProposedChanges(value: unknown): value is ProposedChange[] {
         typeof v.before === 'string' &&
         typeof v.after === 'string' &&
         isMember(SOURCES, v.source) &&
-        typeof v.accepted === 'boolean'
+        typeof v.accepted === 'boolean' &&
+        (v.matchedBy === undefined || v.matchedBy === 'path')
       );
     })
   );

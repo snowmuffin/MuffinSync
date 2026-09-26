@@ -57,7 +57,9 @@ export interface ProposedChange {
   layerName: string;
   before: string;
   after: string;
-  source: 'import' | 'find-replace' | 'snippet';
+  source: 'import' | 'find-replace' | 'snippet' | 'check';
+  /** Set when an import row found its layer by path because its id missed. */
+  matchedBy?: 'path';
   accepted: boolean;      // the user's decision in review
 }
 
@@ -68,8 +70,9 @@ export interface BlockedChange {
   /**
    * `changed`: the user picked some occurrences in a layer whose text has
    * changed since the search, so the picked indices may name other matches.
+   * `ambiguous`: an import row's id missed and several layers share its path.
    */
-  reason: 'missing' | 'not-text' | 'changed';
+  reason: 'missing' | 'not-text' | 'changed' | 'ambiguous';
 }
 
 /** One node the user chose to replace in. See spec section 3.4. */

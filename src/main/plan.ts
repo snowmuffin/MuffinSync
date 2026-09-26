@@ -31,6 +31,10 @@ export interface ChangeTarget {
    * `changed` rather than guessed at.
    */
   after(current: string): string | null;
+  /** The layer to use instead of `id`, found by path because `id` missed. */
+  resolvedId?: string;
+  /** Several layers share this row's path; blocked rather than guessed. */
+  ambiguous?: boolean;
 }
 
 /**
@@ -68,7 +72,12 @@ export async function buildChangeSet(
   let unchangedCount = 0;
 
   const outcome = await runChunked(targets, async (target) => {
-    const node = await deps.getNode(target.id);
+    if (target.ambiguous) {
+      blocked.push({ nodeId: target.id, layerName: target.fallbackName, reason: 'ambiguous' });
+      return;
+    }
+    const id = target.resolvedId ?? target.id;
+    const node = await deps.getNode(id);
 
     if (!node) {
       blocked.push({ nodeId: target.id, layerName: target.fallbackName, reason: 'missing' });
@@ -90,7 +99,7 @@ export async function buildChangeSet(
     }
 
     changes.push({
-      nodeId: target.id,
+      nodeId: id,
       // The document is the authority on what a layer is called; a file, or a
       // search result a moment stale, can carry a name since edited.
       layerName: node.name,
@@ -100,6 +109,7 @@ export async function buildChangeSet(
       // Checked by default: review is for vetoing, not for re-approving every
       // row the user just asked for.
       accepted: true,
+      ...(target.resolvedId ? { matchedBy: 'path' as const } : {}),
     });
   }, deps.control ?? UNSTOPPABLE_SILENT);
 

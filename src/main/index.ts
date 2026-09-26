@@ -9,6 +9,7 @@ import { centreOnNode } from './navigate';
 import { runChunked, type TaskControl } from './chunked';
 import { createFontCache, type FontRef } from './fonts';
 import { localizeFrames, mergeRows, type GenerateResult, type SetText } from './generate';
+import { buildPathIndex, resolveRows, type PathIndex, type PathMatch } from './pathmatch';
 import { isSnippets, type Snippet } from '../shared/generate';
 import { COMMAND_TABS, parseSettings } from '../shared/settings';
 
@@ -185,6 +186,48 @@ function replaceTarget(
   return replaceMatches(current, query, replacement, opts, new Set(target.occurrences));
 }
 
+/**
+ * For import rows whose id no longer names a text layer but which carry a
+ * path, finds the layer by path: the current page first, then every page if
+ * rows are still unmatched. Rows whose id works are left alone. Returns an
+ * empty map when no row needs it, without walking anything.
+ */
+async function matchByPath(
+  rows: ReadonlyArray<TextLayerData>,
+  control: TaskControl
+): Promise<Map<string, PathMatch> | 'stopped'> {
+  const needsPath = new Set<string>();
+  for (const row of rows) {
+    if (!row.path) continue;
+    const node = await getNode(row.id);
+    if (!node || node.type !== 'TEXT') needsPath.add(row.id);
+  }
+  if (needsPath.size === 0) return new Map();
+
+  const indexes: PathIndex[] = [];
+  const pageLayers = await collectTextLayers(
+    figma.currentPage.children as unknown as ReadonlyArray<TraversableNode>,
+    control,
+    { withPaths: true }
+  );
+  if (pageLayers === 'stopped') return 'stopped';
+  indexes.push(buildPathIndex(pageLayers));
+
+  let result = resolveRows(rows, needsPath, indexes);
+  const unmatched = Array.from(result.values()).some((match) => match.kind === 'none');
+  if (unmatched && figma.root.children.length > 1) {
+    await figma.loadAllPagesAsync();
+    const others = figma.root.children.filter((page) => page !== figma.currentPage);
+    const allLayers = await collectTextLayers(others as unknown as ReadonlyArray<TraversableNode>, control, {
+      withPaths: true,
+    });
+    if (allLayers === 'stopped') return 'stopped';
+    indexes.push(buildPathIndex(allLayers));
+    result = resolveRows(rows, needsPath, indexes);
+  }
+  return result;
+}
+
 /** Reads a node for planning and applying. */
 const getNode = async (id: string) =>
   (await figma.getNodeByIdAsync(id)) as ApplicableNode | null;
@@ -233,12 +276,22 @@ figma.ui.onmessage = async (event: unknown) => {
       case 'plan-import': {
         try {
           await runTask('plan', async (control) => {
+            const matches = await matchByPath(message.rows, control);
+            if (matches === 'stopped') {
+              send({ type: 'task-stopped', task: 'plan' });
+              return;
+            }
             const changeSet = await buildChangeSet(
-              message.rows.map((row) => ({
-                id: row.id,
-                fallbackName: row.name,
-                after: () => row.characters,
-              })),
+              message.rows.map((row) => {
+                const match = matches.get(row.id);
+                return {
+                  id: row.id,
+                  fallbackName: row.name,
+                  after: () => row.characters,
+                  resolvedId: match?.kind === 'unique' ? match.id : undefined,
+                  ambiguous: match?.kind === 'ambiguous',
+                };
+              }),
               'import',
               { getNode, control }
             );

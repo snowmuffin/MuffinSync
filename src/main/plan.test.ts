@@ -224,3 +224,27 @@ describe('buildChangeSet with a target that cannot say what to write', () => {
     expect(set.unchangedCount).toBe(0);
   });
 });
+
+describe('buildChangeSet with rows matched by path', () => {
+  it('writes to the layer found by path and says how it was found', async () => {
+    const set = await buildChangeSet(
+      [{ id: '1:1', fallbackName: 'Title', after: () => 'new', resolvedId: '9:1' }],
+      'import',
+      deps([node('9:1', 'Title', 'old')]),
+      0
+    );
+    expect(set.changes).toEqual([
+      { nodeId: '9:1', layerName: 'Title', before: 'old', after: 'new', source: 'import', accepted: true, matchedBy: 'path' },
+    ]);
+  });
+
+  it('blocks an ambiguous row under the id the file named', async () => {
+    const set = await buildChangeSet(
+      [{ id: '1:1', fallbackName: 'Text', after: () => 'x', ambiguous: true }],
+      'import',
+      deps([]),
+      0
+    );
+    expect(set.blocked).toEqual([{ nodeId: '1:1', layerName: 'Text', reason: 'ambiguous' }]);
+  });
+});

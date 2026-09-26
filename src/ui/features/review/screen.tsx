@@ -14,7 +14,11 @@ const BLOCKED_REASON: Record<BlockedChange['reason'], string> = {
   missing: 'layer no longer exists',
   'not-text': 'layer is no longer a text layer',
   changed: 'text changed since the search',
+  ambiguous: 'id not found, and several layers share its path',
 };
+
+/** Reasons whose row names a layer that still exists, so Show can find it. */
+const SHOWABLE: ReadonlySet<BlockedChange['reason']> = new Set(['not-text', 'changed']);
 
 /**
  * Pure: reports a decision through `onApply`/`onCancel` and touches nothing
@@ -97,6 +101,11 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
                 onClick={toggleChange(change.nodeId)}
               />
               <span class="review-row-name">{change.layerName}</span>
+              {change.matchedBy === 'path' && (
+                <span class="review-row-tag" title="The file's id did not exist here; the layer was found by its path.">
+                  matched by path
+                </span>
+              )}
             </label>
             <button
               type="button"
@@ -129,7 +138,7 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
               {/* A 'missing' node is gone, so Show could only ever report
                   "That layer no longer exists." A 'not-text' node is still
                   there and is exactly what the user needs to find. */}
-              {change.reason !== 'missing' && (
+              {SHOWABLE.has(change.reason) && (
                 <button
                   type="button"
                   class="results-row-navigate"

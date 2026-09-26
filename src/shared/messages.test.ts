@@ -727,3 +727,17 @@ describe('settings messages', () => {
     expect(unwrapMainMessage({ type: 'open-tab', tab: 'settings' })).toBeNull();
   });
 });
+
+describe('path matching in messages', () => {
+  const change = { nodeId: '9:1', layerName: 'A', before: 'a', after: 'b', source: 'import', accepted: true };
+
+  it('accepts a change matched by path, and rejects any other matchedBy', () => {
+    expect(unwrapUiMessage({ type: 'apply', changes: [{ ...change, matchedBy: 'path' }] })).not.toBeNull();
+    expect(unwrapUiMessage({ type: 'apply', changes: [{ ...change, matchedBy: 'name' }] })).toBeNull();
+  });
+
+  it('accepts an ambiguous blocked row in a change set', () => {
+    const changeSet = { changes: [], blocked: [{ nodeId: '1:1', layerName: 'A', reason: 'ambiguous' }], unchangedCount: 0, createdAt: 1 };
+    expect(unwrapMainMessage({ type: 'change-set', changeSet })).not.toBeNull();
+  });
+});

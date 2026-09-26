@@ -307,3 +307,17 @@ describe('ReviewScreen with a long list', () => {
     expect(showMoreButtons()[0].textContent).toBe('Show 50 more (50 not shown)');
   });
 });
+
+describe('ReviewScreen and path matching', () => {
+  it('tags a change found by path', () => {
+    draw(setOf({ changes: [{ ...change('9:1', 'after'), matchedBy: 'path' }] }));
+    expect(host.querySelector('.review-row-tag')?.textContent).toContain('matched by path');
+  });
+
+  it('explains an ambiguous row and offers no Show for it', () => {
+    draw(setOf({ blocked: [{ nodeId: '1:1', layerName: 'Text', reason: 'ambiguous' }] }));
+    const row = host.querySelector('.review-blocked-row')!;
+    expect(row.textContent).toContain('several layers share its path');
+    expect(row.querySelector('[data-navigate]')).toBeNull();
+  });
+});
