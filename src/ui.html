@@ -24,10 +24,20 @@
       }
 
       .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         font-size: 24px;
         font-weight: 700;
-        color: #3b82f6;
+        color: #1e3a5f;
         margin-bottom: 8px;
+      }
+
+      /* The same drawing as icon-128.png, inline: a UI bundle cannot load files. */
+      .logo-mark {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
       }
 
       .subtitle {
@@ -394,7 +404,24 @@
   <body>
     <div class="container">
       <div class="header">
-        <div class="logo">📝 Copydesk</div>
+        <div class="logo">
+          <svg class="logo-mark" viewBox="0 0 128 128" aria-hidden="true">
+            <rect width="128" height="128" rx="28" fill="#1e3a5f" />
+            <rect x="30" y="22" width="60" height="80" rx="6" fill="#ffffff" />
+            <rect x="40" y="36" width="40" height="6" rx="3" fill="#94a3b8" />
+            <rect x="40" y="50" width="32" height="6" rx="3" fill="#94a3b8" />
+            <rect x="40" y="64" width="40" height="6" rx="3" fill="#94a3b8" />
+            <rect x="40" y="78" width="24" height="6" rx="3" fill="#94a3b8" />
+            <rect x="36" y="51.5" width="40" height="3" rx="1.5" fill="#f97316" />
+            <g transform="rotate(45 88 82)">
+              <rect x="80" y="54" width="16" height="44" rx="3" fill="#f97316" />
+              <rect x="80" y="54" width="16" height="8" rx="3" fill="#fdba74" />
+              <polygon points="80,98 96,98 88,112" fill="#fde68a" />
+              <polygon points="85,106.5 91,106.5 88,112" fill="#1e293b" />
+            </g>
+          </svg>
+          Copydesk
+        </div>
         <div class="subtitle">Extract, edit, find &amp; replace text layers</div>
       </div>
 
