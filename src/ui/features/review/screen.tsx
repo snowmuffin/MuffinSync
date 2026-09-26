@@ -13,6 +13,7 @@ export interface ReviewProps {
 const BLOCKED_REASON: Record<BlockedChange['reason'], string> = {
   missing: 'layer no longer exists',
   'not-text': 'layer is no longer a text layer',
+  changed: 'text changed since the search',
 };
 
 /**

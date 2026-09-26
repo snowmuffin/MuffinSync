@@ -23,6 +23,7 @@ function markup(): void {
           <input id="replace-input" type="text" />
           <input id="case-sensitive" type="checkbox" />
           <input id="whole-word" type="checkbox" />
+          <input id="use-regex" type="checkbox" />
           <button class="button primary" id="search-btn" type="submit" disabled></button>
         </form>
       </div>
@@ -81,6 +82,8 @@ describe('find & replace wiring', () => {
       scope: 'selection',
       caseSensitive: false,
       wholeWord: false,
+
+      regex: false,
     });
   });
 
@@ -96,6 +99,8 @@ describe('find & replace wiring', () => {
       scope: 'selection',
       caseSensitive: false,
       wholeWord: false,
+
+      regex: false,
     });
   });
 
@@ -109,6 +114,8 @@ describe('find & replace wiring', () => {
       scope: 'selection',
       caseSensitive: false,
       wholeWord: false,
+
+      regex: false,
     });
   });
 
@@ -134,6 +141,23 @@ describe('find & replace wiring', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it('says what is wrong with an invalid pattern and does not search', () => {
+    input('find-input').value = '(net';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('use-regex').checked = true;
+    act(() => searchBtn().click());
+    expect(post).not.toHaveBeenCalled();
+    expect(document.getElementById('status-host')?.textContent).toMatch(/Invalid regular expression/);
+  });
+
+  it('posts regex: true when Regular expression is ticked', () => {
+    input('find-input').value = '\\d+';
+    input('find-input').dispatchEvent(new Event('input'));
+    input('use-regex').checked = true;
+    searchBtn().click();
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ type: 'search', regex: true }));
+  });
+
   it('posts the query, the scope, and both options', () => {
     input('find-input').value = 'Sign up';
     input('find-input').dispatchEvent(new Event('input'));
@@ -145,6 +169,8 @@ describe('find & replace wiring', () => {
       scope: 'selection',
       caseSensitive: true,
       wholeWord: false,
+
+      regex: false,
     });
   });
 
@@ -200,6 +226,8 @@ describe('find & replace wiring', () => {
       scope: 'selection',
       caseSensitive: false,
       wholeWord: false,
+
+      regex: false,
     });
   });
 

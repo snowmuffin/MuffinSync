@@ -1,10 +1,10 @@
-import type { Scope, TaskKind } from '../shared/types';
+import type { MatchOptions, ReplaceTarget, Scope, TaskKind } from '../shared/types';
 import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
 import { buildChangeSet, type ChangeTarget } from './plan';
-import { matchingLayers, replaceAll } from './search';
+import { matchingLayers, replaceMatches } from '../shared/match';
 import { centreOnNode } from './navigate';
 import type { TaskControl } from './chunked';
 import { createFontCache, type FontRef } from './fonts';
@@ -94,6 +94,24 @@ function fontsOf(node: ApplicableNode): FontRef[] {
   return textNode.fontName === figma.mixed
     ? textNode.getRangeAllFontNames(0, textNode.characters.length)
     : [textNode.fontName];
+}
+
+/**
+ * What a find & replace target becomes. Every occurrence, unless the user
+ * picked some -- and picked indices only name the same matches in the text
+ * they were picked in, so a layer edited since the search is refused (`null`,
+ * blocked as `changed`) rather than having other occurrences replaced.
+ */
+function replaceTarget(
+  current: string,
+  target: ReplaceTarget,
+  query: string,
+  replacement: string,
+  opts: MatchOptions
+): string | null {
+  if (!target.occurrences) return replaceMatches(current, query, replacement, opts);
+  if (current !== target.expected) return null;
+  return replaceMatches(current, query, replacement, opts, new Set(target.occurrences));
 }
 
 /** Reads a node for planning and applying. */
@@ -187,6 +205,7 @@ figma.ui.onmessage = async (event: unknown) => {
             const matches = matchingLayers(rows, message.query, {
               caseSensitive: message.caseSensitive,
               wholeWord: message.wholeWord,
+              regex: message.regex,
             });
             send({ type: 'search-results', matches, scope: message.scope });
           });
@@ -204,13 +223,14 @@ figma.ui.onmessage = async (event: unknown) => {
           const opts = {
             caseSensitive: message.caseSensitive,
             wholeWord: message.wholeWord,
+            regex: message.regex,
           };
           // Each node is re-read and the replacement recomputed here, so the
           // set's `before` is the document's text now, not at search time.
           const targets: ChangeTarget[] = message.targets.map((target) => ({
             id: target.nodeId,
             fallbackName: target.layerName,
-            after: (current) => replaceAll(current, message.query, message.replacement, opts),
+            after: (current) => replaceTarget(current, target, message.query, message.replacement, opts),
           }));
           await runTask('plan', async (control) => {
             const changeSet = await buildChangeSet(

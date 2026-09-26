@@ -210,3 +210,17 @@ describe('buildChangeSet under a task control', () => {
     expect(progress[progress.length - 1]).toEqual([2, 2]);
   });
 });
+
+describe('buildChangeSet with a target that cannot say what to write', () => {
+  it('blocks the row as changed, naming the layer from the document', async () => {
+    const set = await buildChangeSet(
+      [{ id: '1:1', fallbackName: 'stale name', after: () => null }],
+      'find-replace',
+      deps([node('1:1', 'Hero', 'edited since')]),
+      0
+    );
+    expect(set.blocked).toEqual([{ nodeId: '1:1', layerName: 'Hero', reason: 'changed' }]);
+    expect(set.changes).toEqual([]);
+    expect(set.unchangedCount).toBe(0);
+  });
+});

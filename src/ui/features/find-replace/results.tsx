@@ -1,13 +1,23 @@
+import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import type { ReplaceTarget, SearchMatch } from '../../../shared/types';
+import type { MatchOptions, ReplaceTarget, SearchMatch } from '../../../shared/types';
+import { findMatches } from '../../../shared/match';
 import { LIST_PAGE, ShowMore } from '../show-more';
 
 export interface ResultListProps {
   matches: SearchMatch[];
+  /** What was searched for, so each row can highlight its own matches. */
+  query: string;
+  options: MatchOptions;
   canReplace: boolean;
   onReplace(targets: ReplaceTarget[]): void;
   onCancel(): void;
   onNavigate(nodeId: string): void;
+}
+
+/** Every occurrence index of a row: the default choice. */
+function everyIndex(count: number): Set<number> {
+  return new Set(Array.from({ length: count }, (_, i) => i));
 }
 
 /**
@@ -16,34 +26,104 @@ export interface ResultListProps {
  *
  * Searching without a replacement is a first-class use (spec 3.4): when
  * `canReplace` is false there is nothing to accept, so no checkbox and no
- * replace action are shown at all.
+ * replace action are shown at all -- the highlights still show where each
+ * match is.
+ *
+ * With a replacement, each highlighted match can be clicked to leave that one
+ * occurrence alone (spec 2026-09-26 local features §2.2). The row checkbox
+ * takes or leaves every occurrence at once, and shows indeterminate when only
+ * some are chosen.
  */
-export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigate }: ResultListProps) {
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(matches.map((match) => match.nodeId))
+export function ResultList({
+  matches,
+  query,
+  options,
+  canReplace,
+  onReplace,
+  onCancel,
+  onNavigate,
+}: ResultListProps) {
+  const [chosen, setChosen] = useState<Map<string, Set<number>>>(
+    () => new Map(matches.map((match) => [match.nodeId, everyIndex(match.matchCount)]))
   );
-
   const [shown, setShown] = useState(LIST_PAGE);
 
+  const picked = (match: SearchMatch) => chosen.get(match.nodeId)?.size ?? 0;
   const totalMatches = matches.reduce((sum, match) => sum + match.matchCount, 0);
-  const selectedCount = matches.filter((match) => selected.has(match.nodeId)).length;
+  const selectedCount = matches.filter((match) => picked(match) > 0).length;
+  const allSelected = matches.every((match) => picked(match) === match.matchCount);
 
-  const toggleMatch = (nodeId: string) => (event: Event) => {
+  const update = (nodeId: string, next: Set<number>) =>
+    setChosen((prev) => new Map(prev).set(nodeId, next));
+
+  const toggleRow = (match: SearchMatch) => (event: Event) => {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (target.checked) next.add(nodeId);
-      else next.delete(nodeId);
-      return next;
-    });
+    update(match.nodeId, target.checked ? everyIndex(match.matchCount) : new Set());
+  };
+
+  const toggleOccurrence = (match: SearchMatch, index: number) => () => {
+    const next = new Set(chosen.get(match.nodeId));
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    update(match.nodeId, next);
+  };
+
+  const toggleAll = (event: Event) => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+    setChosen(
+      new Map(
+        matches.map((match) => [
+          match.nodeId,
+          target.checked ? everyIndex(match.matchCount) : new Set<number>(),
+        ])
+      )
+    );
   };
 
   const handleReplace = () => {
-    const targets: ReplaceTarget[] = matches
-      .filter((match) => selected.has(match.nodeId))
-      .map((match) => ({ nodeId: match.nodeId, layerName: match.layerName }));
+    const targets: ReplaceTarget[] = [];
+    for (const match of matches) {
+      const set = chosen.get(match.nodeId);
+      if (!set || set.size === 0) continue;
+      if (set.size === match.matchCount) {
+        targets.push({ nodeId: match.nodeId, layerName: match.layerName });
+      } else {
+        targets.push({
+          nodeId: match.nodeId,
+          layerName: match.layerName,
+          occurrences: Array.from(set).sort((a, b) => a - b),
+          expected: match.characters,
+        });
+      }
+    }
     onReplace(targets);
+  };
+
+  /** The row's text with each match marked; clickable when replacing. */
+  const highlighted = (match: SearchMatch) => {
+    const ranges = findMatches(match.characters, query, options);
+    const set = chosen.get(match.nodeId);
+    const parts: Array<string | JSX.Element> = [];
+    let cursor = 0;
+    ranges.forEach((range, index) => {
+      parts.push(match.characters.slice(cursor, range.start));
+      const on = !canReplace || (set?.has(index) ?? false);
+      parts.push(
+        <mark
+          class={on ? 'match' : 'match skipped'}
+          data-occurrence={String(index)}
+          title={canReplace ? (on ? 'Click to leave this one' : 'Click to replace this one') : undefined}
+          onClick={canReplace ? toggleOccurrence(match, index) : undefined}
+        >
+          {match.characters.slice(range.start, range.end)}
+        </mark>
+      );
+      cursor = range.end;
+    });
+    parts.push(match.characters.slice(cursor));
+    return parts;
   };
 
   return (
@@ -54,14 +134,28 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
         {matches.length === 1 ? 'layer' : 'layers'}
       </div>
 
+      {canReplace && matches.length > 1 && (
+        <label class="review-select-all">
+          <input
+            type="checkbox"
+            data-select-all=""
+            checked={allSelected}
+            indeterminate={!allSelected && selectedCount > 0}
+            onClick={toggleAll}
+          />
+          Select all
+        </label>
+      )}
+
       {matches.slice(0, shown).map((match) => (
         <div class="results-row" data-match-row="" key={match.nodeId}>
           {canReplace && (
             <input
               type="checkbox"
               data-match=""
-              checked={selected.has(match.nodeId)}
-              onClick={toggleMatch(match.nodeId)}
+              checked={picked(match) > 0}
+              indeterminate={picked(match) > 0 && picked(match) < match.matchCount}
+              onClick={toggleRow(match)}
             />
           )}
           <div class="results-row-body">
@@ -78,7 +172,7 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
                 Show
               </button>
             </div>
-            <div class="results-row-text">{match.characters}</div>
+            <div class="results-row-text">{highlighted(match)}</div>
           </div>
         </div>
       ))}

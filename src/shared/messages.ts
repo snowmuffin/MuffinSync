@@ -17,7 +17,14 @@ export type UiToMain =
   | { type: 'plan-import'; rows: TextLayerData[] }
   | { type: 'apply'; changes: ProposedChange[] }
   | { type: 'cancel' }
-  | { type: 'search'; query: string; scope: Scope; caseSensitive: boolean; wholeWord: boolean }
+  | {
+      type: 'search';
+      query: string;
+      scope: Scope;
+      caseSensitive: boolean;
+      wholeWord: boolean;
+      regex: boolean;
+    }
   | {
       type: 'plan-replace';
       query: string;
@@ -28,6 +35,7 @@ export type UiToMain =
       scope: Scope;
       caseSensitive: boolean;
       wholeWord: boolean;
+      regex: boolean;
     }
   | { type: 'navigate'; nodeId: string }
   // Ask the running extract, search or plan to stop. Distinct from 'cancel',
@@ -95,6 +103,7 @@ const SOURCES: Record<ProposedChange['source'], true> = {
 const BLOCK_REASONS: Record<BlockedChange['reason'], true> = {
   missing: true,
   'not-text': true,
+  changed: true,
 };
 
 /**
@@ -163,7 +172,15 @@ function isReplaceTargets(value: unknown): value is ReplaceTarget[] {
     value.every((t) => {
       if (typeof t !== 'object' || t === null) return false;
       const v = t as Record<string, unknown>;
-      return typeof v.nodeId === 'string' && typeof v.layerName === 'string';
+      if (typeof v.nodeId !== 'string' || typeof v.layerName !== 'string') return false;
+      if (v.occurrences === undefined) return v.expected === undefined || typeof v.expected === 'string';
+      // Chosen occurrences only mean something against the text they were
+      // chosen in, so `expected` must come with them.
+      return (
+        Array.isArray(v.occurrences) &&
+        v.occurrences.every((i) => Number.isInteger(i) && (i as number) >= 0) &&
+        typeof v.expected === 'string'
+      );
     })
   );
 }
@@ -216,13 +233,15 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return typeof p.query === 'string' &&
         isScope(p.scope) &&
         typeof p.caseSensitive === 'boolean' &&
-        typeof p.wholeWord === 'boolean'
+        typeof p.wholeWord === 'boolean' &&
+        typeof p.regex === 'boolean'
         ? {
             type: 'search',
             query: p.query,
             scope: p.scope,
             caseSensitive: p.caseSensitive,
             wholeWord: p.wholeWord,
+            regex: p.regex,
           }
         : null;
     case 'plan-replace':
@@ -231,7 +250,8 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
         isReplaceTargets(p.targets) &&
         isScope(p.scope) &&
         typeof p.caseSensitive === 'boolean' &&
-        typeof p.wholeWord === 'boolean'
+        typeof p.wholeWord === 'boolean' &&
+        typeof p.regex === 'boolean'
         ? {
             type: 'plan-replace',
             query: p.query,
@@ -240,6 +260,7 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
             scope: p.scope,
             caseSensitive: p.caseSensitive,
             wholeWord: p.wholeWord,
+            regex: p.regex,
           }
         : null;
     case 'navigate':

@@ -25,7 +25,12 @@ export interface ChangeTarget {
   id: string;
   /** Used only when the node is gone; a missing node cannot be asked its name. */
   fallbackName: string;
-  after(current: string): string;
+  /**
+   * The text to write, from the node's current text. `null` when the producer
+   * cannot say what to write against this text -- the row is blocked as
+   * `changed` rather than guessed at.
+   */
+  after(current: string): string | null;
 }
 
 /**
@@ -75,6 +80,10 @@ export async function buildChangeSet(
     }
 
     const after = target.after(node.characters);
+    if (after === null) {
+      blocked.push({ nodeId: target.id, layerName: node.name, reason: 'changed' });
+      return;
+    }
     if (node.characters === after) {
       unchangedCount++;
       return;

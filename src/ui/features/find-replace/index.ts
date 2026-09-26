@@ -5,6 +5,7 @@ import { post } from '../../post';
 import { clearStatus, showStatus } from '../../status';
 import { byId } from '../../dom';
 import { getScope } from '../scope';
+import { checkQuery } from '../../../shared/match';
 import { beginTask, isBusy } from '../task';
 
 /**
@@ -44,6 +45,7 @@ function handleReplace(targets: ReplaceTarget[]): void {
     scope: lastSearch.scope,
     caseSensitive: lastSearch.options.caseSensitive,
     wholeWord: lastSearch.options.wholeWord,
+    regex: lastSearch.options.regex,
   });
   closeResults();
   // The results are already gone but the sandbox is still re-reading every
@@ -84,6 +86,8 @@ export function showResults(matches: SearchMatch[]): void {
   render(
     h(ResultList, {
       matches,
+      query: lastSearch?.query ?? '',
+      options: lastSearch?.options ?? { caseSensitive: false, wholeWord: false, regex: false },
       canReplace,
       onReplace: handleReplace,
       onCancel: handleCancel,
@@ -105,6 +109,7 @@ export function initFindReplace(root: Document): void {
   const replaceInput = root.getElementById('replace-input') as HTMLInputElement | null;
   const caseSensitive = root.getElementById('case-sensitive') as HTMLInputElement | null;
   const wholeWord = root.getElementById('whole-word') as HTMLInputElement | null;
+  const regex = root.getElementById('use-regex') as HTMLInputElement | null;
   const searchBtn = root.getElementById('search-btn') as HTMLButtonElement | null;
   const form = root.getElementById('find-form') as HTMLFormElement | null;
   if (!findInput || !replaceInput || !caseSensitive || !wholeWord || !searchBtn || !form) {
@@ -132,7 +137,14 @@ export function initFindReplace(root: Document): void {
     const options: MatchOptions = {
       caseSensitive: caseSensitive.checked,
       wholeWord: wholeWord.checked,
+      // Optional in the markup so older test fixtures without it still work.
+      regex: regex?.checked ?? false,
     };
+    const problem = checkQuery(query, options);
+    if (problem) {
+      showStatus(problem, 'error');
+      return;
+    }
     const scope = getScope();
     const replacement = replaceInput.value;
 
@@ -149,6 +161,7 @@ export function initFindReplace(root: Document): void {
       scope,
       caseSensitive: options.caseSensitive,
       wholeWord: options.wholeWord,
+      regex: options.regex,
     });
   });
 }

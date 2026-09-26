@@ -20,6 +20,8 @@ function mount(props: Partial<Parameters<typeof ResultList>[0]> = {}) {
     render(
       <ResultList
         matches={props.matches ?? matches}
+        query={props.query ?? 'sign up'}
+        options={props.options ?? { caseSensitive: false, wholeWord: false, regex: false }}
         canReplace={props.canReplace ?? true}
         onReplace={onReplace}
         onCancel={onCancel}
@@ -114,6 +116,80 @@ describe('ResultList', () => {
     mount({ matches: given });
     act(() => boxes()[0].click());
     expect(given).toEqual(matches);
+  });
+});
+
+describe('ResultList occurrences', () => {
+  const marks = (row = 1) =>
+    Array.from(rows()[row].querySelectorAll<HTMLElement>('mark[data-occurrence]'));
+  const selectAll = () => host.querySelector<HTMLInputElement>('[data-select-all]');
+
+  beforeEach(() => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('highlights every match in a row', () => {
+    mount();
+    expect(marks().map((m) => m.textContent)).toEqual(['Sign up', 'sign up']);
+  });
+
+  it('still highlights when there is no replacement, without making marks clickable', () => {
+    mount({ canReplace: false });
+    expect(marks()).toHaveLength(2);
+    expect(marks()[0].title).toBe('');
+  });
+
+  it('leaves one occurrence alone when its mark is clicked', () => {
+    const { onReplace } = mount();
+    act(() => marks()[1].click());
+    expect(marks()[1].classList.contains('skipped')).toBe(true);
+    expect(boxes()[1].indeterminate).toBe(true);
+    act(() => button('Replace').click());
+    expect(vi.mocked(onReplace).mock.calls[0][0]).toEqual([
+      { nodeId: '1:1', layerName: 'Hero / CTA' },
+      {
+        nodeId: '1:2',
+        layerName: 'Pricing / Card',
+        occurrences: [0],
+        expected: 'Sign up or sign up',
+      },
+    ]);
+  });
+
+  it('drops a row whose every occurrence was clicked away', () => {
+    mount();
+    act(() => marks()[0].click());
+    act(() => marks()[1].click());
+    expect(boxes()[1].checked).toBe(false);
+    expect(button('Replace').textContent).toBe('Replace 1 layer');
+  });
+
+  it('takes every occurrence back when the row checkbox is ticked', () => {
+    const { onReplace } = mount();
+    act(() => marks()[1].click());
+    act(() => boxes()[1].click()); // indeterminate -> unchecked
+    act(() => boxes()[1].click()); // -> all
+    act(() => button('Replace').click());
+    expect(vi.mocked(onReplace).mock.calls[0][0][1]).toEqual({ nodeId: '1:2', layerName: 'Pricing / Card' });
+  });
+
+  it('clears and restores every row with Select all', () => {
+    mount();
+    expect(selectAll()?.checked).toBe(true);
+    act(() => selectAll()!.click());
+    expect(button('Replace').disabled).toBe(true);
+    act(() => selectAll()!.click());
+    expect(button('Replace').textContent).toBe('Replace 2 layers');
+  });
+
+  it('highlights regex matches with the options the search used', () => {
+    mount({
+      matches: [{ nodeId: '1:1', layerName: 'Price', characters: 'Only 12 left of 345', matchCount: 2 }],
+      query: '\\d+',
+      options: { caseSensitive: false, wholeWord: false, regex: true },
+    });
+    expect(marks(0).map((m) => m.textContent)).toEqual(['12', '345']);
   });
 });
 

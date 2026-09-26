@@ -12,6 +12,8 @@ export type Scope = 'selection' | 'page';
 export interface MatchOptions {
   caseSensitive: boolean;
   wholeWord: boolean;
+  /** Treat the query as a regular expression. Off by default. */
+  regex: boolean;
 }
 
 /** One layer the query occurs in. See spec section 3.4. */
@@ -44,7 +46,11 @@ export interface ProposedChange {
 export interface BlockedChange {
   nodeId: string;
   layerName: string;
-  reason: 'missing' | 'not-text';
+  /**
+   * `changed`: the user picked some occurrences in a layer whose text has
+   * changed since the search, so the picked indices may name other matches.
+   */
+  reason: 'missing' | 'not-text' | 'changed';
 }
 
 /** One node the user chose to replace in. See spec section 3.4. */
@@ -55,6 +61,16 @@ export interface ReplaceTarget {
    * named in the blocked row; a missing node cannot be asked its name.
    */
   layerName: string;
+  /**
+   * The occurrences to replace, by index among the layer's matches (0-based,
+   * left to right). Absent: replace every occurrence.
+   */
+  occurrences?: number[];
+  /**
+   * The layer's text when it was searched. Required with `occurrences`: the
+   * indices only mean something against this text.
+   */
+  expected?: string;
 }
 
 export interface ChangeSet {

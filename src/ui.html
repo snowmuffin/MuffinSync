@@ -115,6 +115,21 @@
         opacity: 0.5;
       }
 
+      /* A match inside a result row. Clickable when replacing: a skipped one
+         is struck through and left as is. */
+      mark.match {
+        background: #fde68a;
+        color: inherit;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+
+      mark.match.skipped {
+        background: transparent;
+        text-decoration: line-through;
+        color: #94a3b8;
+      }
+
       .list-more {
         display: block;
         width: 100%;
@@ -537,6 +552,9 @@
             </label>
             <label class="checkbox-row">
               <input id="whole-word" type="checkbox" /> Whole word
+            </label>
+            <label class="checkbox-row">
+              <input id="use-regex" type="checkbox" /> Regular expression
             </label>
 
             <div class="scope-selector">

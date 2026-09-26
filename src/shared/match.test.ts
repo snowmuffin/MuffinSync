@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { countMatches, replaceAll, matchingLayers } from './search';
-import type { MatchOptions } from '../shared/types';
+import {
+  checkQuery,
+  countMatches,
+  findMatches,
+  matchingLayers,
+  replaceAll,
+  replaceMatches,
+} from './match';
+import type { MatchOptions } from './types';
 
 const opts = (over: Partial<MatchOptions> = {}): MatchOptions => ({
   caseSensitive: false,
   wholeWord: false,
+  regex: false,
   ...over,
 });
 
@@ -152,5 +160,98 @@ describe('matchingLayers', () => {
 
   it('returns nothing for an empty query', () => {
     expect(matchingLayers(rows, '', opts())).toEqual([]);
+  });
+});
+
+describe('findMatches', () => {
+  it('gives each literal match its range', () => {
+    expect(findMatches('a sign up, sign up', 'sign up', opts()).map((m) => [m.start, m.end])).toEqual([
+      [2, 9],
+      [11, 18],
+    ]);
+  });
+});
+
+describe('regular expressions', () => {
+  const re = (over: Partial<MatchOptions> = {}) => opts({ regex: true, ...over });
+
+  it('matches a pattern rather than the literal text', () => {
+    expect(countMatches('Order 12 and 345', '\\d+', re())).toBe(2);
+    expect(countMatches('Order 12', '\\d+', opts())).toBe(0);
+  });
+
+  it('ignores case unless caseSensitive is on', () => {
+    expect(countMatches('SIGN up', 'sign', re())).toBe(1);
+    expect(countMatches('SIGN up', 'sign', re({ caseSensitive: true }))).toBe(0);
+  });
+
+  it('applies whole word with the same Unicode rule as literal mode', () => {
+    expect(countMatches('cat catalog café', 'ca\\w*', re({ wholeWord: true }))).toBe(2);
+    expect(countMatches('안녕하세요 안녕', '안녕', re({ wholeWord: true }))).toBe(1);
+  });
+
+  it('skips empty matches instead of looping', () => {
+    expect(countMatches('abc', 'x*', re())).toBe(0);
+    expect(countMatches('aa b', 'a*', re())).toBe(1);
+  });
+
+  it('steps past an empty match on an astral character without splitting it', () => {
+    expect(countMatches('😀a😀', 'a?', re())).toBe(1);
+  });
+
+  it('expands $1, $&, $<name> and $$ in the replacement', () => {
+    expect(replaceAll('John Smith', '(\\w+) (\\w+)', '$2, $1', re())).toBe('Smith, John');
+    expect(replaceAll('cost 5', '\\d', '[$&]', re())).toBe('cost [5]');
+    expect(replaceAll('2026-09', '(?<y>\\d{4})-(?<m>\\d\\d)', '$<m>/$<y>', re())).toBe('09/2026');
+    expect(replaceAll('5', '\\d', '$$$&', re())).toBe('$5');
+  });
+
+  it('reads two digits after $ only when that names a group', () => {
+    expect(replaceAll('ab', '(a)(b)', '$12', re())).toBe('a2');
+  });
+
+  it('leaves $ sequences that name nothing as they are', () => {
+    expect(replaceAll('ab', '(a)b', '$2 $<x> $z', re())).toBe('$2 $<x> $z');
+  });
+
+  it('never expands $ in literal mode', () => {
+    expect(replaceAll('price', 'price', '$1 $&', opts())).toBe('$1 $&');
+  });
+
+  it('keeps indices in the same UTF-16 space as literal mode', () => {
+    const text = '😀 sign';
+    expect(findMatches(text, 'sign', re())[0].start).toBe(findMatches(text, 'sign', opts())[0].start);
+  });
+});
+
+describe('checkQuery', () => {
+  it('asks for something to find when the query is empty', () => {
+    expect(checkQuery('', opts())).toBe('Type something to find.');
+  });
+
+  it('accepts any literal text, brackets included', () => {
+    expect(checkQuery('(net', opts())).toBeNull();
+  });
+
+  it('reports an invalid pattern in regex mode', () => {
+    expect(checkQuery('(net', opts({ regex: true }))).toMatch(/^Invalid regular expression/);
+  });
+
+  it('accepts a valid pattern', () => {
+    expect(checkQuery('\\d+', opts({ regex: true }))).toBeNull();
+  });
+});
+
+describe('replaceMatches with chosen occurrences', () => {
+  it('replaces only the chosen matches, by index', () => {
+    expect(replaceMatches('a b a b a', 'a', 'X', opts(), new Set([0, 2]))).toBe('X b a b X');
+  });
+
+  it('changes nothing when nothing is chosen', () => {
+    expect(replaceMatches('a b a', 'a', 'X', opts(), new Set())).toBe('a b a');
+  });
+
+  it('works with regex groups too', () => {
+    expect(replaceMatches('1 2 3', '(\\d)', '<$1>', opts({ regex: true }), new Set([1]))).toBe('1 <2> 3');
   });
 });

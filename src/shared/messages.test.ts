@@ -156,6 +156,7 @@ describe('unwrapUiMessage', () => {
         scope: 'page',
         caseSensitive: false,
         wholeWord: true,
+        regex: false,
       })
     ).toEqual({
       type: 'search',
@@ -163,30 +164,31 @@ describe('unwrapUiMessage', () => {
       scope: 'page',
       caseSensitive: false,
       wholeWord: true,
+      regex: false,
     });
   });
 
   it('rejects a search message whose query is not a string', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 5, scope: 'page', caseSensitive: false, wholeWord: false })
+      unwrapUiMessage({ type: 'search', query: 5, scope: 'page', caseSensitive: false, wholeWord: false, regex: false })
     ).toBeNull();
   });
 
   it('rejects a search message whose scope is not a known scope', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'document', caseSensitive: false, wholeWord: false })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'everywhere', caseSensitive: false, wholeWord: false, regex: false })
     ).toBeNull();
   });
 
   it('rejects a search message whose caseSensitive is not a boolean', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: 'yes', wholeWord: false })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: 'yes', wholeWord: false, regex: false })
     ).toBeNull();
   });
 
   it('rejects a search message whose wholeWord is not a boolean', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: false, wholeWord: 1 })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: false, wholeWord: 1, regex: false })
     ).toBeNull();
   });
 
@@ -200,6 +202,7 @@ describe('unwrapUiMessage', () => {
         scope: 'selection',
         caseSensitive: true,
         wholeWord: false,
+        regex: false,
       })
     ).toEqual({
       type: 'plan-replace',
@@ -209,6 +212,7 @@ describe('unwrapUiMessage', () => {
       scope: 'selection',
       caseSensitive: true,
       wholeWord: false,
+      regex: false,
     });
   });
 
@@ -221,6 +225,7 @@ describe('unwrapUiMessage', () => {
         scope: 'page',
         caseSensitive: false,
         wholeWord: false,
+        regex: false,
       })
     ).toBeNull();
   });
@@ -235,6 +240,7 @@ describe('unwrapUiMessage', () => {
         scope: 'page',
         caseSensitive: false,
         wholeWord: false,
+        regex: false,
       })
     ).toBeNull();
   });
@@ -249,6 +255,7 @@ describe('unwrapUiMessage', () => {
         scope: 'page',
         caseSensitive: false,
         wholeWord: false,
+        regex: false,
       })
     ).toBeNull();
   });
@@ -265,14 +272,43 @@ describe('unwrapUiMessage', () => {
     scope: 'page',
     caseSensitive: false,
     wholeWord: false,
+    regex: false,
   };
 
   const badReplace: Array<[string, Record<string, unknown>]> = [
     ['query is not a string', { ...replaceMessage, query: 5 }],
-    ['scope is not a known scope', { ...replaceMessage, scope: 'document' }],
+    ['scope is not a known scope', { ...replaceMessage, scope: 'everywhere' }],
     ['caseSensitive is not a boolean', { ...replaceMessage, caseSensitive: 'yes' }],
     ['wholeWord is not a boolean', { ...replaceMessage, wholeWord: 1 }],
+    ['regex is not a boolean', { ...replaceMessage, regex: 'yes' }],
+    ['target picks occurrences without the text they were picked in', {
+      ...replaceMessage,
+      targets: [{ nodeId: '1:1', layerName: 'Hero', occurrences: [0] }],
+    }],
+    ['target picks a negative occurrence', {
+      ...replaceMessage,
+      targets: [{ nodeId: '1:1', layerName: 'Hero', occurrences: [-1], expected: 'x' }],
+    }],
+    ['target picks a fractional occurrence', {
+      ...replaceMessage,
+      targets: [{ nodeId: '1:1', layerName: 'Hero', occurrences: [0.5], expected: 'x' }],
+    }],
+    ['target carries a non-string expected', {
+      ...replaceMessage,
+      targets: [{ nodeId: '1:1', layerName: 'Hero', expected: 5 }],
+    }],
   ];
+
+  it('accepts a plan-replace target with chosen occurrences and the text they were chosen in', () => {
+    const targets = [{ nodeId: '1:1', layerName: 'Hero', occurrences: [0, 2], expected: 'a b a b a' }];
+    expect(unwrapUiMessage({ ...replaceMessage, targets })).toEqual({ ...replaceMessage, targets });
+  });
+
+  it('rejects a search message whose regex is not a boolean', () => {
+    expect(
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: false, wholeWord: false, regex: 1 })
+    ).toBeNull();
+  });
 
   for (const [label, bad] of badReplace) {
     it(`rejects a plan-replace message whose ${label}`, () => {
