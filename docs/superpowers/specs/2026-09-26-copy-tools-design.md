@@ -1,7 +1,7 @@
 # Copy Tools — Design and Plan
 
 **Date:** 2026-09-26
-**Status:** Approved 2026-09-26 — §8 decided as recommended
+**Status:** Implemented 2026-09-26 as 1.3.0 — §8 decided as recommended
 **Starts from:** `main` at `891d6b4` (1.2.0 prepared, 442 tests)
 **Target version:** 1.3.0. 1.2.0 stays as prepared, whether or not it has been
 published by the time this lands.

@@ -96,3 +96,11 @@ starts with measurement (C0) before any of it is built.
 **Done 2026-09-26.** Everything from the original feature set that needs no
 network or account. Design and scope:
 `docs/superpowers/specs/2026-09-26-local-features-design.md`.
+
+---
+
+## Stage E — Copy tools (1.3.0)
+
+**Done 2026-09-26.** Settings, menu entries, clipboard, statistics, context
+columns, path matching and the Check tab. Design:
+`docs/superpowers/specs/2026-09-26-copy-tools-design.md`.

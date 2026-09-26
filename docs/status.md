@@ -1,6 +1,6 @@
 # Project status
 
-**As of 2026-09-26, after the local features.** 442 tests across 28 files; typecheck clean
+**As of 2026-09-26, at 1.3.0.** 545 tests across 38 files; typecheck clean
 on both configs; build green; `npm audit` clean.
 
 This is a snapshot, not a plan. The plan for each phase lives in
@@ -191,6 +191,20 @@ Manual checks: `docs/verification/local-features-parity.md`.
 
 ---
 
+## Copy tools (1.3.0) — implemented 2026-09-26
+
+Design: `docs/superpowers/specs/2026-09-26-copy-tools-design.md`.
+
+- Remembered settings; menu entries per tab.
+- Copy JSON, Paste to import; text statistics; optional `path`/`length` columns.
+- Import matches by layer path when an id is gone (one match: used, marked;
+  several: blocked as ambiguous).
+- Check tab: nine rules and a file-level glossary, fixed through review.
+
+Manual checks: `docs/verification/copy-tools-parity.md`.
+
+---
+
 ## Still out of scope
 
 - **Comment archiving and export.** The plugin API cannot read comments; it
@@ -204,12 +218,12 @@ Manual checks: `docs/verification/local-features-parity.md`.
 
 ## Before a release
 
-`package.json` and `CHANGELOG.md` are at **1.2.0**, which includes the local
-features. What remains is below.
+`package.json` and `CHANGELOG.md` are at **1.3.0** (1.2.0 plus the copy tools).
+Publish whichever the Community listing is behind on. What remains is below.
 
 - Run the three phase parity documents, `stage-a-parity.md`,
-  `stage-c-parity.md` and `local-features-parity.md` in Figma desktop and record
-  the results.
+  `stage-c-parity.md`, `local-features-parity.md` and `copy-tools-parity.md` in
+  Figma desktop and record the results.
 - ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
   repository was renamed to `snowmuffin/Copydesk` the same day; GitHub redirects
   the old URL, so an existing clone keeps working without changing its remote.

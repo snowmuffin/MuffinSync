@@ -4,6 +4,29 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-26
+
+### Added
+- **Check** tab: rule-based copy checks — double spaces, leading or trailing
+  spaces, space before punctuation, repeated words, three dots, straight
+  quotes, placeholder text, empty layers — fixed through review. Placeholder
+  and empty findings are report-only.
+- **Glossary** of terms to avoid and use instead, stored in the file so
+  collaborators share it, with CSV import and export.
+- **Settings are remembered**: tab, scope, hidden layers, match options,
+  context columns and check rules.
+- **Menu entries** open Extract, Find, Check, Generate or Snippets directly.
+- **Copy JSON** and **Paste to import**, for editing copy in another tool
+  without saving files.
+- **Text statistics** after extracting: layers, words and characters, per
+  frame too. Words are counted so Korean and Japanese come out sensibly.
+- **Context columns** (`path`, `length`) in CSV and JSON exports.
+
+### Changed
+- **Import matches by layer path** when a row's id no longer exists (a
+  duplicated file, pasted frames). One layer at that path is used and marked
+  "matched by path" in review; several block the row as ambiguous.
+
 ## [1.2.0] - 2026-09-26
 
 First release as **Copydesk** (formerly MuffinSync).

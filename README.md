@@ -50,6 +50,18 @@ Copydesk (formerly MuffinSync) is a powerful and user-friendly plugin for Figma,
 - **A personal library.** Save named pieces of text; they're kept with `figma.clientStorage`, on this device, for your Figma account — they never leave the machine.
 - **Use them two ways.** **Apply to selection** puts the snippet into every text layer in the selection, through the same review screen as import. **Add as layer** creates a new text layer in the middle of the view.
 
+### 8️⃣ Check
+- **Rule-based copy checks** over the selection, page or all pages: double spaces, leading or trailing spaces, space before punctuation, repeated words, three dots (`...` → `…`), straight quotes, placeholder text (Lorem ipsum, TODO, TBD…), empty layers. Turn rules on or off; three dots and straight quotes are off by default.
+- **Glossary.** List terms to avoid and what to use instead (`Log in → Sign in`). The glossary is saved in the file, so everyone editing it checks against the same list; import and export it as CSV.
+- **Fix through review.** Findings are highlighted per layer with a checkbox per rule; **Fix** recomputes the fixes on each layer's current text and sends them to the review screen. Placeholder and empty findings are shown, not fixed.
+
+### 9️⃣ Conveniences
+- **Remembered settings**: the tab, scope, hidden-layer choice, match options, context columns and check rules come back next time.
+- **Menu entries**: Plugins → Copydesk → Extract & import, Find & replace, Check copy, Generate or Snippets opens that tab directly.
+- **Copy JSON / Paste to import**: move copy to a chat, a translation tool or a doc and back without saving files. Pasted text goes through the same review as a file.
+- **Statistics**: after extracting, layers, words and characters, in total and per frame.
+- **Context columns**: tick **Add context columns** to include `path` (e.g. `Checkout / Summary / Total`) and `length` in CSV and JSON. Import ignores them — except that a row whose id no longer exists is matched to the layer at the same path, so an edited file can be imported into a duplicated design.
+
 ## 🚀 How to Use
 
 1. **Run the Plugin**: Access the plugin via Plugins > Copydesk in your Figma application.
@@ -132,29 +144,38 @@ Copydesk/
 │   │   ├── plan.ts      # buildChangeSet: diffs imported/proposed rows against the document
 │   │   ├── apply.ts     # applyTextChanges (re-checks each node before writing)
 │   │   ├── generate.ts  # mergeRows, localizeFrames: clone frames and fill their text
+│   │   ├── pathmatch.ts # buildPathIndex, resolveRows: import rows matched by layer path
 │   │   └── navigate.ts  # centreOnNode: switches page if needed and zooms, without changing selection
 │   ├── shared/          # imported by both sides
 │   │   ├── types.ts     # TextLayerData, Scope, MatchOptions, SearchMatch, ExportFormat, ChangeSet, ProposedChange, BlockedChange, ReplaceTarget
 │   │   ├── messages.ts  # UiToMain, MainToUi, unwrapUiMessage, unwrapMainMessage
 │   │   ├── match.ts     # findMatches, replaceMatches, checkQuery: literal and regex matching for both sides
-│   │   └── generate.ts  # Snippet, fillTags, localesOf, buildTranslations, gridPosition
+│   │   ├── generate.ts  # Snippet, fillTags, localesOf, buildTranslations, gridPosition
+│   │   ├── checks.ts    # copy check rules, findIssues, fixText, glossary tables
+│   │   └── settings.ts  # Settings, parseSettings, TAB_NAMES, COMMAND_TABS
 │   ├── ui/              # iframe. DOM, no Figma API.
 │   │   ├── index.ts     # mounts the status banner, routes inbound messages
 │   │   ├── dom.ts       # byId, debugLog, messageOf
 │   │   ├── status.tsx   # Preact status banner, with an optional action button
 │   │   ├── post.ts      # typed postMessage to the sandbox
 │   │   ├── download.ts  # filenameFor, mimeTypeFor, safeFileName, attemptDownload (text or bytes)
+│   │   ├── clipboard.ts # copyText, with an execCommand fallback
 │   │   ├── features/
 │   │   │   ├── extract.ts        # extract and PDF buttons, the download row for every format
 │   │   │   ├── import.ts         # parses the chosen file, posts plan-import
 │   │   │   ├── scope.ts          # the shared scope and Include hidden layers choice; disables Selection when nothing is selected
-│   │   │   ├── tabs.ts           # switches the Extract / Find / Generate / Snippets panels by class toggle
+│   │   │   ├── tabs.ts           # switches the Extract / Find / Check / Generate / Snippets panels
+│   │   │   ├── settings.ts       # applies and saves remembered settings
 │   │   │   ├── generate.ts       # data merge and localization: read the file, summarise, post
 │   │   │   ├── task.ts           # the running task: busy state, progress text, Stop
 │   │   │   ├── show-more.tsx     # paging for long lists
 │   │   │   ├── find-replace/
 │   │   │   │   ├── index.ts      # owns the remembered search, posts search/plan-replace, mounts ResultList
 │   │   │   │   └── results.tsx   # ResultList: highlighted matches, per-occurrence choice, Select all
+│   │   │   ├── check/
+│   │   │   │   ├── index.ts      # runs checks, shows results, keeps the glossary in step with the file
+│   │   │   │   ├── options.tsx   # CheckOptions: rule toggles and glossary editor
+│   │   │   │   └── results.tsx   # CheckResults: findings per layer, fixes per rule
 │   │   │   ├── snippets/
 │   │   │   │   ├── index.ts      # the stored library: get/save, apply to selection, add as layer
 │   │   │   │   └── list.tsx      # SnippetList: pure Preact form and list
@@ -162,7 +183,7 @@ Copydesk/
 │   │   │       ├── index.ts      # mounts/unmounts ReviewScreen, turns its decision into apply/cancel, invalidates on selection change
 │   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
 │   │   └── format/      # csv, json, rows (duplicate ids), table (any columns), zip (stored ZIP + CRC-32),
-│   │                    # documents (XLSX, DOCX, Markdown, EPUB), read-zip (test support)
+│   │                    # documents (XLSX, DOCX, Markdown, EPUB), stats, read-zip (test support)
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
 ├── tools/fixture/        # Dev-only Figma plugin that builds pages of thousands of text layers
 ├── dist/                 # Build output (generated; not committed)
