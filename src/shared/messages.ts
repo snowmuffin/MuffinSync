@@ -82,7 +82,6 @@ function isTextLayerRows(value: unknown): value is TextLayerData[] {
 const SOURCES: Record<ProposedChange['source'], true> = {
   import: true,
   'find-replace': true,
-  spellcheck: true,
 };
 
 const BLOCK_REASONS: Record<BlockedChange['reason'], true> = {
@@ -113,8 +112,7 @@ function isProposedChanges(value: unknown): value is ProposedChange[] {
         typeof v.before === 'string' &&
         typeof v.after === 'string' &&
         isMember(SOURCES, v.source) &&
-        typeof v.accepted === 'boolean' &&
-        (v.reason === undefined || typeof v.reason === 'string')
+        typeof v.accepted === 'boolean'
       );
     })
   );

@@ -102,14 +102,6 @@ describe('unwrapUiMessage', () => {
     });
   });
 
-  it('accepts a change carrying the optional reason', () => {
-    const withReason = { ...change, reason: 'spelling' };
-    expect(unwrapUiMessage({ type: 'apply', changes: [withReason] })).toEqual({
-      type: 'apply',
-      changes: [withReason],
-    });
-  });
-
   it('rejects apply whose changes are not proposals', () => {
     expect(unwrapUiMessage({ type: 'apply', changes: [{ nodeId: 1 }] })).toBeNull();
   });
@@ -129,7 +121,6 @@ describe('unwrapUiMessage', () => {
     ['a source outside the known set', { ...change, source: 'banana' }],
     ['a non-string source', { ...change, source: 3 }],
     ['a non-boolean accepted', { ...change, accepted: 'yes' }],
-    ['a non-string reason', { ...change, reason: 5 }],
   ];
 
   for (const [label, bad] of broken) {

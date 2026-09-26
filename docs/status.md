@@ -1,6 +1,6 @@
 # Project status
 
-**As of 2026-09-25, commit `ed26e20`.** 232 tests across 16 files; typecheck clean
+**As of 2026-09-25, commit `ed26e20`.** 232 tests across 16 files (230 since the spell-check fields were removed on 2026-09-26); typecheck clean
 on both configs; build green; `npm audit` clean.
 
 This is a snapshot, not a plan. The plan for each phase lives in
@@ -11,14 +11,14 @@ This is a snapshot, not a plan. The plan for each phase lives in
 
 ## Phases
 
-Section 7 of the spec defines four phases. Three are merged.
+Section 7 of the spec defines four phases. Three are merged; the fourth was dropped.
 
 | Phase | Contents | State |
 |---|---|---|
 | **0** | Build pipeline, bundle inlining, module split, vitest | Merged. No behaviour change by design |
 | **1** | Change Set model, Diff Review UI, import retrofitted onto it, shared scope selector, DOM test environment | Merged |
 | **2** | Find & Replace, Layer Navigation, the tab bar, one change-set builder for every producer, `ChangeSet.scope` and `selectionchange` invalidation | Merged |
-| **3** | AI provider layer, Spell Check | Not started |
+| **3** | AI provider layer, Spell Check | **Dropped** (2026-09-26). The plugin makes no network calls |
 
 ### What the plugin does today
 
@@ -140,7 +140,8 @@ Each was found in review, judged non-blocking, and left deliberately.
 
 The feature set this project was decomposed from spans roughly twenty independent
 subsystems. Spec section 1 scopes the current tier to build pipeline, Find &
-Replace, Diff Review, Layer Navigation, and AI Spell Check. Deferred to later
+Replace, Diff Review, Layer Navigation, and AI Spell Check; AI Spell Check was
+since dropped, and the plugin makes no network calls. Deferred to later
 tiers, with reasons:
 
 - Document export (PDF/DOCX/XLSX/EPUB) and Frame-to-document conversion — these are

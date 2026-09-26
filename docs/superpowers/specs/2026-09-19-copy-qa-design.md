@@ -4,6 +4,12 @@
 **Status:** Approved, pending implementation plan
 **Scope:** MuffinSync v2 — build foundation plus the Copy QA feature set
 
+> **Amended 2026-09-26: AI Spell Check and the AI provider layer are dropped.**
+> Phase 3 will not be built. Section 4, the `spellcheck` producer, and every
+> other AI reference below are kept as the record of what was designed, not as
+> planned work. The code no longer carries `'spellcheck'` as a change source or
+> the `reason` field that existed for it, and `networkAccess` stays `["none"]`.
+
 ---
 
 ## 1. Context
@@ -592,7 +598,7 @@ Each phase ends with a working plugin.
 | **0** | Build pipeline, bundle inlining, module split, vitest | **No behaviour change.** Existing extract and import work exactly as before, now with tests |
 | **1** | Change Set model, Diff Review UI, import retrofitted onto it, shared scope selector, DOM test environment | Import routes through review instead of overwriting; extract's scope is visible rather than implicit; component output is under test |
 | **2** | Find & Replace, Layer Navigation, the tab bar, `buildChangeSet` generalised to serve two producers, and the two rules 3.1 left unbuilt — `ChangeSet.scope` and `selectionchange` invalidation | Searching answers "where does this appear" on its own; replacing routes through the same review import does; a selection-scoped set cannot outlive the selection it was built against |
-| **3** | AI provider layer, Spell Check | Figma runtime `networkAccess` verified here |
+| **3** | ~~AI provider layer, Spell Check~~ | **Dropped 2026-09-26** — see the note at the top |
 
 Phase 0 changes no user-visible behaviour by design. That is what makes it
 safe: any regression is unambiguous.

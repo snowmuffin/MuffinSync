@@ -1,7 +1,7 @@
 # Remaining Work — Roadmap
 
 **Date:** 2026-09-26
-**Starts from:** `main` at `7b05019` — Phases 0–2 merged, 232 tests, no CI.
+**Starts from:** `main` at `7b05019` — Phases 0–2 merged, 230 tests, no CI.
 **Spec:** `docs/superpowers/specs/2026-09-19-copy-qa-design.md`
 **Status snapshot:** `docs/status.md`
 
@@ -16,14 +16,11 @@ plan in this directory (in the style of the Phase 0–2 plans) when it starts.
 |---|---|---|---|
 | **A** | Deferred cleanups from Phases 0–2 | — | Small, one branch |
 | **R1** | First release of what exists (Phases 0–2 + A) | A, manual parity checks | Manual |
-| **B** | Phase 3: AI provider layer and Spell Check | B0 spike passing | Large |
 | **C** | Chunked traversal for large documents | — | Medium, own spec |
-| **R2** | Release with Spell Check | B, C | Manual |
 
-Rationale for releasing before Phase 3: everything in Phases 0–2 is useful
-without an API key, and Phase 3 adds the first network access and the first
-third-party data flow. Shipping them separately means a problem found in
-review of the AI feature does not hold back the rest.
+**Phase 3 (AI provider layer, Spell Check) is dropped** as of 2026-09-26 — see
+the note at the top of the spec. The plugin stays offline:
+`networkAccess.allowedDomains` remains `["none"]`.
 
 **Constraint that replaces CI:** there is no CI any more. Every commit must
 pass `npm run typecheck && npm test && npm run build` locally, and a release is
@@ -51,7 +48,7 @@ Left alone on purpose: `search-results.scope` stays transported-but-unread (the
 status doc explains why).
 
 **Done when:** all eight closed, `docs/status.md` updated, README/CHANGELOG
-updated for A1–A5 (user-visible), 232+ tests passing.
+updated for A1–A5 (user-visible), 230+ tests passing.
 
 ---
 
@@ -68,113 +65,13 @@ Manual, by the maintainer:
 
 ---
 
-## Stage B — Phase 3: AI provider layer and Spell Check
-
-Spec §4 and §7. Built in this order; each step is independently mergeable.
-
-### B0 — Network spike (gate for everything else)
-
-The spec leaves one thing unverified: whether Figma's runtime lets the UI iframe
-reach the provider once `manifest.json` allows it.
-
-- Add the provider domain to `networkAccess.allowedDomains` (with the
-  `reasoning` field Figma asks for when domains are listed).
-- A throwaway button that sends one minimal request with a test key and shows
-  status + response.
-- **Run it in Figma desktop.** Pass = a 200 from the provider. This needs the
-  maintainer; it cannot be checked from here.
-
-If it fails, stop: Phase 3's design depends on browser-direct calls.
-
-### B1 — Settings storage
-
-- `src/main/storage.ts`: thin `figma.clientStorage` wrapper (not unit tested,
-  per spec §6).
-- Messages: `get-settings`, `set-settings`, `settings` — validated with accept
-  and reject tests like every other variant.
-- Stored: provider, API key, model. The key is never logged, never included in
-  a status message, never sent anywhere but the chosen provider.
-
-### B2 — Provider layer
-
-- `src/ui/ai/provider.ts`: the `AiProvider` interface from spec §4.1.
-- `src/ui/ai/anthropic.ts`: the adapter, using `@anthropic-ai/sdk` with
-  `dangerouslyAllowBrowser: true` (the plugin is the user's own client holding
-  the user's own key — the case that option exists for).
-  - Structured output via `output_config.format` (JSON schema), so the
-    response shape is enforced by the API, and still validated on arrival.
-  - Typed SDK errors mapped to user-facing reasons: bad key (401), rate limit
-    (429), provider down (5xx), network blocked.
-- `src/ui/ai/parse.ts`: response → `Suggestion[]`. Pure, tested against
-  malformed responses (spec §6).
-- **Default model: `claude-opus-5`**, the current general default. Spell
-  checking short strings is a cheap task; the settings screen lets the user
-  pick a cheaper model (`claude-haiku-4-5`, `claude-sonnet-5`). **Open:**
-  whether the default should be the cheap one — the user pays.
-
-### B3 — Batching and cost estimate
-
-- Chunk layer texts into requests of bounded size.
-- Before any spend, show an estimate: input tokens from
-  `messages.countTokens`, output bounded by `max_tokens`, priced from a small
-  per-model table in the code. The user confirms before the run starts
-  (spec §4.4).
-
-### B4 — The Spell Check producer
-
-- `Suggestion` = `{ nodeId, original, corrected, reason }`. `original` is the
-  text the model saw.
-- New message `plan-spellcheck` carries the chosen suggestions; the sandbox
-  builds the set with the existing `buildChangeSet`:
-  `after: (current) => current === original ? corrected : current`.
-  A layer edited since the check therefore lands in `unchangedCount` instead
-  of having newer text overwritten — the same guarantee apply already gives.
-- Review screen: render `ProposedChange.reason` under the before/after lines
-  (the field exists; nothing displays it yet).
-
-### B5 — UI
-
-- Settings screen: provider, key (masked), model, and the disclosure from
-  spec §4.5 at the point of entry.
-- Spell Check tab: **hidden entirely with no key**; visible with an error when
-  the key exists but a call fails (spec §4.4).
-- Flow: scope → estimate → confirm → progress → suggestions → review.
-
-### B6 — Docs and verification
-
-- `docs/verification/phase-3-parity.md`: key save/clear, tab hidden without
-  key, disclosure visible, estimate shown before spend, a failing key reported,
-  a layer edited during the check not overwritten, every other tab unaffected
-  with the network blocked.
-- README, CHANGELOG, `docs/status.md`.
-
-**Scope decision — OpenAI.** The spec names Anthropic and OpenAI. Recommend
-shipping Anthropic only in Phase 3 and adding OpenAI behind the same interface
-later if asked for: one adapter halves the error-mapping and verification
-surface, and the spec's only open question (default provider when both keys
-exist) disappears. **Needs a decision.**
-
-**Done when:** spec §7's Phase 3 row holds — spell check suggestions reach the
-document only through review, and the `networkAccess` behaviour is verified in
-Figma.
-
----
-
 ## Stage C — Chunked traversal
 
 Spec §8 assigns this its own spec and plan cycle; this roadmap only schedules
 it. `collectTextLayers` becomes async and yields between chunks, so a page with
 thousands of layers does not freeze the panel. It changes the contract for
-extract, search, and spell check at once, which is why it follows B rather
-than sitting in the middle of it. Needs a generated test document with
+extract and search at once. Needs a generated test document with
 thousands of text nodes.
-
----
-
-## R2 — Release with Spell Check
-
-As R1, plus `phase-3-parity.md`, and a note in the Community listing that
-Spell Check is optional and sends text to the chosen provider.
 
 ---
 
@@ -182,6 +79,3 @@ Spell Check is optional and sends text to the chosen provider.
 
 1. **A1** — format selector: wire it, or remove it?
 2. **A2** — duplicate ids in an import: reject the file, or keep the last row?
-3. **B2** — default model: `claude-opus-5` (quality) or `claude-haiku-4-5` (cost)?
-4. **B** — Anthropic only for Phase 3, or Anthropic and OpenAI as the spec says?
-5. **R1** — release Phases 0–2 before Phase 3, or ship everything together?
