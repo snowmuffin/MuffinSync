@@ -4,6 +4,29 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **Regular expressions** in Find & Replace, opt-in, with `$1`/`$&`/`$<name>`
+  in the replacement; an invalid pattern is reported before searching.
+- **Matches are highlighted** in the results, and clicking one leaves that
+  occurrence alone, so a layer can be partly replaced. **Select all** on the
+  results list.
+- **All pages** scope for extract and search; **Show** switches to the
+  layer's page.
+- **Include hidden layers** option (on by default).
+- **Export text to Excel, Word, Markdown and EPUB**, grouped by frame, and
+  **frames to PDF** with Figma's own export.
+- **Snippets** tab: a personal text library stored on this device; apply to
+  the selection through review, or add as a new layer.
+- **Generate** tab: **data merge** (`{{Column}}` tags, one copy per CSV/JSON
+  row) and **localized copies** (one copy per frame and language column).
+
+### Changed
+- "Find & Replace" tab is now labelled **Find** so four tabs fit.
+
+### Fixed
+- The manual-copy download fallback no longer builds its markup from the file
+  content, so layer text containing HTML can't inject elements into the panel.
+
 ## [1.2.0] - 2026-09-26
 
 First release as **Copydesk** (formerly MuffinSync).

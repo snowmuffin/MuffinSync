@@ -7,12 +7,13 @@ Copydesk (formerly MuffinSync) is a powerful and user-friendly plugin for Figma,
 ## ✨ Key Features
 
 ### 1️⃣ Text Layer Extraction (Export)
-- **Comprehensive Traversal**: Copydesk can navigate through all text layers within selected frames or an entire page.
+- **Comprehensive Traversal**: Copydesk walks every text layer in the selection, the current page, or **all pages**, and can leave out hidden layers (**Include hidden layers**).
 - **Detailed Extraction**: Extracts essential text layer information including:
   - `id`: Unique Figma Node ID
   - `name`: Descriptive layer name
   - `characters`: Actual text content of the layer
-- **Automatic Downloads**: Users can download the extracted data as CSV or JSON files for easy manipulation.
+- **Automatic Downloads**: CSV or JSON for editing and importing back; **Excel, Word, Markdown or EPUB** for reading and sharing, with text grouped under each layer's top-level frame.
+- **Frames to PDF**: **Export frames as PDF** saves the selected frames (or every top-level frame on the page) using Figma's own PDF export — one PDF, or a ZIP of PDFs for several.
 
 ### 2️⃣ Text Data Modification (External)
 - **Flexible Editing**: The plugin allows the extracted CSV or JSON files to be opened in any external text editor (like VS Code or Notepad), enabling users to modify text content efficiently.
@@ -26,19 +27,28 @@ Copydesk (formerly MuffinSync) is a powerful and user-friendly plugin for Figma,
 - **Automatic Font Handling**: Every font a text layer uses is loaded before its content is replaced. Layers with mixed fonts across character ranges are handled too — each range's font is loaded via `getRangeAllFontNames()`, so multi-font layers import without errors.
 
 ### 4️⃣ Find & Replace
-- **A separate tab from Extract.** The plugin panel opens on Extract; a tab bar switches to Find & Replace. The Find & Replace panel keeps its own Find/Replace text and matching options when you switch away and back; the scope choice (Selection or Current page) is shared between the two tabs by design — it's one choice with a visible copy in each panel, not two independent settings.
-- **Two steps, same review screen as import.** Searching walks the chosen scope (Selection or Current page) and lists every layer the query occurs in, with that layer's current text and how many times the query occurs in it. Pick which rows to act on; replacing re-reads each chosen layer, recomputes the replacement, and sends the result through the same review screen import uses — nothing is written to the document until it is applied there.
+- **Its own tab.** The plugin panel opens on Extract; the **Find** tab holds Find & Replace. It keeps its own Find/Replace text and matching options when you switch away and back; the scope choice (Selection, Current page or All pages) and Include hidden layers are shared between the two tabs by design — it's one choice with a visible copy in each panel, not two independent settings.
+- **Two steps, same review screen as import.** Searching walks the chosen scope and lists every layer the query occurs in, with that layer's current text and how many times the query occurs in it. Pick which rows to act on; replacing re-reads each chosen layer, recomputes the replacement, and sends the result through the same review screen import uses — nothing is written to the document until it is applied there.
 - **Leave "Replace with" empty to search without replacing.** The results list still shows where the query occurs, but with no checkboxes and no Replace button — only a Close button and each row's jump action.
-- **Case sensitivity and whole word, not regular expressions.** A query is matched literally. Whole word treats letters by Unicode category rather than by script-specific word rules, so it is close to useless for languages that don't delimit words with spaces (e.g. Korean).
-- **Replacement is per layer.** A layer with several matches is one row in the results, accepted or refused as a whole; the match count is shown, but replacing only one occurrence within a layer isn't offered.
+- **Case sensitivity, whole word, and regular expressions.** By default a query is matched literally. Tick **Regular expression** to use a pattern; the replacement can then use `$1`, `$&`, `$<name>` and `$$`. An invalid pattern is reported before searching. A pathological pattern can stall the plugin — regular expressions are opt-in for that reason. Whole word treats letters by Unicode category rather than by script-specific word rules, so it is close to useless for languages that don't delimit words with spaces (e.g. Korean).
+- **Matches are highlighted, and each one can be left alone.** Click a highlighted match to skip that occurrence; the row checkbox shows a dash when only some are chosen. If a layer's text changes between searching and replacing, a layer with only some occurrences chosen is listed under "Cannot apply" instead of guessing which occurrences you meant. **Select all** covers every row.
 - **Long lists are paged.** Results and review show 200 rows at a time with a "Show more" button. Counts, "select all", Replace and Apply always cover every row, shown or not.
-- **Jump to a layer without selecting it.** Any row whose layer is still in the document — in the results list or in review, including a "Cannot apply" row for a layer that is no longer a text layer — has a "Show" button that centres it in the viewport. It only zooms; it never changes the current selection. A row for a layer that no longer exists has nothing to centre, so it has no "Show".
+- **Jump to a layer without selecting it.** Any row whose layer is still in the document — in the results list or in review, including a "Cannot apply" row for a layer that is no longer a text layer — has a "Show" button that centres it in the viewport, switching page first if the layer is on another one. It never changes the current selection. A row for a layer that no longer exists has nothing to centre, so it has no "Show".
 
 ### 5️⃣ Large Documents
 - **Work runs in slices.** Extracting, searching, checking what would change, and applying hand control back to Figma every few milliseconds, so the canvas keeps repainting on pages with thousands of text layers.
 - **Progress you can see.** The status line counts up while a task runs, e.g. "Searching text layers... 4,200 of 20,000".
 - **Stop.** Extract, search and the "checking what would change" step have a **Stop** button; stopping produces nothing and changes nothing. Applying has no Stop — a half-applied batch would no longer match what you reviewed — but it reports progress.
 - **One task at a time.** Extract, Import and Search are unavailable while a task runs.
+
+### 6️⃣ Generate
+- **Data merge.** Select one template frame whose text uses `{{Column}}` tags, choose a CSV or JSON file, and get one copy per row beside the template, each named after the row's first column. Tags that match no column are left as written and listed.
+- **Localized copies.** Select frames, choose an extracted CSV (or JSON) with a column added per language (`ko`, `ja`, …), and get one copy per frame and language, named `Frame — ko`. Layers without a translation keep the source text and are counted.
+- Both add new frames only, can be undone with Figma's undo, show progress, and can be stopped — a stopped run removes the copies it made.
+
+### 7️⃣ Snippets
+- **A personal library.** Save named pieces of text; they're kept with `figma.clientStorage`, on this device, for your Figma account — they never leave the machine.
+- **Use them two ways.** **Apply to selection** puts the snippet into every text layer in the selection, through the same review screen as import. **Add as layer** creates a new text layer in the middle of the view.
 
 ## 🚀 How to Use
 
@@ -49,7 +59,7 @@ Copydesk (formerly MuffinSync) is a powerful and user-friendly plugin for Figma,
    - Download the result with **CSV Download** or **JSON Download**.
 3. **Edit Externally**: Open the saved file in your preferred text editor, make necessary text changes, and save the file.
 4. **Import Changes**: Use the "Select File to Import" button to choose your edited file. The plugin shows a review screen listing what would change; uncheck anything you don't want and click **Apply** to write the accepted changes, or **Cancel** to close the review without changing anything.
-5. **Find & Replace**: Switch to the **Find & Replace** tab. Type the text to find, and optionally what to replace it with; choose Selection or Current page, then click **Search** (or press Enter). The results list shows every matching layer with its text and match count. Uncheck any layers you don't want, then click **Replace N layers** to send them to the same review screen import uses, or **Close** to leave the document untouched. Leaving "Replace with" empty turns Search into a pure lookup — the results list has no checkboxes or Replace button, only Close.
+5. **Find & Replace**: Switch to the **Find** tab. Type the text to find, and optionally what to replace it with; choose Selection, Current page or All pages, then click **Search** (or press Enter). The results list shows every matching layer with its text and match count. Uncheck any layers you don't want, then click **Replace N layers** to send them to the same review screen import uses, or **Close** to leave the document untouched. Leaving "Replace with" empty turns Search into a pure lookup — the results list has no checkboxes or Replace button, only Close.
 
 ### 💡 File Saving Tips
 - **Mac Users**: Recommended to use TextEdit.app or Visual Studio Code (VS Code).
@@ -118,34 +128,41 @@ Copydesk/
 │   │   ├── index.ts     # message router, scope resolution, the one-task-at-a-time guard
 │   │   ├── chunked.ts   # runChunked: time-sliced loops with progress and stop
 │   │   ├── fonts.ts     # createFontCache: each font loaded once per apply
-│   │   ├── traverse.ts  # collectTextLayers (findAllWithCriteria, sliced), resolveRoots, isWithin
+│   │   ├── traverse.ts  # collectTextLayers (findAllWithCriteria, sliced; hidden filter, frame names), resolveRoots, isWithin, pageOf
 │   │   ├── plan.ts      # buildChangeSet: diffs imported/proposed rows against the document
 │   │   ├── apply.ts     # applyTextChanges (re-checks each node before writing)
-│   │   ├── search.ts    # countMatches, replaceAll, matchingLayers (literal matching, case/whole-word options)
-│   │   └── navigate.ts  # centreOnNode: zooms the viewport to a node without changing selection
+│   │   ├── generate.ts  # mergeRows, localizeFrames: clone frames and fill their text
+│   │   └── navigate.ts  # centreOnNode: switches page if needed and zooms, without changing selection
 │   ├── shared/          # imported by both sides
 │   │   ├── types.ts     # TextLayerData, Scope, MatchOptions, SearchMatch, ExportFormat, ChangeSet, ProposedChange, BlockedChange, ReplaceTarget
-│   │   └── messages.ts  # UiToMain, MainToUi, unwrapUiMessage, unwrapMainMessage
+│   │   ├── messages.ts  # UiToMain, MainToUi, unwrapUiMessage, unwrapMainMessage
+│   │   ├── match.ts     # findMatches, replaceMatches, checkQuery: literal and regex matching for both sides
+│   │   └── generate.ts  # Snippet, fillTags, localesOf, buildTranslations, gridPosition
 │   ├── ui/              # iframe. DOM, no Figma API.
 │   │   ├── index.ts     # mounts the status banner, routes inbound messages
 │   │   ├── dom.ts       # byId, debugLog, messageOf
 │   │   ├── status.tsx   # Preact status banner, with an optional action button
 │   │   ├── post.ts      # typed postMessage to the sandbox
-│   │   ├── download.ts  # filenameFor, mimeTypeFor, attemptDownload, displayDownloadContent
+│   │   ├── download.ts  # filenameFor, mimeTypeFor, safeFileName, attemptDownload (text or bytes)
 │   │   ├── features/
-│   │   │   ├── extract.ts        # extract button, scoped extraction, the CSV/JSON download buttons
+│   │   │   ├── extract.ts        # extract and PDF buttons, the download row for every format
 │   │   │   ├── import.ts         # parses the chosen file, posts plan-import
-│   │   │   ├── scope.ts          # tracks the chosen extraction/search scope, disables Selection when nothing is selected
-│   │   │   ├── tabs.ts           # switches the Extract / Find & Replace panels by class toggle
+│   │   │   ├── scope.ts          # the shared scope and Include hidden layers choice; disables Selection when nothing is selected
+│   │   │   ├── tabs.ts           # switches the Extract / Find / Generate / Snippets panels by class toggle
+│   │   │   ├── generate.ts       # data merge and localization: read the file, summarise, post
 │   │   │   ├── task.ts           # the running task: busy state, progress text, Stop
 │   │   │   ├── show-more.tsx     # paging for long lists
 │   │   │   ├── find-replace/
 │   │   │   │   ├── index.ts      # owns the remembered search, posts search/plan-replace, mounts ResultList
-│   │   │   │   └── results.tsx   # ResultList: pure Preact component rendering search results
+│   │   │   │   └── results.tsx   # ResultList: highlighted matches, per-occurrence choice, Select all
+│   │   │   ├── snippets/
+│   │   │   │   ├── index.ts      # the stored library: get/save, apply to selection, add as layer
+│   │   │   │   └── list.tsx      # SnippetList: pure Preact form and list
 │   │   │   └── review/
 │   │   │       ├── index.ts      # mounts/unmounts ReviewScreen, turns its decision into apply/cancel, invalidates on selection change
 │   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
-│   │   └── format/      # csv.ts, json.ts, rows.ts (rejects a file naming one layer twice)
+│   │   └── format/      # csv, json, rows (duplicate ids), table (any columns), zip (stored ZIP + CRC-32),
+│   │                    # documents (XLSX, DOCX, Markdown, EPUB), read-zip (test support)
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
 ├── tools/fixture/        # Dev-only Figma plugin that builds pages of thousands of text layers
 ├── dist/                 # Build output (generated; not committed)

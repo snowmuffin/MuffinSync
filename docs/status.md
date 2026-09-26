@@ -1,6 +1,6 @@
 # Project status
 
-**As of 2026-09-26, after Stage C.** 308 tests across 19 files; typecheck clean
+**As of 2026-09-26, after the local features.** 442 tests across 28 files; typecheck clean
 on both configs; build green; `npm audit` clean.
 
 This is a snapshot, not a plan. The plan for each phase lives in
@@ -172,36 +172,45 @@ Each was found in review, judged non-blocking, and left deliberately.
 
 ---
 
-## Not in this tier
+## Local features — implemented 2026-09-26
 
-The feature set this project was decomposed from spans roughly twenty independent
-subsystems. Spec section 1 scopes the current tier to build pipeline, Find &
-Replace, Diff Review, Layer Navigation, and AI Spell Check; AI Spell Check was
-since dropped, and the plugin makes no network calls. Deferred to later
-tiers, with reasons:
+Design: `docs/superpowers/specs/2026-09-26-local-features-design.md`. Everything
+from the original feature set that needs no network or account:
 
-- Document export (PDF/DOCX/XLSX/EPUB) and Frame-to-document conversion — these are
-  publishing, not syncing, and are large enough to need their own spec.
-- Localization workflows and locale frame generation.
-- Spreadsheet data binding, merge tags, and auto-repeat.
-- External content sources. **Google Sheets OAuth is excluded outright**: it cannot
-  work without a backend, and the free Community release rules that out.
-- Comment archiving and export.
-- A text snippet library.
+- Find & Replace: regular expressions (opt-in), highlighted matches,
+  per-occurrence replacement, Select all on results.
+- All-pages scope; Show switches page. Include hidden layers option.
+- Text export to XLSX, DOCX, Markdown and EPUB (grouped by frame); frames to PDF.
+- Snippets tab (figma.clientStorage).
+- Generate tab: data merge (`{{Column}}` tags) and localized copies.
 
-Also excluded within this tier, each with its reason recorded in the spec: regular
-expressions in Find & Replace, per-occurrence replacement, match highlighting, and
-all-pages search.
+The three earlier exclusions — regular expressions, per-occurrence replacement,
+all-pages search — are reversed there, each with its original reason addressed.
+
+Manual checks: `docs/verification/local-features-parity.md`.
+
+---
+
+## Still out of scope
+
+- **Comment archiving and export.** The plugin API cannot read comments; it
+  would need Figma's REST API and a personal access token, i.e. network access
+  and a credential. Excluded with the other external integrations.
+- **External content sources.** Google Sheets OAuth needs a backend, which the
+  free Community release rules out.
+- **AI features** (spell check, translation) were dropped on 2026-09-26.
 
 ---
 
 ## Before a release
 
-The next release is **1.2.0**: `package.json` and `CHANGELOG.md` are already
-at that version; what remains is below.
+`package.json` and `CHANGELOG.md` are at **1.2.0**. The local features were
+added after it and sit under `[Unreleased]`: either fold them into 1.2.0 before
+publishing, or publish them as the next version.
 
-- Run the three phase parity documents, `stage-a-parity.md` and
-  `stage-c-parity.md` in Figma desktop and record the results.
+- Run the three phase parity documents, `stage-a-parity.md`,
+  `stage-c-parity.md` and `local-features-parity.md` in Figma desktop and record
+  the results.
 - ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
   repository was renamed to `snowmuffin/Copydesk` the same day; GitHub redirects
   the old URL, so an existing clone keeps working without changing its remote.

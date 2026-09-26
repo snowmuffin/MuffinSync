@@ -1,7 +1,7 @@
 # Local Features — Design
 
 **Date:** 2026-09-26
-**Status:** Approved (maintainer: "implement everything that needs no external integration")
+**Status:** Implemented 2026-09-26 (maintainer: "implement everything that needs no external integration")
 **Scope:** every deferred feature that runs entirely inside Figma and the plugin
 iframe. Builds on the Copy QA spec (2026-09-19) and the large-documents spec
 (2026-09-26).

@@ -88,3 +88,11 @@ starts with measurement (C0) before any of it is built.
 
 1. **A1** — format selector: wire it, or remove it?
 2. **A2** — duplicate ids in an import: reject the file, or keep the last row?
+
+---
+
+## Stage D — Local features
+
+**Done 2026-09-26.** Everything from the original feature set that needs no
+network or account. Design and scope:
+`docs/superpowers/specs/2026-09-26-local-features-design.md`.
