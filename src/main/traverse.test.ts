@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
+import {
+  collectTextLayers,
+  isWithin,
+  resolveRoots,
+  type ParentedNode,
+  type TraversableNode,
+} from './traverse';
 
 const text = (id: string, name: string, characters: string): TraversableNode =>
   ({ type: 'TEXT', id, name, characters });
@@ -76,5 +82,36 @@ describe('resolveRoots', () => {
   it('returns the page array itself when both are empty', () => {
     const empty: string[] = [];
     expect(resolveRoots('selection', [], empty)).toBe(empty);
+  });
+});
+
+describe('isWithin', () => {
+  // A file with two pages: page A holds frame > text, page B holds a text.
+  const document: ParentedNode = { parent: null };
+  const pageA: ParentedNode = { parent: document };
+  const pageB: ParentedNode = { parent: document };
+  const frame: ParentedNode = { parent: pageA };
+  const nested: ParentedNode = { parent: frame };
+  const elsewhere: ParentedNode = { parent: pageB };
+
+  it('finds a page several levels up', () => {
+    expect(isWithin(nested, pageA)).toBe(true);
+  });
+
+  it('finds a direct parent', () => {
+    expect(isWithin(frame, pageA)).toBe(true);
+  });
+
+  it('counts the node itself', () => {
+    expect(isWithin(pageA, pageA)).toBe(true);
+  });
+
+  it('rejects a node on another page', () => {
+    expect(isWithin(elsewhere, pageA)).toBe(false);
+  });
+
+  it('rejects a node whose chain ends without meeting the ancestor', () => {
+    const detached: ParentedNode = { parent: null };
+    expect(isWithin(detached, pageA)).toBe(false);
   });
 });

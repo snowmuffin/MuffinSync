@@ -1,3 +1,5 @@
+import { isWithin } from './traverse';
+
 /** What came of trying to centre a node. See `centreOnNode`. */
 export type NavigateResult = 'centred' | 'not-found' | 'other-page';
 
@@ -26,14 +28,7 @@ export type NavigateResult = 'centred' | 'not-found' | 'other-page';
 export async function centreOnNode(nodeId: string): Promise<NavigateResult> {
   const node = await figma.getNodeByIdAsync(nodeId);
   if (!node || !('absoluteBoundingBox' in node)) return 'not-found';
-  if (!isOnCurrentPage(node)) return 'other-page';
+  if (!isWithin(node, figma.currentPage)) return 'other-page';
   figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
   return 'centred';
-}
-
-function isOnCurrentPage(node: BaseNode): boolean {
-  for (let current: BaseNode | null = node; current; current = current.parent) {
-    if (current === figma.currentPage) return true;
-  }
-  return false;
 }

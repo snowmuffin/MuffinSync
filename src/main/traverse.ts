@@ -49,3 +49,20 @@ export function resolveRoots<T>(
 ): ReadonlyArray<T> {
   return scope === 'selection' && selection.length > 0 ? selection : pageChildren;
 }
+
+/** The one field `isWithin` walks. Figma's BaseNode satisfies it structurally. */
+export interface ParentedNode {
+  readonly parent: ParentedNode | null;
+}
+
+/**
+ * Whether `ancestor` is `node` or one of its ancestors. Navigation uses it to
+ * tell a node on another page from one on the current page, by walking up to
+ * the page rather than asking Figma to load every page.
+ */
+export function isWithin(node: ParentedNode, ancestor: ParentedNode): boolean {
+  for (let current: ParentedNode | null = node; current; current = current.parent) {
+    if (current === ancestor) return true;
+  }
+  return false;
+}

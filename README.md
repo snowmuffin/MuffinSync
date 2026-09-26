@@ -109,7 +109,7 @@ MuffinSync/
 ├── src/
 │   ├── main/            # Figma sandbox. No DOM, no network.
 │   │   ├── index.ts     # message router, scope resolution, font loading
-│   │   ├── traverse.ts  # collectTextLayers, resolveRoots
+│   │   ├── traverse.ts  # collectTextLayers, resolveRoots, isWithin
 │   │   ├── plan.ts      # buildChangeSet: diffs imported/proposed rows against the document
 │   │   ├── apply.ts     # applyTextChanges (re-checks each node before writing)
 │   │   ├── search.ts    # countMatches, replaceAll, matchingLayers (literal matching, case/whole-word options)
