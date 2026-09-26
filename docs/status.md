@@ -163,8 +163,8 @@ all-pages search.
 - Run the three phase parity documents and `stage-a-parity.md` in Figma desktop
   and record the results.
 - ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
-  repository is still `snowmuffin/MuffinSync`; renaming it is optional, as GitHub
-  redirects the old URL.
+  repository was renamed to `snowmuffin/Copydesk` the same day; GitHub redirects
+  the old URL, so an existing clone keeps working without changing its remote.
 - ~~Settle the format selector.~~ Removed in Stage A.
 - Upload `icon-128.png` as the Community icon when publishing: it was redrawn for
   the rename, and the listing still shows the old muffin until it is replaced.

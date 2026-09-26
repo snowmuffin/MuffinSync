@@ -105,7 +105,7 @@ npm run test:watch
 
 ### Project Structure
 ```
-MuffinSync/
+Copydesk/
 ├── src/
 │   ├── main/            # Figma sandbox. No DOM, no network.
 │   │   ├── index.ts     # message router, scope resolution, font loading
