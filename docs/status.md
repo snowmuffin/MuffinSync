@@ -1,6 +1,6 @@
 # Project status
 
-**As of 2026-09-25, commit `ed26e20`.** 232 tests across 16 files (230 since the spell-check fields were removed on 2026-09-26); typecheck clean
+**As of 2026-09-26, after Stage A.** 255 tests across 16 files; typecheck clean
 on both configs; build green; `npm audit` clean.
 
 This is a snapshot, not a plan. The plan for each phase lives in
@@ -79,6 +79,24 @@ outside the test suite's reach, and the parity documents are the only net.
 
 ---
 
+## Resolved in Stage A (2026-09-26)
+
+Eight items this list used to carry, closed on `claude/zen-sagan-zay4p6` per
+`docs/superpowers/plans/2026-09-26-remaining-roadmap.md`:
+
+- The decorative CSV/JSON format selector is removed; the download buttons decide.
+- An import file naming one layer id twice is rejected, with the ids named.
+- Enter in the Find panel searches.
+- The tab bar has ARIA tab semantics and arrow/Home/End key switching.
+- In-progress statuses stay up until answered (a new `progress` status kind).
+- The review screen remounts per `openReview` call, not per millisecond.
+- The other-page check is pure (`isWithin` in `traverse.ts`) and tested.
+- `initTabs` / `initScope` detach the previous call's listeners.
+
+Manual checks for the visible ones: `docs/verification/stage-a-parity.md`.
+
+---
+
 ## Known deferred items
 
 Each was found in review, judged non-blocking, and left deliberately.
@@ -90,22 +108,13 @@ Each was found in review, judged non-blocking, and left deliberately.
   extract or a search. Pre-existing; the fix changes the contract for all three
   producers at once, so spec section 8 assigns it its own cycle. The in-progress
   status messages make a freeze legible, but do not prevent it.
-- **`'info'` status messages auto-hide after 3 seconds.** A search or plan that
-  takes longer returns the user to silence. Affects every producer equally.
-- **The review screen's remount key is `createdAt` at millisecond resolution.**
-  Two change sets built in the same millisecond would collide and the second would
-  inherit the first's selection. Requires two full message round trips inside one
-  millisecond; unreachable in practice, but it rests on timing rather than
-  construction.
-- **Duplicate `id` rows in an imported file are not grouped.** Two rows naming the
-  same node both become entries, share one checkbox, and the last write wins.
 
 **Contract and tests**
 
-- **`search-results.scope` is validated and transported but never read.** Kept
-  rather than dropped: `createdAt` was also unused until it became the remount key.
-- **`isOnCurrentPage` in `src/main/navigate.ts` is testable logic inside a module
-  excluded from unit tests.** Taking `(node, page)` as arguments would make it pure.
+- **`search-results.scope` and `ChangeSet.createdAt` are validated and transported
+  but never read.** `createdAt` was the review's remount key until Stage A replaced
+  it with a counter. Both are kept: dropping a field is a contract change, and
+  neither costs anything to carry.
 - **No test pins the `action` class opt-in** that the action-bar spacing depends on
   in the stylesheet — only the class's presence in the two components is asserted,
   not that the spacing follows.
@@ -115,16 +124,6 @@ Each was found in review, judged non-blocking, and left deliberately.
 - The navigate action is offered on blocked rows whose reason is `not-text`, which
   is useful, and withheld from `missing` rows, which is correct. It is not offered
   anywhere else.
-- Enter does not submit the Find field; there is no `<form>` and no keydown handler.
-- The tab bar uses plain buttons with no `role="tab"` or `aria-selected`, so the
-  selected tab is conveyed by colour and weight alone.
-- `initTabs` and `initScope` each add a click listener per call without removing
-  prior ones. Only reachable from tests today; both handlers are idempotent.
-- **The format selector (CSV/JSON) is decorative** and has been since Phase 0.
-  `selectedFormat` in `src/ui/features/extract.ts` is assigned when an option is
-  clicked and read nowhere but a debug log; the download buttons pass `'csv'` and
-  `'json'` as literals. So the user picks a format twice and only the second choice
-  counts. Whether to wire it or remove it is a behaviour decision of its own.
 
 **Process**
 
@@ -161,7 +160,8 @@ all-pages search.
 
 ## Before a release
 
-- Run all three parity documents in Figma desktop and record the results.
+- Run the three phase parity documents and `stage-a-parity.md` in Figma desktop
+  and record the results.
 - Decide the plugin's name. Spec section 9 notes that "Sync" stops describing the
   product at Tier 2, where document generation begins, and that Figma preserves the
   plugin id and existing installations across a rename — so there is no cost to

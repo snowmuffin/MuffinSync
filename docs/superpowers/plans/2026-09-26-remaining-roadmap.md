@@ -30,6 +30,9 @@ built from a clean `git pull && npm ci`.
 
 ## Stage A — Deferred cleanups
 
+**Done 2026-09-26.** A1 removed the selector; A2 rejects the file. Results are
+recorded in `docs/status.md` → *Resolved in Stage A*.
+
 All items are listed in `docs/status.md` → *Known deferred items*. One branch,
 one commit per item, each with a test where the item is testable.
 
