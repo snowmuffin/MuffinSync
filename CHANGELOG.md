@@ -17,16 +17,10 @@ All notable changes to MuffinSync will be documented in this file.
 - Any row naming a layer still in the document — in the results or the
   review — can centre it in the viewport.
 - Extract and Find & Replace are now separate tabs.
-- GitHub Actions workflow running type check, tests, and build on every push
-  and PR.
-- Release workflow: pushing a `v*` tag checks it against `package.json`,
-  builds and tests that commit, and attaches the packaged plugin to a GitHub
-  Release with the version's CHANGELOG section as notes. Publishing to the
-  Figma Community stays manual.
 - `.editorconfig`.
 - A test suite (vitest), where there was none, covering CSV and JSON handling,
   the message contract, layer traversal, scope resolution, and text
-  application. CI runs it on every push and pull request.
+  application. Run it with `npm test`.
 
 ### Changed
 - A review built from a selection now closes when the selection changes,
@@ -49,7 +43,7 @@ All notable changes to MuffinSync will be documented in this file.
   html-webpack-plugin 5.6.8, `@figma/plugin-typings` 1.138. This clears all 11
   known advisories previously reported by `npm audit` (all in dev tooling; the
   shipped plugin bundle was never affected).
-- Node 22 is now the supported version, in CI and in `engines` (Node 18 is
+- Node 22 is now the supported version, in `engines` (Node 18 is
   end-of-life).
 - Console logging is gated behind a `DEBUG` flag instead of always running.
 - `ui.html` is now minified in production builds, cutting it from 22.7 KiB to

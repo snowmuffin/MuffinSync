@@ -77,7 +77,7 @@ id,name,characters
 ## 🛠️ Development Setup
 
 ### Requirements
-- **Node.js**: Version 22 or higher (CI builds on Node 22)
+- **Node.js**: Version 22 or higher
 - **npm**: Node package manager
 
 ### Installation and Build
@@ -135,8 +135,6 @@ MuffinSync/
 │   │   │       └── screen.tsx    # ReviewScreen: pure Preact component rendering the change set
 │   │   └── format/      # csv.ts, json.ts
 │   └── ui.html          # markup and styles only; the bundle is inlined at build time
-├── scripts/
-│   └── release-notes.mjs # Prints one version's CHANGELOG section for the GitHub Release
 ├── dist/                 # Build output (generated; not committed)
 ├── manifest.json         # Figma plugin manifest file
 ├── package.json          # Project metadata and dependencies
@@ -158,21 +156,11 @@ Tests sit beside the code they cover, as `*.test.ts`.
 3. Select the `manifest.json` file located in this project directory.
 4. The plugin will be added to your development section for testing.
 
-## 📦 Releasing
-
-Figma offers no API for Community publishing, so a release is half automated: CI
-builds and packages the plugin, and publishing is done by hand from the desktop app.
-
-1. **Prepare the release commit on `main`.**
-   - Bump `version` in `package.json` (and `package-lock.json`, e.g. `npm version 1.1.0 --no-git-tag-version`).
-   - In `CHANGELOG.md`, rename `## [Unreleased]` to `## [1.1.0] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` above it.
-2. **Tag and push:** `git tag v1.1.0 && git push origin v1.1.0`.
-3. **CI (`.github/workflows/release.yml`)** then:
-   - fails if the tag doesn't match `package.json`'s version, or `CHANGELOG.md` has no non-empty section for it;
-   - runs the type check, tests, and production build;
-   - creates a GitHub Release with `MuffinSync-1.1.0.zip` (`manifest.json` + `dist/code.js` + `dist/ui.html`) and the CHANGELOG section as its notes.
-4. **Verify:** download and unzip the release asset, import its `manifest.json` in the Figma desktop app, and run the checks in [`docs/verification/`](docs/verification/).
-5. **Publish** from the Figma desktop app (**Plugins → Development → Manage plugins in development → Publish**). The plugin id lives in `manifest.json`, so publishing from the unzipped copy updates the existing Community listing.
+> **Publishing to the Figma Community** is done manually from the Figma desktop app (**Plugins → Development → Manage plugins in development → Publish**). Figma does not provide a CLI or API for marketplace publishing, and there is no CI: build and check locally before publishing.
+>
+> ```bash
+> git pull && npm ci && npm run typecheck && npm test && npm run build
+> ```
 
 ## ⚠️ Important Notes
 

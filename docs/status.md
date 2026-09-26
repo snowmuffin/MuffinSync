@@ -160,9 +160,6 @@ all-pages search.
 
 ## Before a release
 
-The mechanics are in the README's *Releasing* section: a `v*` tag makes CI build
-and attach the plugin zip to a GitHub Release; publishing to the Community is manual.
-
 - Run all three parity documents in Figma desktop and record the results.
 - Decide the plugin's name. Spec section 9 notes that "Sync" stops describing the
   product at Tier 2, where document generation begins, and that Figma preserves the
