@@ -4,6 +4,10 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-26
+
+First release as **Copydesk** (formerly MuffinSync).
+
 ### Added
 - **Regular expressions** in Find & Replace, opt-in, with `$1`/`$&`/`$<name>`
   in the replacement; an invalid pattern is reported before searching.
@@ -19,31 +23,16 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
   the selection through review, or add as a new layer.
 - **Generate** tab: **data merge** (`{{Column}}` tags, one copy per CSV/JSON
   row) and **localized copies** (one copy per frame and language column).
-
-### Changed
-- "Find & Replace" tab is now labelled **Find** so four tabs fit.
-
-### Fixed
-- The manual-copy download fallback no longer builds its markup from the file
-  content, so layer text containing HTML can't inject elements into the panel.
-
-## [1.2.0] - 2026-09-26
-
-First release as **Copydesk** (formerly MuffinSync).
-
-### Added
-- Find & Replace searches the current page or the selection and lists every
-  layer the query occurs in, with its text and an occurrence count.
+- Find & Replace searches the selection, the current page or every page and
+  lists every layer the query occurs in, with its text and an occurrence count.
 - Replacing routes through the same review screen import uses; nothing is
   written until it is applied there.
 - Leaving the replacement empty searches without replacing.
 - Matching offers case sensitivity and whole word. A query is matched
-  literally — regular expressions are not supported.
-- Replacement is per layer: a layer with several matches is one row, accepted
-  or refused whole.
+  literally unless Regular expression is ticked.
 - Any row naming a layer still in the document — in the results or the
   review — can centre it in the viewport.
-- Extract and Find & Replace are now separate tabs.
+- Extract, Find, Generate and Snippets are separate tabs.
 - `.editorconfig`.
 - A test suite (vitest), where there was none, covering CSV and JSON handling,
   the message contract, layer traversal, scope resolution, and text
@@ -114,6 +103,8 @@ First release as **Copydesk** (formerly MuffinSync).
   unavailable until it finishes.
 
 ### Fixed
+- The manual-copy download fallback no longer builds its markup from the file
+  content, so layer text containing HTML can't inject elements into the panel.
 - **Mixed-font import**: text layers using more than one font across character
   ranges failed to import. Every font in the range is now loaded via
   `getRangeAllFontNames()` before the text is replaced.

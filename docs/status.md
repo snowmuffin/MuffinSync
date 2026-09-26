@@ -204,9 +204,8 @@ Manual checks: `docs/verification/local-features-parity.md`.
 
 ## Before a release
 
-`package.json` and `CHANGELOG.md` are at **1.2.0**. The local features were
-added after it and sit under `[Unreleased]`: either fold them into 1.2.0 before
-publishing, or publish them as the next version.
+`package.json` and `CHANGELOG.md` are at **1.2.0**, which includes the local
+features. What remains is below.
 
 - Run the three phase parity documents, `stage-a-parity.md`,
   `stage-c-parity.md` and `local-features-parity.md` in Figma desktop and record
