@@ -64,3 +64,25 @@ describe('fromCSV', () => {
     expect(() => fromCSV('')).toThrow(FormatError);
   });
 });
+
+describe('context columns', () => {
+  const rows = [{ id: '1:1', name: 'Total', characters: 'Total 👋', path: 'Checkout / Summary / Total' }];
+
+  it('adds path and length to CSV when asked', () => {
+    expect(toCSV(rows, true)).toBe('id,name,characters,path,length\n1:1,Total,Total 👋,Checkout / Summary / Total,7');
+  });
+
+  it('leaves the round-trip columns alone by default', () => {
+    expect(toCSV(rows)).toBe('id,name,characters\n1:1,Total,Total 👋');
+  });
+
+  it('reads path back and ignores length', () => {
+    expect(fromCSV('id,name,characters,path,length\n1:1,A,x,Home / A,1')).toEqual([
+      { id: '1:1', name: 'A', characters: 'x', path: 'Home / A' },
+    ]);
+  });
+
+  it('leaves path out when the column is empty or missing', () => {
+    expect(fromCSV('id,name,characters,path\n1:1,A,x,')).toEqual([{ id: '1:1', name: 'A', characters: 'x' }]);
+  });
+});

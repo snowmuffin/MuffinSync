@@ -9,6 +9,12 @@ export interface TextLayerData {
    * from an imported file.
    */
   frame?: string;
+  /**
+   * Ancestor names from the top-level frame down to the layer, joined with
+   * ` / `. Written when context columns are on; read by import to match a
+   * layer whose id no longer exists (copy tools spec §4).
+   */
+  path?: string;
 }
 
 /**

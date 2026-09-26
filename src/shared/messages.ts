@@ -16,7 +16,7 @@ export type UiToMain =
   // pushes before this would arrive at nothing and be dropped.
   | { type: 'ui-ready' }
   // `includeHidden: false` skips layers that are hidden or inside something hidden.
-  | { type: 'extract'; scope: Scope; includeHidden: boolean }
+  | { type: 'extract'; scope: Scope; includeHidden: boolean; contextColumns: boolean }
   | { type: 'plan-import'; rows: TextLayerData[] }
   | { type: 'apply'; changes: ProposedChange[] }
   | { type: 'cancel' }
@@ -123,7 +123,8 @@ function isTextLayerRows(value: unknown): value is TextLayerData[] {
         typeof v.id === 'string' &&
         typeof v.name === 'string' &&
         typeof v.characters === 'string' &&
-        (v.frame === undefined || typeof v.frame === 'string')
+        (v.frame === undefined || typeof v.frame === 'string') &&
+        (v.path === undefined || typeof v.path === 'string')
       );
     })
   );
@@ -265,8 +266,15 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       // No payload: the discriminant is the whole message.
       return { type: 'ui-ready' };
     case 'extract':
-      return isScope(p.scope) && typeof p.includeHidden === 'boolean'
-        ? { type: 'extract', scope: p.scope, includeHidden: p.includeHidden }
+      return isScope(p.scope) &&
+        typeof p.includeHidden === 'boolean' &&
+        typeof p.contextColumns === 'boolean'
+        ? {
+            type: 'extract',
+            scope: p.scope,
+            includeHidden: p.includeHidden,
+            contextColumns: p.contextColumns,
+          }
         : null;
     case 'plan-import':
       return isTextLayerRows(p.rows) ? { type: 'plan-import', rows: p.rows } : null;

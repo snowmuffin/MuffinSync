@@ -3,6 +3,7 @@ import {
   collectTextLayers,
   isShown,
   isWithin,
+  layerPath,
   pageOf,
   resolveRoots,
   type ParentedNode,
@@ -258,5 +259,26 @@ describe('isWithin', () => {
   it('rejects a node whose chain ends without meeting the ancestor', () => {
     const detached: ParentedNode = { parent: null };
     expect(isWithin(detached, pageA)).toBe(false);
+  });
+});
+
+describe('layerPath', () => {
+  const page = { id: 'p', type: 'PAGE', name: 'Page 1', parent: null };
+  const frame = { id: 'f', type: 'FRAME', name: 'Checkout', parent: page };
+  const group = { id: 'g', type: 'GROUP', name: 'Summary', parent: frame };
+
+  it('joins ancestor names from the top-level frame down, the layer last, without the page', () => {
+    expect(layerPath({ id: 't', name: 'Total', parent: group }, new Map())).toBe('Checkout / Summary / Total');
+  });
+
+  it('is just the name for a layer directly on the page', () => {
+    expect(layerPath({ id: 't', name: 'Loose', parent: page }, new Map())).toBe('Loose');
+  });
+
+  it('reuses a cached container path for siblings', () => {
+    const cache = new Map<string, string>();
+    layerPath({ id: 't1', name: 'A', parent: group }, cache);
+    expect(cache.get('g')).toBe('Checkout / Summary');
+    expect(layerPath({ id: 't2', name: 'B', parent: group }, cache)).toBe('Checkout / Summary / B');
   });
 });

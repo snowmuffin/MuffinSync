@@ -1,10 +1,17 @@
 import type { TextLayerData } from '../../shared/types';
-import { FormatError } from './csv';
+import { FormatError, textLength } from './csv';
 
-/** Exactly id, name and characters, in that order -- the round-trip format. */
-export function toJSON(rows: TextLayerData[]): string {
+/**
+ * Exactly id, name and characters, in that order -- the round-trip format --
+ * plus `path` and `length` when `context` is on.
+ */
+export function toJSON(rows: TextLayerData[], context = false): string {
   return JSON.stringify(
-    rows.map(({ id, name, characters }) => ({ id, name, characters })),
+    rows.map(({ id, name, characters, path }) =>
+      context
+        ? { id, name, characters, path: path ?? '', length: textLength(characters) }
+        : { id, name, characters }
+    ),
     null,
     2
   );
@@ -39,5 +46,15 @@ export function fromJSON(text: string): TextLayerData[] {
     );
   }
 
-  return parsed as TextLayerData[];
+  // Keep only the fields import uses, so extra keys in a hand-edited file
+  // (a length column, notes) never travel further.
+  return (parsed as Array<Record<string, unknown>>).map((entry) => {
+    const row: TextLayerData = {
+      id: entry.id as string,
+      name: entry.name as string,
+      characters: entry.characters as string,
+    };
+    if (typeof entry.path === 'string' && entry.path !== '') row.path = entry.path;
+    return row;
+  });
 }

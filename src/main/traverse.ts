@@ -31,6 +31,27 @@ export function topFrameName(node: VisibilityNode, cache: Map<string, string>): 
   return name;
 }
 
+/**
+ * A container's path: its ancestors' names from the top-level frame down,
+ * itself included, joined with ` / `. Pages are not part of a path. Cached by
+ * node id across one walk.
+ */
+function containerPath(node: VisibilityNode | null | undefined, cache: Map<string, string>): string {
+  if (!node || node.type === 'PAGE') return '';
+  const known = cache.get(node.id);
+  if (known !== undefined) return known;
+  const above = containerPath(node.parent, cache);
+  const path = above ? `${above} / ${node.name ?? ''}` : (node.name ?? '');
+  cache.set(node.id, path);
+  return path;
+}
+
+/** A layer's path: its containers' path, then its own name. */
+export function layerPath(node: VisibilityNode, cache: Map<string, string>): string {
+  const above = containerPath(node.parent, cache);
+  return above ? `${above} / ${node.name ?? ''}` : (node.name ?? '');
+}
+
 /** What `isShown` walks: a node's own visibility and its ancestors'. */
 export interface VisibilityNode {
   readonly id: string;
@@ -71,6 +92,8 @@ export interface CollectOptions {
   includeHidden?: boolean;
   /** Record each layer's top-level frame name, for document exports. */
   withFrames?: boolean;
+  /** Record each layer's path, for context columns and path matching. */
+  withPaths?: boolean;
 }
 
 /**
@@ -101,6 +124,7 @@ export async function collectTextLayers(
   const includeHidden = options.includeHidden ?? true;
   const visibility = new Map<string, boolean>();
   const frames = new Map<string, string>();
+  const paths = new Map<string, string>();
   const nodes: TextNodeLike[] = [];
   for (const root of roots) {
     if (root.type === 'TEXT') nodes.push(root);
@@ -119,6 +143,7 @@ export async function collectTextLayers(
       if (!includeHidden && !isShown(node, visibility)) return;
       const row: TextLayerData = { id: node.id, name: node.name, characters: node.characters ?? '' };
       if (options.withFrames) row.frame = topFrameName(node, frames);
+      if (options.withPaths) row.path = layerPath(node, paths);
       found.push(row);
     },
     control

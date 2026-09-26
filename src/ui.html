@@ -111,6 +111,7 @@
       body[data-busy] #extract-btn,
       body[data-busy] #export-pdf-btn,
       body[data-busy] #import-btn,
+      body[data-busy] #paste-import-btn,
       body[data-busy] #search-btn {
         cursor: not-allowed;
         opacity: 0.5;
@@ -198,6 +199,42 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
+      }
+
+      .export-stats {
+        font-size: 13px;
+        color: #334155;
+        margin-bottom: 12px;
+      }
+
+      .export-stats details {
+        margin-top: 4px;
+        color: #64748b;
+      }
+
+      .export-stats table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4px;
+        font-size: 12px;
+      }
+
+      .export-stats td,
+      .export-stats th {
+        text-align: left;
+        padding: 2px 4px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .export-stats td:not(:first-child),
+      .export-stats th:not(:first-child) {
+        text-align: right;
+      }
+
+      .paste-input {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        resize: vertical;
       }
 
       .list-more {
@@ -575,6 +612,9 @@
             <label class="checkbox-row">
               <input class="include-hidden" type="checkbox" checked /> Include hidden layers
             </label>
+            <label class="checkbox-row">
+              <input id="context-columns" type="checkbox" /> Add context columns (path, length)
+            </label>
 
             <button class="button primary" id="extract-btn">
               Extract Text Layers
@@ -590,10 +630,12 @@
               format below.
             </div>
 
+            <div id="export-stats" class="export-stats"></div>
             <div class="download-group-label">For editing and importing back</div>
             <div class="download-buttons">
               <button class="button primary" data-download="csv">CSV</button>
               <button class="button primary" data-download="json">JSON</button>
+              <button class="button secondary" id="copy-json-btn" type="button">Copy JSON</button>
             </div>
             <div class="download-group-label">For reading and sharing</div>
             <div class="download-buttons">
@@ -619,6 +661,16 @@
             <button class="button secondary" id="import-btn">
               Select File to Import
             </button>
+            <button class="button secondary" id="paste-toggle-btn" type="button">
+              Paste to import
+            </button>
+            <div id="paste-area" class="hidden">
+              <textarea id="paste-input" class="text-input paste-input" rows="6"
+                placeholder="Paste JSON or CSV with id, name and characters"></textarea>
+              <button class="button primary" id="paste-import-btn" type="button">
+                Check what would change
+              </button>
+            </div>
           </div>
         </div>
 

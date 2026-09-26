@@ -24,10 +24,23 @@ function escapeField(value: string): string {
   return needsQuoting(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function toCSV(rows: TextLayerData[]): string {
-  const lines = [HEADERS.join(',')];
+/** Characters as a person counts them: code points, so an emoji is one. */
+export function textLength(text: string): number {
+  return Array.from(text).length;
+}
+
+/**
+ * The round-trip columns, plus `path` and `length` when `context` is on.
+ * Import reads the first three, and `path` only to match layers by position
+ * when an id misses; `length` is for the reader.
+ */
+export function toCSV(rows: TextLayerData[], context = false): string {
+  const headers = context ? [...HEADERS, 'path', 'length'] : [...HEADERS];
+  const lines = [headers.join(',')];
   for (const row of rows) {
-    lines.push(HEADERS.map((h) => escapeField(row[h])).join(','));
+    const fields = HEADERS.map((h) => escapeField(row[h]));
+    if (context) fields.push(escapeField(row.path ?? ''), String(textLength(row.characters)));
+    lines.push(fields.join(','));
   }
   return lines.join('\n');
 }
@@ -95,13 +108,19 @@ export function fromCSV(text: string): TextLayerData[] {
   const index = Object.fromEntries(
     HEADERS.map((h) => [h, headers.indexOf(h)])
   ) as Record<(typeof HEADERS)[number], number>;
+  const pathIndex = headers.indexOf('path');
 
   return rows
     .slice(1)
     .filter((r) => r.some((v) => v !== ''))
-    .map((r) => ({
-      id: r[index.id] ?? '',
-      name: r[index.name] ?? '',
-      characters: r[index.characters] ?? '',
-    }));
+    .map((r) => {
+      const row: TextLayerData = {
+        id: r[index.id] ?? '',
+        name: r[index.name] ?? '',
+        characters: r[index.characters] ?? '',
+      };
+      const path = pathIndex === -1 ? '' : (r[pathIndex] ?? '');
+      if (path !== '') row.path = path;
+      return row;
+    });
 }

@@ -55,7 +55,7 @@ export function hasTags(text: string): boolean {
 }
 
 /** Columns Extract writes; any other column in a translation file is a locale. */
-const SOURCE_COLUMNS = new Set(['id', 'name', 'characters', 'frame']);
+const SOURCE_COLUMNS = new Set(['id', 'name', 'characters', 'frame', 'path', 'length']);
 
 export function localesOf(headers: ReadonlyArray<string>): string[] {
   return headers.filter((header) => header !== '' && !SOURCE_COLUMNS.has(header.toLowerCase()));

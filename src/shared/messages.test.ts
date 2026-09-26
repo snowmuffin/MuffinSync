@@ -26,8 +26,8 @@ describe('unwrapUiMessage', () => {
   });
 
   it('keeps the payload of a typed message', () => {
-    expect(unwrapUiMessage({ pluginMessage: { type: 'extract', scope: 'page', includeHidden: true } }))
-      .toEqual({ type: 'extract', scope: 'page', includeHidden: true });
+    expect(unwrapUiMessage({ pluginMessage: { type: 'extract', scope: 'page', includeHidden: true, contextColumns: false } }))
+      .toEqual({ type: 'extract', scope: 'page', includeHidden: true, contextColumns: false });
   });
 
   it('returns null for an unknown type', () => {
@@ -41,23 +41,34 @@ describe('unwrapUiMessage', () => {
   });
 
   it('rejects extract without a scope', () => {
-    expect(unwrapUiMessage({ type: 'extract', includeHidden: true })).toBeNull();
+    expect(unwrapUiMessage({ type: 'extract', includeHidden: true, contextColumns: false })).toBeNull();
   });
 
   it('rejects extract with an unknown scope', () => {
-    expect(unwrapUiMessage({ type: 'extract', scope: 'everywhere', includeHidden: true })).toBeNull();
+    expect(unwrapUiMessage({ type: 'extract', scope: 'everywhere', includeHidden: true, contextColumns: false })).toBeNull();
   });
 
   it('accepts extract over every page', () => {
-    expect(unwrapUiMessage({ type: 'extract', scope: 'document', includeHidden: false })).toEqual({
+    expect(unwrapUiMessage({ type: 'extract', scope: 'document', includeHidden: false, contextColumns: true })).toEqual({
       type: 'extract',
       scope: 'document',
       includeHidden: false,
+      contextColumns: true,
     });
   });
 
   it('rejects extract without includeHidden', () => {
-    expect(unwrapUiMessage({ type: 'extract', scope: 'page' })).toBeNull();
+    expect(unwrapUiMessage({ type: 'extract', scope: 'page', contextColumns: false })).toBeNull();
+  });
+
+  it('rejects extract without contextColumns', () => {
+    expect(unwrapUiMessage({ type: 'extract', scope: 'page', includeHidden: true })).toBeNull();
+  });
+
+  it('accepts rows carrying a path, and rejects a non-text path', () => {
+    const rows = [{ id: '1:1', name: 'A', characters: 'x', path: 'Home / A' }];
+    expect(unwrapUiMessage({ type: 'plan-import', rows })).toEqual({ type: 'plan-import', rows });
+    expect(unwrapUiMessage({ type: 'plan-import', rows: [{ ...rows[0], path: 5 }] })).toBeNull();
   });
 
   const change = {

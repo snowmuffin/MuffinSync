@@ -37,3 +37,19 @@ describe('fromJSON', () => {
     );
   });
 });
+
+describe('JSON context columns', () => {
+  const rows = [{ id: '1:1', name: 'A', characters: 'xy', path: 'Home / A', frame: 'Home' }];
+
+  it('adds path and length when asked, and never the frame', () => {
+    expect(JSON.parse(toJSON(rows, true))).toEqual([
+      { id: '1:1', name: 'A', characters: 'xy', path: 'Home / A', length: 2 },
+    ]);
+  });
+
+  it('reads path back and drops keys import does not use', () => {
+    expect(fromJSON('[{"id":"1","name":"A","characters":"x","path":"P","length":1,"note":"n"}]')).toEqual([
+      { id: '1', name: 'A', characters: 'x', path: 'P' },
+    ]);
+  });
+});

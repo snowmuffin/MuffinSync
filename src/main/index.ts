@@ -105,13 +105,13 @@ async function collectFor(
   scope: Scope,
   includeHidden: boolean,
   control: TaskControl,
-  withFrames = false
+  extras: { withFrames?: boolean; withPaths?: boolean } = {}
 ): Promise<TextLayerData[] | 'stopped'> {
   const roots = await rootsFor(scope);
-  if (includeHidden) return collectTextLayers(roots, control, { withFrames });
+  if (includeHidden) return collectTextLayers(roots, control, extras);
   figma.skipInvisibleInstanceChildren = true;
   try {
-    return await collectTextLayers(roots, control, { includeHidden: false, withFrames });
+    return await collectTextLayers(roots, control, { ...extras, includeHidden: false });
   } finally {
     figma.skipInvisibleInstanceChildren = false;
   }
@@ -211,7 +211,10 @@ figma.ui.onmessage = async (event: unknown) => {
       case 'extract': {
         try {
           await runTask('extract', async (control) => {
-            const rows = await collectFor(message.scope, message.includeHidden, control, true);
+            const rows = await collectFor(message.scope, message.includeHidden, control, {
+              withFrames: true,
+              withPaths: message.contextColumns,
+            });
             if (rows === 'stopped') {
               send({ type: 'task-stopped', task: 'extract' });
             } else {

@@ -51,7 +51,7 @@ describe('hasTags', () => {
 
 describe('localesOf', () => {
   it('treats every column but the extract columns as a locale', () => {
-    expect(localesOf(['id', 'name', 'characters', 'ko', 'ja', 'Frame', ''])).toEqual(['ko', 'ja']);
+    expect(localesOf(['id', 'name', 'characters', 'ko', 'ja', 'Frame', 'path', 'length', ''])).toEqual(['ko', 'ja']);
   });
 });
 
