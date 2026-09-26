@@ -4,6 +4,10 @@ All notable changes to Copydesk (formerly MuffinSync) will be documented in this
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-26
+
+First release as **Copydesk** (formerly MuffinSync).
+
 ### Added
 - Find & Replace searches the current page or the selection and lists every
   layer the query occurs in, with its text and an occurrence count.

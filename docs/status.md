@@ -197,6 +197,9 @@ all-pages search.
 
 ## Before a release
 
+The next release is **1.2.0**: `package.json` and `CHANGELOG.md` are already
+at that version; what remains is below.
+
 - Run the three phase parity documents, `stage-a-parity.md` and
   `stage-c-parity.md` in Figma desktop and record the results.
 - ~~Decide the plugin's name.~~ Decided 2026-09-26: **Copydesk** (spec §9). The
