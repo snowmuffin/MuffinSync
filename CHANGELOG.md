@@ -19,6 +19,10 @@ All notable changes to MuffinSync will be documented in this file.
 - Extract and Find & Replace are now separate tabs.
 - GitHub Actions workflow running type check, tests, and build on every push
   and PR.
+- Release workflow: pushing a `v*` tag checks it against `package.json`,
+  builds and tests that commit, and attaches the packaged plugin to a GitHub
+  Release with the version's CHANGELOG section as notes. Publishing to the
+  Figma Community stays manual.
 - `.editorconfig`.
 - A test suite (vitest), where there was none, covering CSV and JSON handling,
   the message contract, layer traversal, scope resolution, and text

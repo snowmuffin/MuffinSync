@@ -1,0 +1,65 @@
+name: Release
+
+# Pushing a tag like v1.1.0 builds the plugin from that commit and attaches it to
+# a GitHub Release. Publishing to the Figma Community stays manual: Figma offers
+# no API for it, so the zip is what gets run through docs/verification/ and then
+# published from the desktop app.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check the tag matches package.json
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${pkg}"
+            exit 1
+          fi
+          echo "VERSION=${pkg}" >> "$GITHUB_ENV"
+
+      - name: Extract release notes from CHANGELOG.md
+        run: node scripts/release-notes.mjs "$VERSION" > release-notes.md
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Package
+        run: |
+          dir="MuffinSync-${VERSION}"
+          mkdir -p "$dir/dist"
+          cp manifest.json "$dir/"
+          cp dist/code.js dist/ui.html "$dir/dist/"
+          zip -r "$dir.zip" "$dir"
+          echo "ASSET=$dir.zip" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "$ASSET" --title "MuffinSync $VERSION" --notes-file release-notes.md --verify-tag

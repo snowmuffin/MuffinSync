@@ -11,6 +11,6 @@ export default defineConfig({
     // Pure modules stay on `node`, which is faster. A component test opts into
     // a DOM per file with `// @vitest-environment happy-dom`.
     environment: 'node',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.mjs'],
   },
 });
