@@ -24,6 +24,11 @@ function escapeField(value: string): string {
   return needsQuoting(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/** Any table as CSV, quoting fields the same way the export does. */
+export function rowsToCSV(rows: ReadonlyArray<ReadonlyArray<string>>): string {
+  return rows.map((row) => row.map(escapeField).join(',')).join('\n');
+}
+
 /** Characters as a person counts them: code points, so an emoji is one. */
 export function textLength(text: string): number {
   return Array.from(text).length;

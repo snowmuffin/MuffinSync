@@ -49,7 +49,7 @@ export type ExportFormat = 'csv' | 'json' | 'xlsx' | 'docx' | 'md' | 'epub';
  * A long piece of document work the sandbox reports progress on. Only one runs
  * at a time. See docs/superpowers/specs/2026-09-26-large-documents-design.md §5.
  */
-export type TaskKind = 'extract' | 'search' | 'plan' | 'apply' | 'export' | 'generate';
+export type TaskKind = 'extract' | 'search' | 'plan' | 'apply' | 'export' | 'generate' | 'check';
 
 /** A text change the user may accept. See spec section 3. */
 export interface ProposedChange {

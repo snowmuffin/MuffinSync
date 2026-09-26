@@ -19,6 +19,7 @@ const LABELS: Record<TaskKind, string> = {
   apply: 'Applying changes...',
   export: 'Exporting frames...',
   generate: 'Generating frames...',
+  check: 'Checking copy...',
 };
 
 let current: TaskKind | null = null;

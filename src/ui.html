@@ -112,7 +112,8 @@
       body[data-busy] #export-pdf-btn,
       body[data-busy] #import-btn,
       body[data-busy] #paste-import-btn,
-      body[data-busy] #search-btn {
+      body[data-busy] #search-btn,
+      body[data-busy] #check-btn {
         cursor: not-allowed;
         opacity: 0.5;
       }
@@ -246,6 +247,97 @@
         font-size: 11px;
         font-weight: 500;
         white-space: nowrap;
+      }
+
+      .rule-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 13px;
+        color: #334155;
+        margin-bottom: 6px;
+      }
+
+      .rule-row .hint {
+        color: #94a3b8;
+        font-size: 11px;
+      }
+
+      .glossary-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        padding: 6px 0;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      .glossary-row .avoid {
+        text-decoration: line-through;
+        color: #94a3b8;
+      }
+
+      .glossary-row .use {
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .glossary-row .flags {
+        margin-left: auto;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+
+      .glossary-add {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .glossary-add .text-input {
+        margin: 0;
+      }
+
+      .inline-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+
+      mark.issue {
+        background: #fecaca;
+        color: inherit;
+        border-radius: 2px;
+        white-space: pre-wrap;
+      }
+
+      mark.issue.report {
+        background: #fde68a;
+      }
+
+      .rule-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+      }
+
+      .rule-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      .rule-chip.report {
+        background: #fef3c7;
+        color: #92400e;
       }
 
       .list-more {
@@ -601,6 +693,8 @@
             role="tab" aria-selected="true" aria-controls="extract-panel">Extract</button>
           <button class="tab" id="find-replace-tab" data-tab="find-replace" type="button"
             role="tab" aria-selected="false" aria-controls="find-replace-panel" tabindex="-1">Find</button>
+          <button class="tab" id="check-tab" data-tab="check" type="button"
+            role="tab" aria-selected="false" aria-controls="check-panel" tabindex="-1">Check</button>
           <button class="tab" id="generate-tab" data-tab="generate" type="button"
             role="tab" aria-selected="false" aria-controls="generate-panel" tabindex="-1">Generate</button>
           <button class="tab" id="snippets-tab" data-tab="snippets" type="button"
@@ -718,6 +812,27 @@
           </form>
         </div>
 
+        <div id="check-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="check-tab">
+          <div class="section">
+            <div class="section-title">Check copy</div>
+            <div class="instruction">
+              Find spacing, punctuation, placeholder and terminology problems, and
+              fix them through review.
+            </div>
+            <div class="scope-selector">
+              <div class="scope-option selected" data-scope="selection">Selection</div>
+              <div class="scope-option" data-scope="page">Current page</div>
+              <div class="scope-option" data-scope="document">All pages</div>
+            </div>
+            <label class="checkbox-row">
+              <input class="include-hidden" type="checkbox" checked /> Include hidden layers
+            </label>
+            <button class="button primary" id="check-btn" type="button">Run check</button>
+          </div>
+          <div id="check-options-host"></div>
+          <input type="file" id="glossary-file" class="file-input" accept=".csv,.json" />
+        </div>
+
         <div id="generate-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="generate-tab">
           <div class="section">
             <div class="section-title">Data merge</div>
@@ -754,6 +869,8 @@
       <div id="review-host"></div>
 
       <div id="results-host"></div>
+
+      <div id="check-results-host"></div>
 
       <div id="status-host"></div>
     </div>

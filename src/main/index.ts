@@ -1,5 +1,5 @@
 import type { MatchOptions, ReplaceTarget, Scope, TaskKind, TextLayerData } from '../shared/types';
-import type { ExportedFile, MainToUi } from '../shared/messages';
+import type { CheckResult, ExportedFile, MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
@@ -12,6 +12,7 @@ import { localizeFrames, mergeRows, type GenerateResult, type SetText } from './
 import { buildPathIndex, resolveRows, type PathIndex, type PathMatch } from './pathmatch';
 import { isSnippets, type Snippet } from '../shared/generate';
 import { COMMAND_TABS, parseSettings } from '../shared/settings';
+import { findIssues, fixText, isGlossary, type GlossaryEntry } from '../shared/checks';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
@@ -129,6 +130,17 @@ function textWriter(): SetText {
 
 const SNIPPETS_KEY = 'snippets';
 const SETTINGS_KEY = 'settings';
+/** Stored in the file, not per user: terminology belongs to the product (spec §5.2). */
+const GLOSSARY_KEY = 'glossary';
+
+function loadGlossary(): GlossaryEntry[] {
+  try {
+    const parsed: unknown = JSON.parse(figma.root.getPluginData(GLOSSARY_KEY) || '[]');
+    return isGlossary(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 async function loadSnippets(): Promise<Snippet[]> {
   const stored: unknown = await figma.clientStorage.getAsync(SNIPPETS_KEY);
@@ -494,6 +506,66 @@ figma.ui.onmessage = async (event: unknown) => {
         send({ type: 'notice', message: `Added "${node.name}" as a new text layer.` });
         break;
       }
+      case 'get-glossary':
+        send({ type: 'glossary', entries: loadGlossary() });
+        break;
+      case 'save-glossary':
+        try {
+          figma.root.setPluginData(GLOSSARY_KEY, JSON.stringify(message.entries));
+        } catch {
+          send({ type: 'error', message: 'The glossary could not be saved: this file is read-only for you.' });
+        }
+        send({ type: 'glossary', entries: loadGlossary() });
+        break;
+      case 'check': {
+        await runTask('check', async (control) => {
+          const rows = await collectFor(message.scope, message.includeHidden, control);
+          if (rows === 'stopped') {
+            send({ type: 'task-stopped', task: 'check' });
+            return;
+          }
+          const results: CheckResult[] = [];
+          // Sliced too: nine rules over tens of thousands of layers is work.
+          const outcome = await runChunked(
+            rows,
+            (row) => {
+              const findings = findIssues(row.characters, message.rules, message.glossary);
+              if (findings.length > 0) {
+                results.push({ nodeId: row.id, layerName: row.name, characters: row.characters, findings });
+              }
+            },
+            control
+          );
+          send(
+            outcome === 'stopped'
+              ? { type: 'task-stopped', task: 'check' }
+              : { type: 'check-results', results, scope: message.scope }
+          );
+        });
+        break;
+      }
+      case 'plan-check':
+        await runTask('plan', async (control) => {
+          // Fixes are recomputed on each layer's current text, as find &
+          // replace does, so an edit since the check is fixed, not overwritten.
+          const changeSet = await buildChangeSet(
+            message.targets.map((target) => ({
+              id: target.nodeId,
+              fallbackName: target.layerName,
+              after: (current: string) => fixText(current, target.rules, message.glossary),
+            })),
+            'check',
+            { getNode, control },
+            Date.now(),
+            message.scope
+          );
+          send(
+            changeSet === 'stopped'
+              ? { type: 'task-stopped', task: 'plan' }
+              : { type: 'change-set', changeSet }
+          );
+        });
+        break;
       case 'merge': {
         const selection = figma.currentPage.selection;
         if (selection.length !== 1) {

@@ -12,6 +12,7 @@ import { initGenerate, generatedMessage } from './features/generate';
 import { initSnippets, showSnippets } from './features/snippets';
 import { applySettings, initSettings } from './features/settings';
 import { showTab } from './features/tabs';
+import { initCheck, requestGlossary, showCheckResults, showGlossary } from './features/check';
 import { endTask, reportProgress, taskStopped } from './features/task';
 
 const statusHost = byId('status-host');
@@ -38,6 +39,7 @@ initScope(document);
 initTabs(document);
 initGenerate(document);
 initSettings(document);
+initCheck(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {
@@ -57,7 +59,8 @@ window.onmessage = (event: MessageEvent) => {
     message.type !== 'snippets' &&
     message.type !== 'notice' &&
     message.type !== 'settings' &&
-    message.type !== 'open-tab'
+    message.type !== 'open-tab' &&
+    message.type !== 'glossary'
   ) {
     endTask();
   }
@@ -126,6 +129,14 @@ window.onmessage = (event: MessageEvent) => {
       applySettings(message.settings);
       break;
 
+    case 'check-results':
+      showCheckResults(message.results, message.scope);
+      break;
+
+    case 'glossary':
+      showGlossary(message.entries);
+      break;
+
     case 'open-tab':
       showTab(message.tab);
       break;
@@ -164,3 +175,4 @@ window.onmessage = (event: MessageEvent) => {
 // purpose: the handler above must exist before anything is asked for.
 post({ type: 'ui-ready' });
 initSnippets();
+requestGlossary();

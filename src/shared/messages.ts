@@ -10,6 +10,7 @@ import type {
 } from './types';
 import { isSnippets, isStringRecord, type Snippet, type Translations } from './generate';
 import { isTabName, parseSettings, type Settings, type TabName } from './settings';
+import { isFindings, isGlossary, isRuleId, type Finding, type GlossaryEntry, type RuleId } from './checks';
 
 export type UiToMain =
   // Sent once the iframe's message handler is installed. Anything the sandbox
@@ -56,7 +57,12 @@ export type UiToMain =
   | { type: 'merge'; rows: Array<Record<string, string>> }
   | { type: 'localize'; locales: string[]; translations: Translations }
   // Remembered settings (copy tools spec §2).
-  | { type: 'save-settings'; settings: Settings };
+  | { type: 'save-settings'; settings: Settings }
+  // Check tab (copy tools spec §5).
+  | { type: 'check'; scope: Scope; includeHidden: boolean; rules: RuleId[]; glossary: GlossaryEntry[] }
+  | { type: 'plan-check'; targets: CheckTarget[]; glossary: GlossaryEntry[]; scope: Scope }
+  | { type: 'get-glossary' }
+  | { type: 'save-glossary'; entries: GlossaryEntry[] };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
@@ -72,6 +78,8 @@ export type MainToUi =
   | { type: 'task-stopped'; task: TaskKind }
   | { type: 'pdf-exported'; files: ExportedFile[] }
   | { type: 'snippets'; snippets: Snippet[] }
+  | { type: 'check-results'; results: CheckResult[]; scope: Scope }
+  | { type: 'glossary'; entries: GlossaryEntry[] }
   | { type: 'settings'; settings: Settings }
   // A menu command asked for this tab; overrides the remembered one.
   | { type: 'open-tab'; tab: TabName }
@@ -86,6 +94,21 @@ export type MainToUi =
       /** Layers left in the source language for want of a translation (localize). */
       untranslated: number;
     };
+
+/** A layer with what the check found in it. */
+export interface CheckResult {
+  nodeId: string;
+  layerName: string;
+  characters: string;
+  findings: Finding[];
+}
+
+/** A layer to fix, and which rules' fixes to apply to it. */
+export interface CheckTarget {
+  nodeId: string;
+  layerName: string;
+  rules: RuleId[];
+}
 
 /** One exported file, named after its layer. */
 export interface ExportedFile {
@@ -202,6 +225,7 @@ const TASK_KINDS: Record<TaskKind, true> = {
   apply: true,
   export: true,
   generate: true,
+  check: true,
 };
 
 /** A count a progress report can carry: a whole number, never negative. */
@@ -257,6 +281,37 @@ function isChangeSet(value: unknown): value is ChangeSet {
     typeof v.unchangedCount === 'number' &&
     typeof v.createdAt === 'number' &&
     (v.scope === undefined || isScope(v.scope))
+  );
+}
+
+function isRules(value: unknown): value is RuleId[] {
+  return Array.isArray(value) && value.every(isRuleId);
+}
+
+function isCheckTargets(value: unknown): value is CheckTarget[] {
+  return (
+    Array.isArray(value) &&
+    value.every((t) => {
+      if (typeof t !== 'object' || t === null) return false;
+      const v = t as Record<string, unknown>;
+      return typeof v.nodeId === 'string' && typeof v.layerName === 'string' && isRules(v.rules);
+    })
+  );
+}
+
+function isCheckResults(value: unknown): value is CheckResult[] {
+  return (
+    Array.isArray(value) &&
+    value.every((r) => {
+      if (typeof r !== 'object' || r === null) return false;
+      const v = r as Record<string, unknown>;
+      return (
+        typeof v.nodeId === 'string' &&
+        typeof v.layerName === 'string' &&
+        typeof v.characters === 'string' &&
+        isFindings(v.findings)
+      );
+    })
   );
 }
 
@@ -343,6 +398,21 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return typeof p.settings === 'object' && p.settings !== null
         ? { type: 'save-settings', settings: parseSettings(p.settings) }
         : null;
+    case 'check':
+      return isScope(p.scope) &&
+        typeof p.includeHidden === 'boolean' &&
+        isRules(p.rules) &&
+        isGlossary(p.glossary)
+        ? { type: 'check', scope: p.scope, includeHidden: p.includeHidden, rules: p.rules, glossary: p.glossary }
+        : null;
+    case 'plan-check':
+      return isCheckTargets(p.targets) && isGlossary(p.glossary) && isScope(p.scope)
+        ? { type: 'plan-check', targets: p.targets, glossary: p.glossary, scope: p.scope }
+        : null;
+    case 'get-glossary':
+      return { type: 'get-glossary' };
+    case 'save-glossary':
+      return isGlossary(p.entries) ? { type: 'save-glossary', entries: p.entries } : null;
     case 'merge':
       return Array.isArray(p.rows) && p.rows.every(isStringRecord)
         ? { type: 'merge', rows: p.rows as Array<Record<string, string>> }
@@ -421,6 +491,12 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
       return typeof p.settings === 'object' && p.settings !== null
         ? { type: 'settings', settings: parseSettings(p.settings) }
         : null;
+    case 'check-results':
+      return isCheckResults(p.results) && isScope(p.scope)
+        ? { type: 'check-results', results: p.results, scope: p.scope }
+        : null;
+    case 'glossary':
+      return isGlossary(p.entries) ? { type: 'glossary', entries: p.entries } : null;
     case 'open-tab':
       return isTabName(p.tab) ? { type: 'open-tab', tab: p.tab } : null;
     case 'notice':

@@ -741,3 +741,50 @@ describe('path matching in messages', () => {
     expect(unwrapMainMessage({ type: 'change-set', changeSet })).not.toBeNull();
   });
 });
+
+describe('check messages', () => {
+  const glossary = [{ avoid: 'log in', use: 'sign in', caseSensitive: false, wholeWord: true }];
+  const check = { type: 'check', scope: 'page', includeHidden: true, rules: ['double-space', 'glossary'], glossary };
+
+  it('accepts a check request', () => {
+    expect(unwrapUiMessage(check)).toEqual(check);
+  });
+
+  const badChecks: Array<[string, Record<string, unknown>]> = [
+    ['an unknown rule', { ...check, rules: ['spelling'] }],
+    ['a glossary entry without a term', { ...check, glossary: [{ ...glossary[0], avoid: '' }] }],
+    ['a non-boolean includeHidden', { ...check, includeHidden: 1 }],
+    ['an unknown scope', { ...check, scope: 'everywhere' }],
+  ];
+  for (const [label, bad] of badChecks) {
+    it(`rejects a check with ${label}`, () => {
+      expect(unwrapUiMessage(bad)).toBeNull();
+    });
+  }
+
+  it('accepts plan-check targets with rules, and rejects unknown rules', () => {
+    const msg = { type: 'plan-check', targets: [{ nodeId: '1:1', layerName: 'A', rules: ['edge-space'] }], glossary, scope: 'page' };
+    expect(unwrapUiMessage(msg)).toEqual(msg);
+    expect(unwrapUiMessage({ ...msg, targets: [{ nodeId: '1:1', layerName: 'A', rules: ['x'] }] })).toBeNull();
+  });
+
+  it('accepts the glossary requests and replies', () => {
+    expect(unwrapUiMessage({ type: 'get-glossary' })).toEqual({ type: 'get-glossary' });
+    expect(unwrapUiMessage({ type: 'save-glossary', entries: glossary })).toEqual({ type: 'save-glossary', entries: glossary });
+    expect(unwrapMainMessage({ type: 'glossary', entries: glossary })).toEqual({ type: 'glossary', entries: glossary });
+    expect(unwrapUiMessage({ type: 'save-glossary', entries: [{ avoid: 'x' }] })).toBeNull();
+  });
+
+  it('accepts check results with findings, and rejects malformed findings', () => {
+    const results = [{ nodeId: '1:1', layerName: 'A', characters: 'a  b', findings: [{ rule: 'double-space', start: 1, end: 3, replacement: ' ' }] }];
+    expect(unwrapMainMessage({ type: 'check-results', results, scope: 'page' })).toEqual({ type: 'check-results', results, scope: 'page' });
+    const bad = [{ ...results[0], findings: [{ rule: 'double-space', start: 3, end: 1 }] }];
+    expect(unwrapMainMessage({ type: 'check-results', results: bad, scope: 'page' })).toBeNull();
+  });
+
+  it('accepts check as a change source and a task', () => {
+    const change = { nodeId: '1:1', layerName: 'A', before: 'a', after: 'b', source: 'check', accepted: true };
+    expect(unwrapUiMessage({ type: 'apply', changes: [change] })).not.toBeNull();
+    expect(unwrapMainMessage({ type: 'progress', task: 'check', done: 1, total: 2 })).not.toBeNull();
+  });
+});
