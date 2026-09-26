@@ -126,14 +126,12 @@
         border: 1px solid #bfdbfe;
       }
 
-      .format-selector,
       .scope-selector {
         display: flex;
         gap: 8px;
         margin-bottom: 16px;
       }
 
-      .format-option,
       .scope-option {
         flex: 1;
         padding: 8px 12px;
@@ -145,14 +143,12 @@
         transition: all 0.2s;
       }
 
-      .format-option.selected,
       .scope-option.selected {
         border-color: #3b82f6;
         background: #dbeafe;
         color: #1e40af;
       }
 
-      .format-option:hover,
       .scope-option:hover {
         border-color: #3b82f6;
       }
@@ -414,11 +410,6 @@
             <div class="instruction">
               Extract all text layers from the currently selected frames or
               entire page.
-            </div>
-
-            <div class="format-selector">
-              <div class="format-option selected" data-format="csv">CSV</div>
-              <div class="format-option" data-format="json">JSON</div>
             </div>
 
             <div class="scope-selector">

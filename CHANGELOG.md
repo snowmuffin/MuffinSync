@@ -64,6 +64,10 @@ All notable changes to MuffinSync will be documented in this file.
   component) instead of being concatenated into an HTML string. Those lines
   can include text-layer names read from an imported file, so the old
   approach was an injection path fed by document content.
+- The CSV/JSON selector above the Extract button is gone. It was never
+  read: the format has always been decided by which download button is
+  pressed after extracting, so the user chose twice and only the second
+  choice counted.
 
 ### Fixed
 - **Mixed-font import**: text layers using more than one font across character

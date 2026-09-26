@@ -24,12 +24,6 @@ export interface SearchMatch {
 
 export type ExportFormat = 'csv' | 'json';
 
-const EXPORT_FORMATS: readonly string[] = ['csv', 'json'];
-
-export function isExportFormat(value: string): value is ExportFormat {
-  return EXPORT_FORMATS.includes(value);
-}
-
 /** A text change the user may accept. See spec section 3. */
 export interface ProposedChange {
   nodeId: string;

@@ -1,5 +1,4 @@
 import type { ExportFormat, TextLayerData } from '../../shared/types';
-import { isExportFormat } from '../../shared/types';
 import { toCSV } from '../format/csv';
 import { toJSON } from '../format/json';
 import { byId, debugLog, messageOf } from '../dom';
@@ -8,25 +7,13 @@ import { attemptDownload, filenameFor, mimeTypeFor } from '../download';
 import { post } from '../post';
 import { getScope } from './scope';
 
-let selectedFormat: ExportFormat = 'csv';
-
+/**
+ * There is no format choice before extracting: the format is picked by which
+ * download button is pressed afterwards. A CSV/JSON selector used to sit above
+ * the Extract button, but nothing read it -- the user chose twice and only the
+ * second choice counted.
+ */
 export function initExtract(root: Document): void {
-  // Format selector
-  root.querySelectorAll<HTMLElement>('.format-option').forEach((option) => {
-    option.addEventListener('click', () => {
-      root
-        .querySelectorAll<HTMLElement>('.format-option')
-        .forEach((opt) => opt.classList.remove('selected'));
-      option.classList.add('selected');
-      const format = option.dataset.format;
-      if (format !== undefined && isExportFormat(format)) {
-        selectedFormat = format;
-      }
-      debugLog(`Format changed: ${selectedFormat}`);
-    });
-  });
-
-  // Extract button
   byId('extract-btn', root)?.addEventListener('click', () => {
     debugLog('Text extraction started');
     showStatus('Extracting text layers...', 'info');

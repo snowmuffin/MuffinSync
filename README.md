@@ -36,9 +36,9 @@ MuffinSync is a powerful and user-friendly plugin for Figma, designed to streaml
 
 1. **Run the Plugin**: Access the plugin via Plugins > MuffinSync in your Figma application.
 2. **Extract Text**:
-   - Choose your desired format (CSV or JSON).
    - Choose the extraction scope: **Selection** (the layers inside what's currently selected) or **Current page** (everything on the page). Selection is disabled when nothing is selected.
    - Click the "Extract Text Layers" button to initiate the export.
+   - Download the result with **CSV Download** or **JSON Download**.
 3. **Edit Externally**: Open the saved file in your preferred text editor, make necessary text changes, and save the file.
 4. **Import Changes**: Use the "Select File to Import" button to choose your edited file. The plugin shows a review screen listing what would change; uncheck anything you don't want and click **Apply** to write the accepted changes, or **Cancel** to close the review without changing anything.
 5. **Find & Replace**: Switch to the **Find & Replace** tab. Type the text to find, and optionally what to replace it with; choose Selection or Current page, then click **Search**. The results list shows every matching layer with its text and match count. Uncheck any layers you don't want, then click **Replace N layers** to send them to the same review screen import uses, or **Close** to leave the document untouched. Leaving "Replace with" empty turns Search into a pure lookup — the results list has no checkboxes or Replace button, only Close.
@@ -123,7 +123,7 @@ MuffinSync/
 │   │   ├── post.ts      # typed postMessage to the sandbox
 │   │   ├── download.ts  # filenameFor, mimeTypeFor, attemptDownload, displayDownloadContent
 │   │   ├── features/
-│   │   │   ├── extract.ts        # format selection, extract button, scoped extraction
+│   │   │   ├── extract.ts        # extract button, scoped extraction, the CSV/JSON download buttons
 │   │   │   ├── import.ts         # parses the chosen file, posts plan-import
 │   │   │   ├── scope.ts          # tracks the chosen extraction/search scope, disables Selection when nothing is selected
 │   │   │   ├── tabs.ts           # switches the Extract / Find & Replace panels by class toggle
