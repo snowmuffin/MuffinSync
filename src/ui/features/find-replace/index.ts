@@ -105,7 +105,10 @@ export function initFindReplace(root: Document): void {
   const caseSensitive = root.getElementById('case-sensitive') as HTMLInputElement | null;
   const wholeWord = root.getElementById('whole-word') as HTMLInputElement | null;
   const searchBtn = root.getElementById('search-btn') as HTMLButtonElement | null;
-  if (!findInput || !replaceInput || !caseSensitive || !wholeWord || !searchBtn) return;
+  const form = root.getElementById('find-form') as HTMLFormElement | null;
+  if (!findInput || !replaceInput || !caseSensitive || !wholeWord || !searchBtn || !form) {
+    return;
+  }
 
   // Empty disables the button (spec 3.4); whitespace does not. A query of two
   // spaces replaced by one is ordinary copy QA, so the length that decides is
@@ -114,7 +117,11 @@ export function initFindReplace(root: Document): void {
     searchBtn.disabled = findInput.value.length === 0;
   });
 
-  searchBtn.addEventListener('click', () => {
+  // A form, so Enter in either field searches as the button does. The browser
+  // skips implicit submission while the submit button is disabled; the empty
+  // check below covers anything that submits regardless.
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
     // Posted verbatim. Trimming would search something other than what the
     // field shows: " Pro" typed to avoid matching "Product" would search
     // "Pro" and then rewrite it, on the path that writes to the document.

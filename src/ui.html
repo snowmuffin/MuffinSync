@@ -460,7 +460,7 @@
         </div>
 
         <div id="find-replace-panel" class="tab-panel hidden">
-          <div class="section">
+          <form id="find-form" class="section">
             <label class="field-label" for="find-input">Find</label>
             <input id="find-input" type="text" class="text-input" placeholder="Text to find" />
 
@@ -479,10 +479,10 @@
               <div class="scope-option" data-scope="page">Current page</div>
             </div>
 
-            <button class="button primary" id="search-btn" type="button" disabled>
+            <button class="button primary" id="search-btn" type="submit" disabled>
               Search
             </button>
-          </div>
+          </form>
         </div>
       </div>
 

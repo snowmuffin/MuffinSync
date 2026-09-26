@@ -85,6 +85,8 @@ All notable changes to MuffinSync will be documented in this file.
 - **An import file naming the same layer twice is rejected**, listing the
   repeated ids. Both rows used to become review entries sharing one
   checkbox, and whichever was applied last silently won.
+- Pressing Enter in the Find or Replace field now searches, as the Search
+  button does.
 
 ### Removed
 - Unused `css-loader` / `style-loader` dependencies and their webpack rule — the

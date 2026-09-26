@@ -17,11 +17,13 @@ function markup(): void {
   document.body.innerHTML = `
     <div id="main-content">
       <div id="find-replace-panel" class="tab-panel">
-        <input id="find-input" type="text" />
-        <input id="replace-input" type="text" />
-        <input id="case-sensitive" type="checkbox" />
-        <input id="whole-word" type="checkbox" />
-        <button class="button primary" id="search-btn" type="button" disabled></button>
+        <form id="find-form">
+          <input id="find-input" type="text" />
+          <input id="replace-input" type="text" />
+          <input id="case-sensitive" type="checkbox" />
+          <input id="whole-word" type="checkbox" />
+          <button class="button primary" id="search-btn" type="submit" disabled></button>
+        </form>
       </div>
       <div class="scope-selector">
         <div class="scope-option selected" data-scope="selection"></div>
@@ -35,6 +37,7 @@ function markup(): void {
 
 const input = (id: string) => document.getElementById(id) as HTMLInputElement;
 const searchBtn = () => document.getElementById('search-btn') as HTMLButtonElement;
+const form = () => document.getElementById('find-form') as HTMLFormElement;
 
 describe('find & replace wiring', () => {
   beforeEach(() => {
@@ -90,6 +93,33 @@ describe('find & replace wiring', () => {
       caseSensitive: false,
       wholeWord: false,
     });
+  });
+
+  it('searches when the form is submitted, as Enter in a field does', () => {
+    input('find-input').value = 'Sign up';
+    input('find-input').dispatchEvent(new Event('input'));
+    form().requestSubmit();
+    expect(post).toHaveBeenCalledWith({
+      type: 'search',
+      query: 'Sign up',
+      scope: 'selection',
+      caseSensitive: false,
+      wholeWord: false,
+    });
+  });
+
+  it('posts nothing when a submit arrives with an empty query', () => {
+    // The browser does not submit implicitly while the button is disabled;
+    // this is the guard for anything that dispatches submit regardless.
+    form().dispatchEvent(new Event('submit', { cancelable: true }));
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('cancels the submission, so the panel is never navigated away', () => {
+    input('find-input').value = 'x';
+    const event = new Event('submit', { cancelable: true });
+    form().dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it('posts the query, the scope, and both options', () => {
