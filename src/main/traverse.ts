@@ -14,9 +14,28 @@ export interface TextNodeLike {
   readonly parent?: VisibilityNode | null;
 }
 
+/**
+ * The name of the node's top-level frame: the ancestor that sits directly on
+ * the page. `''` for a layer that is itself directly on the page. Cached by
+ * parent id across one walk, since siblings share the answer.
+ */
+export function topFrameName(node: VisibilityNode, cache: Map<string, string>): string {
+  const parent = node.parent;
+  if (!parent || parent.type === 'PAGE') return '';
+  const known = cache.get(parent.id);
+  if (known !== undefined) return known;
+  let top = parent;
+  while (top.parent && top.parent.type !== 'PAGE') top = top.parent;
+  const name = top.name ?? '';
+  cache.set(parent.id, name);
+  return name;
+}
+
 /** What `isShown` walks: a node's own visibility and its ancestors'. */
 export interface VisibilityNode {
   readonly id: string;
+  readonly name?: string;
+  readonly type?: string;
   readonly visible?: boolean;
   readonly parent?: VisibilityNode | null;
 }
@@ -49,7 +68,9 @@ export function isShown(node: VisibilityNode, cache: Map<string, boolean>): bool
 
 export interface CollectOptions {
   /** Include layers that are hidden or inside something hidden. Default true. */
-  includeHidden: boolean;
+  includeHidden?: boolean;
+  /** Record each layer's top-level frame name, for document exports. */
+  withFrames?: boolean;
 }
 
 /**
@@ -75,9 +96,11 @@ export interface TraversableNode extends TextNodeLike {
 export async function collectTextLayers(
   roots: ReadonlyArray<TraversableNode>,
   control: TaskControl,
-  options: CollectOptions = { includeHidden: true }
+  options: CollectOptions = {}
 ): Promise<TextLayerData[] | 'stopped'> {
+  const includeHidden = options.includeHidden ?? true;
   const visibility = new Map<string, boolean>();
+  const frames = new Map<string, string>();
   const nodes: TextNodeLike[] = [];
   for (const root of roots) {
     if (root.type === 'TEXT') nodes.push(root);
@@ -93,8 +116,10 @@ export async function collectTextLayers(
     (node) => {
       // Deleted on the canvas since it was found: there is nothing to read.
       if (node.removed) return;
-      if (!options.includeHidden && !isShown(node, visibility)) return;
-      found.push({ id: node.id, name: node.name, characters: node.characters ?? '' });
+      if (!includeHidden && !isShown(node, visibility)) return;
+      const row: TextLayerData = { id: node.id, name: node.name, characters: node.characters ?? '' };
+      if (options.withFrames) row.frame = topFrameName(node, frames);
+      found.push(row);
     },
     control
   );

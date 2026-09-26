@@ -1,4 +1,7 @@
 import type { ExportFormat } from '../shared/types';
+
+/** Anything the plugin saves: a text export, or frames exported as PDF. */
+export type FileKind = ExportFormat | 'pdf' | 'zip';
 import { byId, debugLog, messageOf } from './dom';
 import { showStatus } from './status';
 
@@ -28,16 +31,47 @@ export function filenameFor(format: ExportFormat, now: Date = new Date()): strin
   return `figma-text-layers-${now.getTime()}.${format}`;
 }
 
-export function mimeTypeFor(format: ExportFormat): string {
-  return format === 'csv' ? 'text/csv' : 'application/json';
+const MIME_TYPES: Record<FileKind, string> = {
+  csv: 'text/csv',
+  json: 'application/json',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  md: 'text/markdown',
+  epub: 'application/epub+zip',
+  pdf: 'application/pdf',
+  zip: 'application/zip',
+};
+
+export function mimeTypeFor(kind: FileKind): string {
+  return MIME_TYPES[kind];
+}
+
+/**
+ * A file name from a layer name: characters no file system accepts become
+ * `-`, and an empty result falls back to `untitled`.
+ */
+export function safeFileName(name: string): string {
+  const cleaned = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim();
+  return cleaned === '' ? 'untitled' : cleaned;
+}
+
+function base64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
 }
 
 export async function attemptDownload(
-  content: string,
+  content: string | Uint8Array,
   filename: string,
   mimeType: string,
-  format: ExportFormat
+  format: FileKind
 ): Promise<void> {
+  // Blob and FileSystemWritableFileStream accept either; the cast is only
+  // TypeScript's ArrayBufferLike vs ArrayBuffer distinction.
+  const part = content as BlobPart;
   debugLog('🚀 Multiple download methods attempt started');
 
   // Method 1: File System Access API (Chrome 86+)
@@ -57,7 +91,7 @@ export async function attemptDownload(
       });
 
       const writable = await fileHandle.createWritable();
-      await writable.write(content);
+      await writable.write(part);
       await writable.close();
 
       debugLog('✅ File System Access API download success', 'success');
@@ -71,7 +105,7 @@ export async function attemptDownload(
   // Method 2: Blob + URL.createObjectURL
   try {
     debugLog('Method 2: Blob URL download attempt');
-    const blob = new Blob([content], { type: mimeType });
+    const blob = new Blob([part], { type: mimeType });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
@@ -99,9 +133,10 @@ export async function attemptDownload(
   // Method 3: Data URL
   try {
     debugLog('Method 3: Data URL download attempt');
-    const dataUrl = `data:${mimeType};charset=utf-8,${encodeURIComponent(
-      content
-    )}`;
+    const dataUrl =
+      typeof content === 'string'
+        ? `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`
+        : `data:${mimeType};base64,${base64(content)}`;
 
     const a = document.createElement('a');
     a.href = dataUrl;
@@ -125,7 +160,7 @@ export async function attemptDownload(
   // Method 4: Open in new window
   try {
     debugLog('Method 4: New window download attempt');
-    const blob = new Blob([content], { type: mimeType });
+    const blob = new Blob([part], { type: mimeType });
     const url = URL.createObjectURL(blob);
 
     const newWindow = window.open(url, '_blank');
@@ -141,7 +176,13 @@ export async function attemptDownload(
     debugLog(`New window download failed: ${messageOf(error)}`, 'error');
   }
 
-  // All methods failed - switch to manual copy mode
+  // All methods failed. A binary file cannot be copied out as text.
+  if (typeof content !== 'string') {
+    showStatus(`❌ ${filename} could not be saved automatically.`, 'error');
+    return;
+  }
+
+  // Switch to manual copy mode
   debugLog(
     '⚠️ All automatic download methods failed, switching to manual mode',
     'error'
@@ -156,7 +197,7 @@ export async function attemptDownload(
 export function displayDownloadContent(
   content: string,
   filename: string,
-  format: ExportFormat
+  format: FileKind
 ): void {
   debugLog('Manual download content display');
 
@@ -183,17 +224,31 @@ export function displayDownloadContent(
     border-left: 4px solid #f59e0b;
   `;
 
-  manualSection.innerHTML = `
-    <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">
-      ⚠️ Manual Download Required
-    </div>
-    <div style="color: #78350f; font-size: 14px; margin-bottom: 12px;">
-      Automatic download is not supported. Please copy the text below and save as a file.
-    </div>
-    <div style="margin-bottom: 8px;">
-      <strong>Filename:</strong> <code style="background: #fbbf24; padding: 2px 4px; border-radius: 3px;">${filename}</code>
-    </div>
-    <textarea id="manual-content" readonly style="
+  // Built with textContent and value, never innerHTML: the content is layer
+  // text from the document, and a layer reading `</textarea><script>` must
+  // stay text.
+  const heading = document.createElement('div');
+  heading.style.cssText = 'font-weight: 600; color: #92400e; margin-bottom: 8px;';
+  heading.textContent = '⚠️ Manual Download Required';
+
+  const note = document.createElement('div');
+  note.style.cssText = 'color: #78350f; font-size: 14px; margin-bottom: 12px;';
+  note.textContent =
+    'Automatic download is not supported. Please copy the text below and save as a file.';
+
+  const nameLine = document.createElement('div');
+  nameLine.style.cssText = 'margin-bottom: 8px;';
+  const nameLabel = document.createElement('strong');
+  nameLabel.textContent = 'Filename: ';
+  const nameCode = document.createElement('code');
+  nameCode.style.cssText = 'background: #fbbf24; padding: 2px 4px; border-radius: 3px;';
+  nameCode.textContent = filename;
+  nameLine.append(nameLabel, nameCode);
+
+  const textarea = document.createElement('textarea');
+  textarea.id = 'manual-content';
+  textarea.readOnly = true;
+  textarea.style.cssText = `
       width: 100%;
       height: 200px;
       padding: 12px;
@@ -203,14 +258,18 @@ export function displayDownloadContent(
       font-size: 12px;
       background-color: #fffbeb;
       resize: vertical;
-    " placeholder="File content will be displayed here...">${content}</textarea>
-    <div style="margin-top: 12px; font-size: 13px; color: #78350f;">
-      <strong>How to save:</strong><br>
-      1. Select all text above (Cmd+A or Ctrl+A)<br>
-      2. Copy (Cmd+C or Ctrl+C)<br>
-      3. Paste into text editor and save with .${format} extension
-    </div>
   `;
+  textarea.value = content;
+
+  const howTo = document.createElement('div');
+  howTo.style.cssText = 'margin-top: 12px; font-size: 13px; color: #78350f; white-space: pre-line;';
+  howTo.textContent =
+    'How to save:\n' +
+    '1. Select all text above (Cmd+A or Ctrl+A)\n' +
+    '2. Copy (Cmd+C or Ctrl+C)\n' +
+    `3. Paste into text editor and save with .${format} extension`;
+
+  manualSection.append(heading, note, nameLine, textarea, howTo);
 
   exportSection.appendChild(manualSection);
 

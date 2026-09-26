@@ -1,8 +1,13 @@
 import type { TextLayerData } from '../../shared/types';
 import { FormatError } from './csv';
 
+/** Exactly id, name and characters, in that order -- the round-trip format. */
 export function toJSON(rows: TextLayerData[]): string {
-  return JSON.stringify(rows, null, 2);
+  return JSON.stringify(
+    rows.map(({ id, name, characters }) => ({ id, name, characters })),
+    null,
+    2
+  );
 }
 
 function isTextLayerData(value: unknown): value is TextLayerData {

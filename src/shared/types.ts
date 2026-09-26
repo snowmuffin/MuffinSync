@@ -3,6 +3,12 @@ export interface TextLayerData {
   id: string;
   name: string;
   characters: string;
+  /**
+   * The name of the layer's top-level frame, set by extract so document
+   * exports can group by it. Never written to CSV or JSON, and never read
+   * from an imported file.
+   */
+  frame?: string;
 }
 
 /**
@@ -27,13 +33,17 @@ export interface SearchMatch {
   matchCount: number;
 }
 
-export type ExportFormat = 'csv' | 'json';
+/**
+ * A text export. CSV and JSON round-trip through import; the rest are for
+ * reading and sharing (local features spec §4).
+ */
+export type ExportFormat = 'csv' | 'json' | 'xlsx' | 'docx' | 'md' | 'epub';
 
 /**
  * A long piece of document work the sandbox reports progress on. Only one runs
  * at a time. See docs/superpowers/specs/2026-09-26-large-documents-design.md §5.
  */
-export type TaskKind = 'extract' | 'search' | 'plan' | 'apply';
+export type TaskKind = 'extract' | 'search' | 'plan' | 'apply' | 'export' | 'generate';
 
 /** A text change the user may accept. See spec section 3. */
 export interface ProposedChange {

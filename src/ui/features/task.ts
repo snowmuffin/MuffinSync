@@ -17,6 +17,8 @@ const LABELS: Record<TaskKind, string> = {
   search: 'Searching text layers...',
   plan: 'Checking what would change...',
   apply: 'Applying changes...',
+  export: 'Exporting frames...',
+  generate: 'Generating frames...',
 };
 
 let current: TaskKind | null = null;
@@ -35,7 +37,7 @@ function show(task: TaskKind, done?: number, total?: number): void {
     done !== undefined && total !== undefined && total > 0
       ? ` ${count(done)} of ${count(total)}`
       : '';
-  // Apply is never stopped halfway (spec §6), so it offers no Stop.
+  // Apply is never stopped halfway (large-documents spec §6), so it offers no Stop.
   const action = task === 'apply' ? undefined : { label: 'Stop', onClick: requestStop };
   showStatus(LABELS[task] + progress, 'progress', [], action);
 }

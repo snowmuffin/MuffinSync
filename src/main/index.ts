@@ -1,12 +1,12 @@
 import type { MatchOptions, ReplaceTarget, Scope, TaskKind, TextLayerData } from '../shared/types';
-import type { MainToUi } from '../shared/messages';
+import type { ExportedFile, MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
 import { applyTextChanges, type ApplicableNode } from './apply';
 import { buildChangeSet, type ChangeTarget } from './plan';
 import { matchingLayers, replaceMatches } from '../shared/match';
 import { centreOnNode } from './navigate';
-import type { TaskControl } from './chunked';
+import { runChunked, type TaskControl } from './chunked';
 import { createFontCache, type FontRef } from './fonts';
 
 figma.showUI(__html__, { width: 400, height: 500 });
@@ -101,16 +101,27 @@ async function runTask(task: TaskKind, body: (control: TaskControl) => Promise<v
 async function collectFor(
   scope: Scope,
   includeHidden: boolean,
-  control: TaskControl
+  control: TaskControl,
+  withFrames = false
 ): Promise<TextLayerData[] | 'stopped'> {
   const roots = await rootsFor(scope);
-  if (includeHidden) return collectTextLayers(roots, control);
+  if (includeHidden) return collectTextLayers(roots, control, { withFrames });
   figma.skipInvisibleInstanceChildren = true;
   try {
-    return await collectTextLayers(roots, control, { includeHidden: false });
+    return await collectTextLayers(roots, control, { includeHidden: false, withFrames });
   } finally {
     figma.skipInvisibleInstanceChildren = false;
   }
+}
+
+/** Top-level layer types worth exporting when nothing is selected. */
+const FRAME_TYPES = new Set(['FRAME', 'COMPONENT', 'COMPONENT_SET', 'SECTION', 'INSTANCE', 'GROUP']);
+
+/** The selection, or else every top-level frame on the page. */
+function framesToExport(): SceneNode[] {
+  const selection = figma.currentPage.selection;
+  if (selection.length > 0) return [...selection];
+  return figma.currentPage.children.filter((node) => FRAME_TYPES.has(node.type));
 }
 
 /** Every font a layer uses, including the mixed-font case. */
@@ -155,7 +166,7 @@ figma.ui.onmessage = async (event: unknown) => {
       case 'extract': {
         try {
           await runTask('extract', async (control) => {
-            const rows = await collectFor(message.scope, message.includeHidden, control);
+            const rows = await collectFor(message.scope, message.includeHidden, control, true);
             if (rows === 'stopped') {
               send({ type: 'task-stopped', task: 'extract' });
             } else {
@@ -289,6 +300,37 @@ figma.ui.onmessage = async (event: unknown) => {
         } catch (error) {
           throw new Error(
             `Error occurred while navigating: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+        break;
+      }
+      case 'export-pdf': {
+        try {
+          await runTask('export', async (control) => {
+            const nodes = framesToExport();
+            if (nodes.length === 0) {
+              send({ type: 'error', message: 'There are no frames on this page to export.' });
+              return;
+            }
+            const files: ExportedFile[] = [];
+            const outcome = await runChunked(
+              nodes,
+              async (node) => {
+                files.push({ name: node.name, data: await node.exportAsync({ format: 'PDF' }) });
+              },
+              control
+            );
+            send(
+              outcome === 'stopped'
+                ? { type: 'task-stopped', task: 'export' }
+                : { type: 'pdf-exported', files }
+            );
+          });
+        } catch (error) {
+          throw new Error(
+            `Error occurred while exporting frames: ${
               error instanceof Error ? error.message : String(error)
             }`
           );

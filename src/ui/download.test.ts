@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filenameFor, mimeTypeFor } from './download';
+import { filenameFor, mimeTypeFor, safeFileName } from './download';
 
 describe('filenameFor', () => {
   it('names CSV exports with the epoch timestamp', () => {
@@ -23,5 +23,30 @@ describe('mimeTypeFor', () => {
   it('maps each format', () => {
     expect(mimeTypeFor('csv')).toBe('text/csv');
     expect(mimeTypeFor('json')).toBe('application/json');
+  });
+});
+
+describe('mimeTypeFor, every kind', () => {
+  it('names the Office, EPUB, Markdown, PDF and ZIP types', () => {
+    expect(mimeTypeFor('xlsx')).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(mimeTypeFor('docx')).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    expect(mimeTypeFor('epub')).toBe('application/epub+zip');
+    expect(mimeTypeFor('md')).toBe('text/markdown');
+    expect(mimeTypeFor('pdf')).toBe('application/pdf');
+    expect(mimeTypeFor('zip')).toBe('application/zip');
+  });
+});
+
+describe('safeFileName', () => {
+  it('replaces characters file systems reject', () => {
+    expect(safeFileName('Home / Hero: v2?')).toBe('Home - Hero- v2-');
+  });
+
+  it('keeps non-ASCII names', () => {
+    expect(safeFileName('홈 화면')).toBe('홈 화면');
+  });
+
+  it('falls back to untitled for an empty name', () => {
+    expect(safeFileName('   ')).toBe('untitled');
   });
 });

@@ -109,6 +109,7 @@
       /* While a long task runs, the buttons that would start another look
          disabled. Their handlers refuse too; see src/ui/features/task.ts. */
       body[data-busy] #extract-btn,
+      body[data-busy] #export-pdf-btn,
       body[data-busy] #import-btn,
       body[data-busy] #search-btn {
         cursor: not-allowed;
@@ -128,6 +129,31 @@
         background: transparent;
         text-decoration: line-through;
         color: #94a3b8;
+      }
+
+      .download-group-label {
+        font-size: 12px;
+        color: #64748b;
+        margin: 4px 0 6px;
+      }
+
+      .download-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .download-buttons .button {
+        flex: 1 1 0;
+        min-width: 70px;
+        margin: 0;
+        padding: 10px 4px;
+        font-size: 13px;
+      }
+
+      #export-pdf-btn {
+        margin-top: 8px;
       }
 
       .list-more {
@@ -195,12 +221,13 @@
 
       .scope-option {
         flex: 1;
-        padding: 8px 12px;
+        padding: 8px 6px;
         border: 2px solid #e2e8f0;
         border-radius: 6px;
         text-align: center;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 13px;
+        white-space: nowrap;
         transition: all 0.2s;
       }
 
@@ -504,6 +531,9 @@
             <button class="button primary" id="extract-btn">
               Extract Text Layers
             </button>
+            <button class="button secondary" id="export-pdf-btn" type="button">
+              Export frames as PDF
+            </button>
           </div>
           <div id="export-section" class="section hidden">
             <div class="section-title">📁 Extracted Data</div>
@@ -512,16 +542,17 @@
               format below.
             </div>
 
-            <div
-              class="download-buttons"
-              style="display: flex; gap: 8px; margin-bottom: 16px"
-            >
-              <button class="button primary" id="download-csv-btn" style="flex: 1">
-                📄 CSV Download
-              </button>
-              <button class="button primary" id="download-json-btn" style="flex: 1">
-                📋 JSON Download
-              </button>
+            <div class="download-group-label">For editing and importing back</div>
+            <div class="download-buttons">
+              <button class="button primary" data-download="csv">CSV</button>
+              <button class="button primary" data-download="json">JSON</button>
+            </div>
+            <div class="download-group-label">For reading and sharing</div>
+            <div class="download-buttons">
+              <button class="button secondary" data-download="xlsx">Excel</button>
+              <button class="button secondary" data-download="docx">Word</button>
+              <button class="button secondary" data-download="md">Markdown</button>
+              <button class="button secondary" data-download="epub">EPUB</button>
             </div>
           </div>
 

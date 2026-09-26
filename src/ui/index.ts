@@ -2,7 +2,7 @@ import { unwrapMainMessage } from '../shared/messages';
 import { post } from './post';
 import { byId, debugLog } from './dom';
 import { mountStatus, showStatus } from './status';
-import { initExtract, showExportedData } from './features/extract';
+import { initExtract, savePdfs, showExportedData } from './features/extract';
 import { initImport } from './features/import';
 import { openReview, closeReview, invalidateOnSelectionChange } from './features/review';
 import { initFindReplace, showResults } from './features/find-replace';
@@ -99,6 +99,13 @@ window.onmessage = (event: MessageEvent) => {
       setSelectionPresent(message.present);
       invalidateOnSelectionChange();
       break;
+
+    case 'pdf-exported': {
+      const count = message.files.length;
+      savePdfs(message.files);
+      debugLog(`Exported ${count} frame(s) as PDF`);
+      break;
+    }
 
     case 'progress':
       reportProgress(message.task, message.done, message.total);

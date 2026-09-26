@@ -42,7 +42,9 @@ export type UiToMain =
   | { type: 'navigate'; nodeId: string }
   // Ask the running extract, search or plan to stop. Distinct from 'cancel',
   // which closes the plugin. Apply cannot be stopped (spec 2026-09-26 §6).
-  | { type: 'stop-task' };
+  | { type: 'stop-task' }
+  // Export the selected frames, or every top-level frame on the page, as PDF.
+  | { type: 'export-pdf' };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
@@ -55,7 +57,14 @@ export type MainToUi =
   // Sent at the end of each time slice of a long task, not per layer.
   | { type: 'progress'; task: TaskKind; done: number; total: number }
   // The task ended at the user's request and produced nothing.
-  | { type: 'task-stopped'; task: TaskKind };
+  | { type: 'task-stopped'; task: TaskKind }
+  | { type: 'pdf-exported'; files: ExportedFile[] };
+
+/** One exported file, named after its layer. */
+export interface ExportedFile {
+  name: string;
+  data: Uint8Array;
+}
 
 /**
  * Figma delivers plugin messages under more than one envelope depending on
@@ -80,14 +89,16 @@ function peel(event: unknown): Record<string, unknown> | null {
 function isTextLayerRows(value: unknown): value is TextLayerData[] {
   return (
     Array.isArray(value) &&
-    value.every(
-      (r) =>
-        typeof r === 'object' &&
-        r !== null &&
-        typeof (r as Record<string, unknown>).id === 'string' &&
-        typeof (r as Record<string, unknown>).name === 'string' &&
-        typeof (r as Record<string, unknown>).characters === 'string'
-    )
+    value.every((r) => {
+      if (typeof r !== 'object' || r === null) return false;
+      const v = r as Record<string, unknown>;
+      return (
+        typeof v.id === 'string' &&
+        typeof v.name === 'string' &&
+        typeof v.characters === 'string' &&
+        (v.frame === undefined || typeof v.frame === 'string')
+      );
+    })
   );
 }
 
@@ -157,6 +168,8 @@ const TASK_KINDS: Record<TaskKind, true> = {
   search: true,
   plan: true,
   apply: true,
+  export: true,
+  generate: true,
 };
 
 /** A count a progress report can carry: a whole number, never negative. */
@@ -273,6 +286,8 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return typeof p.nodeId === 'string' ? { type: 'navigate', nodeId: p.nodeId } : null;
     case 'stop-task':
       return { type: 'stop-task' };
+    case 'export-pdf':
+      return { type: 'export-pdf' };
     default:
       return null;
   }
@@ -319,6 +334,17 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
         isCount(p.total) &&
         p.done <= p.total
         ? { type: 'progress', task: p.task as TaskKind, done: p.done, total: p.total }
+        : null;
+    case 'pdf-exported':
+      return Array.isArray(p.files) &&
+        p.files.every(
+          (f) =>
+            typeof f === 'object' &&
+            f !== null &&
+            typeof (f as Record<string, unknown>).name === 'string' &&
+            (f as Record<string, unknown>).data instanceof Uint8Array
+        )
+        ? { type: 'pdf-exported', files: p.files as ExportedFile[] }
         : null;
     case 'task-stopped':
       return isMember(TASK_KINDS, p.task)

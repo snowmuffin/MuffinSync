@@ -573,7 +573,7 @@ describe('task messages', () => {
 
   // Each breaks exactly one check on an otherwise valid report.
   const brokenProgress: Array<[string, Record<string, unknown>]> = [
-    ['an unknown task', { task: 'export', done: 1, total: 2 }],
+    ['an unknown task', { task: 'publish', done: 1, total: 2 }],
     ['a non-numeric done', { task: 'search', done: '1', total: 2 }],
     ['a fractional done', { task: 'search', done: 1.5, total: 2 }],
     ['a negative done', { task: 'search', done: -1, total: 2 }],
@@ -598,5 +598,30 @@ describe('task messages', () => {
   it('rejects task-stopped without a known task', () => {
     expect(unwrapMainMessage({ type: 'task-stopped' })).toBeNull();
     expect(unwrapMainMessage({ type: 'task-stopped', task: 'toString' })).toBeNull();
+  });
+});
+
+describe('PDF export messages', () => {
+  it('accepts export-pdf, which carries nothing', () => {
+    expect(unwrapUiMessage({ type: 'export-pdf' })).toEqual({ type: 'export-pdf' });
+  });
+
+  it('accepts exported files with their bytes', () => {
+    const files = [{ name: 'Home', data: new Uint8Array([37, 80, 68, 70]) }];
+    expect(unwrapMainMessage({ type: 'pdf-exported', files })).toEqual({ type: 'pdf-exported', files });
+  });
+
+  it('rejects an exported file whose data is not bytes', () => {
+    expect(unwrapMainMessage({ type: 'pdf-exported', files: [{ name: 'Home', data: [37] }] })).toBeNull();
+  });
+
+  it('rejects an exported file without a name', () => {
+    expect(unwrapMainMessage({ type: 'pdf-exported', files: [{ data: new Uint8Array() }] })).toBeNull();
+  });
+
+  it('accepts progress for the export and generate tasks', () => {
+    for (const task of ['export', 'generate']) {
+      expect(unwrapMainMessage({ type: 'progress', task, done: 1, total: 2 })).not.toBeNull();
+    }
   });
 });
