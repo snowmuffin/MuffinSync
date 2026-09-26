@@ -1,7 +1,7 @@
-import { isWithin } from './traverse';
+import { isWithin, pageOf } from './traverse';
 
 /** What came of trying to centre a node. See `centreOnNode`. */
-export type NavigateResult = 'centred' | 'not-found' | 'other-page';
+export type NavigateResult = 'centred' | 'not-found';
 
 /**
  * Centre a node in the viewport.
@@ -12,23 +12,27 @@ export type NavigateResult = 'centred' | 'not-found' | 'other-page';
  * close the review the user pressed the button from. Zooming answers "where is
  * this" without touching the rule. See spec section 3.5.
  *
- * `scrollAndZoomIntoView` throws for a node that exists but is not on
- * `figma.currentPage` -- reachable here because a change set (unlike a search
- * result) can name nodes from any page in the file. Walking up to find the
- * node's page distinguishes that case from a genuinely missing node, without
- * calling the expensive `figma.loadAllPagesAsync()`. That walk is trustworthy
- * for a node on *any* page, not only one already loaded: under this plugin's
- * `documentAccess: dynamic-page` manifest setting, `getNodeByIdAsync` implicitly
- * loads the node's containing page as part of resolving it, so by the time the
- * node is in hand its whole ancestor chain -- up to and including that page --
- * is synchronously walkable.
+ * `scrollAndZoomIntoView` throws for a node that is not on `figma.currentPage`,
+ * and results and change sets can name nodes on any page. For a node
+ * elsewhere, its page is found by walking up its ancestors and made current
+ * first.
+ * The walk is trustworthy for a node on any page: under
+ * `documentAccess: dynamic-page`, `getNodeByIdAsync` loads the node's page as
+ * part of resolving it, so its whole ancestor chain is synchronously walkable.
  *
  * A thin Figma wrapper by design; spec section 6 excludes these from unit tests.
  */
 export async function centreOnNode(nodeId: string): Promise<NavigateResult> {
   const node = await figma.getNodeByIdAsync(nodeId);
   if (!node || !('absoluteBoundingBox' in node)) return 'not-found';
-  if (!isWithin(node, figma.currentPage)) return 'other-page';
+  if (!isWithin(node, figma.currentPage)) {
+    // Results can span every page now (the document scope). Switching page
+    // changes the selection, which only matters to a selection-scoped review
+    // -- and those name nodes on the current page, so never reach here.
+    const page = pageOf<BaseNode>(node);
+    if (!page || page.type !== 'PAGE') return 'not-found';
+    await figma.setCurrentPageAsync(page as PageNode);
+  }
   figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
   return 'centred';
 }

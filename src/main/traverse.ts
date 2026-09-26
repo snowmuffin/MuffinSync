@@ -9,6 +9,47 @@ export interface TextNodeLike {
   readonly characters?: string;
   /** True once the node has been deleted; the canvas stays live mid-walk. */
   readonly removed?: boolean;
+  /** False when the layer itself is hidden. Pages have no such field. */
+  readonly visible?: boolean;
+  readonly parent?: VisibilityNode | null;
+}
+
+/** What `isShown` walks: a node's own visibility and its ancestors'. */
+export interface VisibilityNode {
+  readonly id: string;
+  readonly visible?: boolean;
+  readonly parent?: VisibilityNode | null;
+}
+
+/**
+ * Whether a layer is actually visible: neither it nor any ancestor is hidden.
+ * `cache` is shared across one walk, keyed by node id, so siblings pay for
+ * their common ancestors once.
+ */
+export function isShown(node: VisibilityNode, cache: Map<string, boolean>): boolean {
+  const chain: VisibilityNode[] = [];
+  let current: VisibilityNode | null | undefined = node;
+  let shown = true;
+  while (current) {
+    const known = cache.get(current.id);
+    if (known !== undefined) {
+      shown = known;
+      break;
+    }
+    chain.push(current);
+    if (current.visible === false) {
+      shown = false;
+      break;
+    }
+    current = current.parent;
+  }
+  for (const visited of chain) cache.set(visited.id, shown);
+  return shown;
+}
+
+export interface CollectOptions {
+  /** Include layers that are hidden or inside something hidden. Default true. */
+  includeHidden: boolean;
 }
 
 /**
@@ -33,8 +74,10 @@ export interface TraversableNode extends TextNodeLike {
  */
 export async function collectTextLayers(
   roots: ReadonlyArray<TraversableNode>,
-  control: TaskControl
+  control: TaskControl,
+  options: CollectOptions = { includeHidden: true }
 ): Promise<TextLayerData[] | 'stopped'> {
+  const visibility = new Map<string, boolean>();
   const nodes: TextNodeLike[] = [];
   for (const root of roots) {
     if (root.type === 'TEXT') nodes.push(root);
@@ -50,6 +93,7 @@ export async function collectTextLayers(
     (node) => {
       // Deleted on the canvas since it was found: there is nothing to read.
       if (node.removed) return;
+      if (!options.includeHidden && !isShown(node, visibility)) return;
       found.push({ id: node.id, name: node.name, characters: node.characters ?? '' });
     },
     control
@@ -62,16 +106,27 @@ export async function collectTextLayers(
  * the fallback rule is testable: an empty selection means the whole page.
  */
 export function resolveRoots<T>(
-  scope: 'selection' | 'page',
+  scope: 'selection' | 'page' | 'document',
   selection: ReadonlyArray<T>,
-  pageChildren: ReadonlyArray<T>
+  pageChildren: ReadonlyArray<T>,
+  pages: ReadonlyArray<T>
 ): ReadonlyArray<T> {
+  if (scope === 'document') return pages;
   return scope === 'selection' && selection.length > 0 ? selection : pageChildren;
 }
 
 /** The one field `isWithin` walks. Figma's BaseNode satisfies it structurally. */
 export interface ParentedNode {
   readonly parent: ParentedNode | null;
+  readonly type?: string;
+}
+
+/** The page a node sits on, or null for a node outside any page. */
+export function pageOf<T extends ParentedNode>(node: T): T | null {
+  for (let current: ParentedNode | null = node; current; current = current.parent) {
+    if (current.type === 'PAGE') return current as T;
+  }
+  return null;
 }
 
 /**

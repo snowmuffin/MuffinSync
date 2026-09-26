@@ -488,14 +488,18 @@
           <div class="section">
             <div class="section-title">1️⃣ Extract Text</div>
             <div class="instruction">
-              Extract all text layers from the currently selected frames or
-              entire page.
+              Extract all text layers from the selection, the current page, or
+              every page.
             </div>
 
             <div class="scope-selector">
               <div class="scope-option selected" data-scope="selection">Selection</div>
               <div class="scope-option" data-scope="page">Current page</div>
+              <div class="scope-option" data-scope="document">All pages</div>
             </div>
+            <label class="checkbox-row">
+              <input class="include-hidden" type="checkbox" checked /> Include hidden layers
+            </label>
 
             <button class="button primary" id="extract-btn">
               Extract Text Layers
@@ -560,7 +564,11 @@
             <div class="scope-selector">
               <div class="scope-option selected" data-scope="selection">Selection</div>
               <div class="scope-option" data-scope="page">Current page</div>
+              <div class="scope-option" data-scope="document">All pages</div>
             </div>
+            <label class="checkbox-row">
+              <input class="include-hidden" type="checkbox" checked /> Include hidden layers
+            </label>
 
             <button class="button primary" id="search-btn" type="submit" disabled>
               Search

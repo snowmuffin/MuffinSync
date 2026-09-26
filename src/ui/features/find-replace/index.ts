@@ -4,7 +4,7 @@ import { ResultList } from './results';
 import { post } from '../../post';
 import { clearStatus, showStatus } from '../../status';
 import { byId } from '../../dom';
-import { getScope } from '../scope';
+import { getIncludeHidden, getScope } from '../scope';
 import { checkQuery } from '../../../shared/match';
 import { beginTask, isBusy } from '../task';
 
@@ -159,6 +159,7 @@ export function initFindReplace(root: Document): void {
       type: 'search',
       query,
       scope,
+      includeHidden: getIncludeHidden(),
       caseSensitive: options.caseSensitive,
       wholeWord: options.wholeWord,
       regex: options.regex,

@@ -36,12 +36,20 @@ export function initScope(root: Document): void {
   listeners?.abort();
   listeners = new AbortController();
   const { signal } = listeners;
+  includeHidden = true;
+  hiddenBoxes(root).forEach((box) => {
+    box.checked = true;
+    box.addEventListener('change', () => {
+      includeHidden = box.checked;
+      hiddenBoxes(root).forEach((other) => (other.checked = includeHidden));
+    }, { signal });
+  });
   options(root).forEach((option) => {
     option.classList.remove('disabled');
     option.addEventListener('click', () => {
       if (option.classList.contains('disabled')) return;
       const next = option.dataset.scope;
-      if (next === 'selection' || next === 'page') {
+      if (next === 'selection' || next === 'page' || next === 'document') {
         applySelection(root, next);
       }
     }, { signal });
@@ -50,6 +58,20 @@ export function initScope(root: Document): void {
 
 export function getScope(): Scope {
   return chosen;
+}
+
+/**
+ * Whether walks include hidden layers. Like the scope, one value shown in each
+ * panel: ticking either box sets both. On by default -- today's behaviour.
+ */
+let includeHidden = true;
+
+function hiddenBoxes(root: Document): HTMLInputElement[] {
+  return Array.from(root.querySelectorAll<HTMLInputElement>('input.include-hidden'));
+}
+
+export function getIncludeHidden(): boolean {
+  return includeHidden;
 }
 
 /**

@@ -13,7 +13,8 @@ export type UiToMain =
   // Sent once the iframe's message handler is installed. Anything the sandbox
   // pushes before this would arrive at nothing and be dropped.
   | { type: 'ui-ready' }
-  | { type: 'extract'; scope: Scope }
+  // `includeHidden: false` skips layers that are hidden or inside something hidden.
+  | { type: 'extract'; scope: Scope; includeHidden: boolean }
   | { type: 'plan-import'; rows: TextLayerData[] }
   | { type: 'apply'; changes: ProposedChange[] }
   | { type: 'cancel' }
@@ -21,6 +22,7 @@ export type UiToMain =
       type: 'search';
       query: string;
       scope: Scope;
+      includeHidden: boolean;
       caseSensitive: boolean;
       wholeWord: boolean;
       regex: boolean;
@@ -163,7 +165,7 @@ function isCount(value: unknown): value is number {
 }
 
 function isScope(value: unknown): value is Scope {
-  return value === 'selection' || value === 'page';
+  return value === 'selection' || value === 'page' || value === 'document';
 }
 
 function isReplaceTargets(value: unknown): value is ReplaceTarget[] {
@@ -222,7 +224,9 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       // No payload: the discriminant is the whole message.
       return { type: 'ui-ready' };
     case 'extract':
-      return isScope(p.scope) ? { type: 'extract', scope: p.scope } : null;
+      return isScope(p.scope) && typeof p.includeHidden === 'boolean'
+        ? { type: 'extract', scope: p.scope, includeHidden: p.includeHidden }
+        : null;
     case 'plan-import':
       return isTextLayerRows(p.rows) ? { type: 'plan-import', rows: p.rows } : null;
     case 'apply':
@@ -232,6 +236,7 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
     case 'search':
       return typeof p.query === 'string' &&
         isScope(p.scope) &&
+        typeof p.includeHidden === 'boolean' &&
         typeof p.caseSensitive === 'boolean' &&
         typeof p.wholeWord === 'boolean' &&
         typeof p.regex === 'boolean'
@@ -239,6 +244,7 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
             type: 'search',
             query: p.query,
             scope: p.scope,
+            includeHidden: p.includeHidden,
             caseSensitive: p.caseSensitive,
             wholeWord: p.wholeWord,
             regex: p.regex,

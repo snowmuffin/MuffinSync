@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initScope, getScope, setSelectionPresent } from './scope';
+import { initScope, getIncludeHidden, getScope, setSelectionPresent } from './scope';
 
 const markup = `
   <div class="scope-selector">
@@ -142,5 +142,53 @@ describe('re-initialising', () => {
     const secondPage = second.querySelector('[data-scope="page"]');
     if (secondPage instanceof HTMLElement) secondPage.click();
     expect(getScope()).toBe('page');
+  });
+});
+
+describe('All pages and hidden layers', () => {
+  const markupWithAll = `
+    <div class="scope-selector">
+      <div class="scope-option selected" data-scope="selection">Selection</div>
+      <div class="scope-option" data-scope="page">Current page</div>
+      <div class="scope-option" data-scope="document">All pages</div>
+    </div>
+    <input class="include-hidden" type="checkbox" checked />
+    <input class="include-hidden" type="checkbox" checked />
+  `;
+  const hiddenBoxes = () => Array.from(document.querySelectorAll<HTMLInputElement>('.include-hidden'));
+
+  beforeEach(() => {
+    document.body.innerHTML = markupWithAll;
+    initScope(document);
+  });
+
+  it('can choose every page', () => {
+    click(document.querySelector('[data-scope="document"]'));
+    expect(getScope()).toBe('document');
+  });
+
+  it('keeps All pages chosen when the selection empties', () => {
+    click(document.querySelector('[data-scope="document"]'));
+    setSelectionPresent(false);
+    expect(getScope()).toBe('document');
+  });
+
+  it('includes hidden layers by default', () => {
+    expect(getIncludeHidden()).toBe(true);
+  });
+
+  it('keeps both panels\' hidden-layer boxes in step', () => {
+    hiddenBoxes()[0].checked = false;
+    hiddenBoxes()[0].dispatchEvent(new Event('change'));
+    expect(getIncludeHidden()).toBe(false);
+    expect(hiddenBoxes()[1].checked).toBe(false);
+  });
+
+  it('resets to including hidden layers on re-init', () => {
+    hiddenBoxes()[0].checked = false;
+    hiddenBoxes()[0].dispatchEvent(new Event('change'));
+    initScope(document);
+    expect(getIncludeHidden()).toBe(true);
+    expect(hiddenBoxes().every((box) => box.checked)).toBe(true);
   });
 });

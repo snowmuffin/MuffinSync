@@ -26,8 +26,8 @@ describe('unwrapUiMessage', () => {
   });
 
   it('keeps the payload of a typed message', () => {
-    expect(unwrapUiMessage({ pluginMessage: { type: 'extract', scope: 'page' } }))
-      .toEqual({ type: 'extract', scope: 'page' });
+    expect(unwrapUiMessage({ pluginMessage: { type: 'extract', scope: 'page', includeHidden: true } }))
+      .toEqual({ type: 'extract', scope: 'page', includeHidden: true });
   });
 
   it('returns null for an unknown type', () => {
@@ -41,11 +41,23 @@ describe('unwrapUiMessage', () => {
   });
 
   it('rejects extract without a scope', () => {
-    expect(unwrapUiMessage({ type: 'extract' })).toBeNull();
+    expect(unwrapUiMessage({ type: 'extract', includeHidden: true })).toBeNull();
   });
 
   it('rejects extract with an unknown scope', () => {
-    expect(unwrapUiMessage({ type: 'extract', scope: 'document' })).toBeNull();
+    expect(unwrapUiMessage({ type: 'extract', scope: 'everywhere', includeHidden: true })).toBeNull();
+  });
+
+  it('accepts extract over every page', () => {
+    expect(unwrapUiMessage({ type: 'extract', scope: 'document', includeHidden: false })).toEqual({
+      type: 'extract',
+      scope: 'document',
+      includeHidden: false,
+    });
+  });
+
+  it('rejects extract without includeHidden', () => {
+    expect(unwrapUiMessage({ type: 'extract', scope: 'page' })).toBeNull();
   });
 
   const change = {
@@ -154,6 +166,7 @@ describe('unwrapUiMessage', () => {
         type: 'search',
         query: 'Sign up',
         scope: 'page',
+        includeHidden: true,
         caseSensitive: false,
         wholeWord: true,
         regex: false,
@@ -162,6 +175,7 @@ describe('unwrapUiMessage', () => {
       type: 'search',
       query: 'Sign up',
       scope: 'page',
+      includeHidden: true,
       caseSensitive: false,
       wholeWord: true,
       regex: false,
@@ -170,25 +184,31 @@ describe('unwrapUiMessage', () => {
 
   it('rejects a search message whose query is not a string', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 5, scope: 'page', caseSensitive: false, wholeWord: false, regex: false })
+      unwrapUiMessage({ type: 'search', query: 5, scope: 'page', includeHidden: true, caseSensitive: false, wholeWord: false, regex: false })
     ).toBeNull();
   });
 
   it('rejects a search message whose scope is not a known scope', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'everywhere', caseSensitive: false, wholeWord: false, regex: false })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'everywhere', includeHidden: true, caseSensitive: false, wholeWord: false, regex: false })
     ).toBeNull();
   });
 
   it('rejects a search message whose caseSensitive is not a boolean', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: 'yes', wholeWord: false, regex: false })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', includeHidden: true, caseSensitive: 'yes', wholeWord: false, regex: false })
+    ).toBeNull();
+  });
+
+  it('rejects a search message whose includeHidden is not a boolean', () => {
+    expect(
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', includeHidden: 'no', caseSensitive: false, wholeWord: false, regex: false })
     ).toBeNull();
   });
 
   it('rejects a search message whose wholeWord is not a boolean', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: false, wholeWord: 1, regex: false })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', includeHidden: true, caseSensitive: false, wholeWord: 1, regex: false })
     ).toBeNull();
   });
 
@@ -306,7 +326,7 @@ describe('unwrapUiMessage', () => {
 
   it('rejects a search message whose regex is not a boolean', () => {
     expect(
-      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', caseSensitive: false, wholeWord: false, regex: 1 })
+      unwrapUiMessage({ type: 'search', query: 'x', scope: 'page', includeHidden: true, caseSensitive: false, wholeWord: false, regex: 1 })
     ).toBeNull();
   });
 

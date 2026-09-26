@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   collectTextLayers,
+  isShown,
   isWithin,
+  pageOf,
   resolveRoots,
   type ParentedNode,
   type TraversableNode,
@@ -117,6 +119,27 @@ describe('collectTextLayers', () => {
     expect(await collect([tree], control)).toBe('stopped');
   });
 
+  it('skips hidden layers and layers inside hidden frames when asked', async () => {
+    const tree = frame('1:0', [
+      text('1:1', 'Shown', 'a'),
+      { type: 'TEXT', id: '1:2', name: 'Hidden', characters: 'b', visible: false } as FakeNode,
+    ]);
+    const hiddenFrame = frame('2:0', [text('2:1', 'Inside hidden', 'c')]);
+    const hiddenRoot = { ...hiddenFrame, visible: false } as FakeNode;
+    // The fakes' parent links, which `isShown` walks.
+    for (const child of tree.children ?? []) (child as { parent?: unknown }).parent = tree;
+    for (const child of hiddenFrame.children ?? []) (child as { parent?: unknown }).parent = hiddenRoot;
+    const result = await collectTextLayers([tree, hiddenFrame], free, { includeHidden: false });
+    expect(result).toEqual([{ id: '1:1', name: 'Shown', characters: 'a' }]);
+  });
+
+  it('keeps hidden layers by default', async () => {
+    const tree = frame('1:0', [
+      { type: 'TEXT', id: '1:2', name: 'Hidden', characters: 'b', visible: false } as FakeNode,
+    ]);
+    expect(await collect([tree])).toHaveLength(1);
+  });
+
   it('reports how many layers it has read out of how many it found', async () => {
     const progress: Array<[number, number]> = [];
     const control: TaskControl = { ...free, onProgress: (done, total) => progress.push([done, total]) };
@@ -128,22 +151,82 @@ describe('collectTextLayers', () => {
 describe('resolveRoots', () => {
   const sel = ['s1', 's2'];
   const page = ['p1', 'p2', 'p3'];
+  const pages = ['page 1', 'page 2'];
 
   it('uses the selection when scope is selection and something is selected', () => {
-    expect(resolveRoots('selection', sel, page)).toBe(sel);
+    expect(resolveRoots('selection', sel, page, pages)).toBe(sel);
   });
 
   it('falls back to the page when scope is selection but nothing is selected', () => {
-    expect(resolveRoots('selection', [], page)).toBe(page);
+    expect(resolveRoots('selection', [], page, pages)).toBe(page);
   });
 
   it('uses the page when scope is page, even with a selection present', () => {
-    expect(resolveRoots('page', sel, page)).toBe(page);
+    expect(resolveRoots('page', sel, page, pages)).toBe(page);
   });
 
   it('returns the page array itself when both are empty', () => {
     const empty: string[] = [];
-    expect(resolveRoots('selection', [], empty)).toBe(empty);
+    expect(resolveRoots('selection', [], empty, pages)).toBe(empty);
+  });
+});
+
+describe('resolveRoots with the document scope', () => {
+  it('uses every page, whatever is selected', () => {
+    const pages = ['page 1', 'page 2'];
+    expect(resolveRoots('document', ['s1'], ['p1'], pages)).toBe(pages);
+  });
+});
+
+describe('isShown', () => {
+  interface Node {
+    id: string;
+    visible?: boolean;
+    parent: Node | null;
+  }
+  const page: Node = { id: 'page', parent: null };
+  const hiddenFrame: Node = { id: 'f1', visible: false, parent: page };
+  const frame: Node = { id: 'f2', visible: true, parent: page };
+  const inHidden: Node = { id: 't1', visible: true, parent: hiddenFrame };
+  const inShown: Node = { id: 't2', visible: true, parent: frame };
+  const hiddenItself: Node = { id: 't3', visible: false, parent: frame };
+
+  it('shows a layer whose whole chain is visible', () => {
+    expect(isShown(inShown, new Map())).toBe(true);
+  });
+
+  it('hides a layer inside a hidden frame', () => {
+    expect(isShown(inHidden, new Map())).toBe(false);
+  });
+
+  it('hides a layer that is hidden itself', () => {
+    expect(isShown(hiddenItself, new Map())).toBe(false);
+  });
+
+  it('remembers ancestors, so a later sibling reuses the answer', () => {
+    const cache = new Map<string, boolean>();
+    isShown(inHidden, cache);
+    expect(cache.get('f1')).toBe(false);
+    const sibling: Node = { id: 't4', parent: hiddenFrame };
+    expect(isShown(sibling, cache)).toBe(false);
+  });
+
+  it('does not let a hidden sibling mark the shared parent hidden', () => {
+    const cache = new Map<string, boolean>();
+    isShown(hiddenItself, cache);
+    expect(isShown(inShown, cache)).toBe(true);
+  });
+});
+
+describe('pageOf', () => {
+  it('finds the page above a nested node', () => {
+    const page = { type: 'PAGE', parent: null };
+    const frame = { type: 'FRAME', parent: page };
+    expect(pageOf({ type: 'TEXT', parent: frame })).toBe(page);
+  });
+
+  it('returns null for a node outside any page', () => {
+    expect(pageOf({ type: 'TEXT', parent: null })).toBeNull();
   });
 });
 

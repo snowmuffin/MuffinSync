@@ -80,6 +80,7 @@ describe('find & replace wiring', () => {
       type: 'search',
       query: '  ',
       scope: 'selection',
+      includeHidden: true,
       caseSensitive: false,
       wholeWord: false,
 
@@ -97,6 +98,7 @@ describe('find & replace wiring', () => {
       type: 'search',
       query: ' Pro',
       scope: 'selection',
+      includeHidden: true,
       caseSensitive: false,
       wholeWord: false,
 
@@ -112,6 +114,7 @@ describe('find & replace wiring', () => {
       type: 'search',
       query: 'Sign up',
       scope: 'selection',
+      includeHidden: true,
       caseSensitive: false,
       wholeWord: false,
 
@@ -167,6 +170,7 @@ describe('find & replace wiring', () => {
       type: 'search',
       query: 'Sign up',
       scope: 'selection',
+      includeHidden: true,
       caseSensitive: true,
       wholeWord: false,
 

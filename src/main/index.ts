@@ -1,4 +1,4 @@
-import type { MatchOptions, ReplaceTarget, Scope, TaskKind } from '../shared/types';
+import type { MatchOptions, ReplaceTarget, Scope, TaskKind, TextLayerData } from '../shared/types';
 import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
@@ -39,11 +39,15 @@ figma.on('selectionchange', reportSelection);
  * and the spec keeps the rule, so scope: 'selection' with an empty selection
  * must not return nothing.
  */
-function rootsFor(scope: Scope): ReadonlyArray<TraversableNode> {
-  const nodes = resolveRoots(
+async function rootsFor(scope: Scope): Promise<ReadonlyArray<TraversableNode>> {
+  // Under `documentAccess: dynamic-page`, pages other than the current one
+  // must be loaded before they can be walked.
+  if (scope === 'document') await figma.loadAllPagesAsync();
+  const nodes = resolveRoots<unknown>(
     scope,
     figma.currentPage.selection,
-    figma.currentPage.children
+    figma.currentPage.children,
+    figma.root.children
   );
   // SceneNode satisfies TraversableNode structurally; TypeScript cannot see
   // that through the SceneNode union, so state it once here.
@@ -85,6 +89,27 @@ async function runTask(task: TaskKind, body: (control: TaskControl) => Promise<v
   } finally {
     running = null;
     stopRequested = false;
+  }
+}
+
+/**
+ * Collect text layers for extract or search. With hidden layers excluded,
+ * Figma is also told to skip invisible instance children, which spares it
+ * building nodes the filter would drop anyway; the flag is global, so it is
+ * put back afterwards.
+ */
+async function collectFor(
+  scope: Scope,
+  includeHidden: boolean,
+  control: TaskControl
+): Promise<TextLayerData[] | 'stopped'> {
+  const roots = await rootsFor(scope);
+  if (includeHidden) return collectTextLayers(roots, control);
+  figma.skipInvisibleInstanceChildren = true;
+  try {
+    return await collectTextLayers(roots, control, { includeHidden: false });
+  } finally {
+    figma.skipInvisibleInstanceChildren = false;
   }
 }
 
@@ -130,7 +155,7 @@ figma.ui.onmessage = async (event: unknown) => {
       case 'extract': {
         try {
           await runTask('extract', async (control) => {
-            const rows = await collectTextLayers(rootsFor(message.scope), control);
+            const rows = await collectFor(message.scope, message.includeHidden, control);
             if (rows === 'stopped') {
               send({ type: 'task-stopped', task: 'extract' });
             } else {
@@ -197,7 +222,7 @@ figma.ui.onmessage = async (event: unknown) => {
       case 'search': {
         try {
           await runTask('search', async (control) => {
-            const rows = await collectTextLayers(rootsFor(message.scope), control);
+            const rows = await collectFor(message.scope, message.includeHidden, control);
             if (rows === 'stopped') {
               send({ type: 'task-stopped', task: 'search' });
               return;
@@ -260,8 +285,6 @@ figma.ui.onmessage = async (event: unknown) => {
           const result = await centreOnNode(message.nodeId);
           if (result === 'not-found') {
             send({ type: 'error', message: 'That layer no longer exists.' });
-          } else if (result === 'other-page') {
-            send({ type: 'error', message: 'That layer is on another page.' });
           }
         } catch (error) {
           throw new Error(

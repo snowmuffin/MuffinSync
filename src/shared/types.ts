@@ -5,8 +5,11 @@ export interface TextLayerData {
   characters: string;
 }
 
-/** Which roots a document walk starts from. See spec section 3.1. */
-export type Scope = 'selection' | 'page';
+/**
+ * Which roots a document walk starts from. See spec section 3.1. `document` is
+ * every page in the file (local features spec §3).
+ */
+export type Scope = 'selection' | 'page' | 'document';
 
 /** How a query is compared against a layer's text. See spec section 3.4. */
 export interface MatchOptions {

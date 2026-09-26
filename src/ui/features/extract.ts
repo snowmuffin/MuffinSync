@@ -5,7 +5,7 @@ import { byId, debugLog, messageOf } from '../dom';
 import { showStatus } from '../status';
 import { attemptDownload, filenameFor, mimeTypeFor } from '../download';
 import { post } from '../post';
-import { getScope } from './scope';
+import { getIncludeHidden, getScope } from './scope';
 import { beginTask, isBusy } from './task';
 
 /**
@@ -19,7 +19,7 @@ export function initExtract(root: Document): void {
     if (isBusy()) return;
     debugLog('Text extraction started');
     beginTask('extract');
-    post({ type: 'extract', scope: getScope() });
+    post({ type: 'extract', scope: getScope(), includeHidden: getIncludeHidden() });
   });
 }
 
