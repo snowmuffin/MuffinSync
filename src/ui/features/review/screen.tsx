@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import type { BlockedChange, ChangeSet, ProposedChange } from '../../../shared/types';
+import { LIST_PAGE, ShowMore } from '../show-more';
 
 export interface ReviewProps {
   changeSet: ChangeSet;
@@ -28,6 +29,9 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(changes.filter((change) => change.accepted).map((change) => change.nodeId))
   );
+
+  const [shownChanges, setShownChanges] = useState(LIST_PAGE);
+  const [shownBlocked, setShownBlocked] = useState(LIST_PAGE);
 
   const selectedCount = changes.filter((change) => selected.has(change.nodeId)).length;
   const allSelected = changes.length > 0 && selectedCount === changes.length;
@@ -81,7 +85,7 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
         </div>
       )}
 
-      {changes.map((change) => (
+      {changes.slice(0, shownChanges).map((change) => (
         <div class="review-row" data-change-row="" key={change.nodeId}>
           <div class="review-row-top">
             <label class="review-row-header">
@@ -108,11 +112,15 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
           </div>
         </div>
       ))}
+      <ShowMore
+        hidden={changes.length - shownChanges}
+        onClick={() => setShownChanges((n) => n + LIST_PAGE)}
+      />
 
       {blocked.length > 0 && (
         <div class="review-blocked">
           <div class="review-blocked-title">Cannot apply ({blocked.length})</div>
-          {blocked.map((change) => (
+          {blocked.slice(0, shownBlocked).map((change) => (
             <div class="review-blocked-row" key={change.nodeId}>
               <span class="review-blocked-row-text">
                 {change.layerName} — {BLOCKED_REASON[change.reason]}
@@ -132,6 +140,10 @@ export function ReviewScreen({ changeSet, onApply, onCancel, onNavigate }: Revie
               )}
             </div>
           ))}
+          <ShowMore
+            hidden={blocked.length - shownBlocked}
+            onClick={() => setShownBlocked((n) => n + LIST_PAGE)}
+          />
         </div>
       )}
 

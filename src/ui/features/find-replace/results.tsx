@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import type { ReplaceTarget, SearchMatch } from '../../../shared/types';
+import { LIST_PAGE, ShowMore } from '../show-more';
 
 export interface ResultListProps {
   matches: SearchMatch[];
@@ -21,6 +22,8 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(matches.map((match) => match.nodeId))
   );
+
+  const [shown, setShown] = useState(LIST_PAGE);
 
   const totalMatches = matches.reduce((sum, match) => sum + match.matchCount, 0);
   const selectedCount = matches.filter((match) => selected.has(match.nodeId)).length;
@@ -51,7 +54,7 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
         {matches.length === 1 ? 'layer' : 'layers'}
       </div>
 
-      {matches.map((match) => (
+      {matches.slice(0, shown).map((match) => (
         <div class="results-row" data-match-row="" key={match.nodeId}>
           {canReplace && (
             <input
@@ -79,6 +82,7 @@ export function ResultList({ matches, canReplace, onReplace, onCancel, onNavigat
           </div>
         </div>
       ))}
+      <ShowMore hidden={matches.length - shown} onClick={() => setShown((n) => n + LIST_PAGE)} />
 
       {canReplace && (
         <button

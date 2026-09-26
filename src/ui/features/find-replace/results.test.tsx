@@ -116,3 +116,52 @@ describe('ResultList', () => {
     expect(given).toEqual(matches);
   });
 });
+
+describe('ResultList with a long list', () => {
+  const many = (n: number): SearchMatch[] =>
+    Array.from({ length: n }, (_, i) => ({
+      nodeId: `9:${i}`,
+      layerName: `Layer ${i}`,
+      characters: 'Sign up',
+      matchCount: 1,
+    }));
+  const showMore = () => host.querySelector<HTMLButtonElement>('[data-show-more]');
+
+  beforeEach(() => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('renders the first 200 rows and says how many are not shown', () => {
+    mount({ matches: many(450) });
+    expect(rows()).toHaveLength(200);
+    expect(showMore()?.textContent).toBe('Show 200 more (250 not shown)');
+  });
+
+  it('renders the next page each time Show more is pressed, then hides the button', () => {
+    mount({ matches: many(450) });
+    act(() => showMore()!.click());
+    expect(rows()).toHaveLength(400);
+    expect(showMore()?.textContent).toBe('Show 50 more (50 not shown)');
+    act(() => showMore()!.click());
+    expect(rows()).toHaveLength(450);
+    expect(showMore()).toBeNull();
+  });
+
+  it('counts and replaces every row, rendered or not', () => {
+    const { onReplace } = mount({ matches: many(450) });
+    expect(button('Replace').textContent).toContain('Replace 450 layers');
+    act(() => button('Replace').click());
+    expect(vi.mocked(onReplace).mock.calls[0][0]).toHaveLength(450);
+  });
+
+  it('summarises the whole list, not the rendered page', () => {
+    mount({ matches: many(450) });
+    expect(host.querySelector('.results-summary')?.textContent).toContain('450 matches in 450 layers');
+  });
+
+  it('shows no Show more button for a short list', () => {
+    mount({ matches: many(200) });
+    expect(showMore()).toBeNull();
+  });
+});

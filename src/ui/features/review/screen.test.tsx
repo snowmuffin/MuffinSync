@@ -267,3 +267,43 @@ describe('ReviewScreen', () => {
     expect(blockedRows[1].querySelector('[data-navigate]')).not.toBeNull();
   });
 });
+
+describe('ReviewScreen with a long list', () => {
+  const manyChanges = (n: number) => Array.from({ length: n }, (_, i) => change(`9:${i}`, 'after'));
+  const showMoreButtons = () => Array.from(host.querySelectorAll<HTMLButtonElement>('[data-show-more]'));
+
+  it('renders the first 200 changes and offers the rest', () => {
+    draw(setOf({ changes: manyChanges(300) }));
+    expect(rows()).toHaveLength(200);
+    expect(showMoreButtons()[0]?.textContent).toBe('Show 100 more (100 not shown)');
+    act(() => showMoreButtons()[0].click());
+    expect(rows()).toHaveLength(300);
+    expect(showMoreButtons()).toHaveLength(0);
+  });
+
+  it('applies every accepted change, rendered or not', () => {
+    const { onApply } = draw(setOf({ changes: manyChanges(300) }));
+    expect(applyButton()?.textContent).toBe('Apply 300 changes');
+    act(() => applyButton()!.click());
+    expect(onApply.mock.calls[0][0]).toHaveLength(300);
+  });
+
+  it('lets Select all clear rows that are not rendered too', () => {
+    draw(setOf({ changes: manyChanges(300) }));
+    act(() => selectAllBox()!.click());
+    expect(applyButton()?.textContent).toBe('Apply 0 changes');
+    expect(applyButton()?.disabled).toBe(true);
+  });
+
+  it('pages the Cannot apply list on its own', () => {
+    const blocked = Array.from({ length: 250 }, (_, i) => ({
+      nodeId: `8:${i}`,
+      layerName: `Gone ${i}`,
+      reason: 'missing' as const,
+    }));
+    draw(setOf({ changes: manyChanges(10), blocked }));
+    expect(host.querySelectorAll('.review-blocked-row')).toHaveLength(200);
+    expect(showMoreButtons()).toHaveLength(1);
+    expect(showMoreButtons()[0].textContent).toBe('Show 50 more (50 not shown)');
+  });
+});
