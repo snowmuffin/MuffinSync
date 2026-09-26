@@ -6,9 +6,11 @@
  * component tree buys nothing the user can see. Preact is here for the review
  * table and the results list. See spec section 3.3.
  */
-export type TabName = 'extract' | 'find-replace' | 'generate' | 'snippets';
+import { TAB_NAMES, type TabName } from '../../shared/settings';
 
-const TABS: readonly TabName[] = ['extract', 'find-replace', 'generate', 'snippets'];
+export type { TabName };
+
+const TABS: readonly TabName[] = TAB_NAMES;
 
 let host: Document | null = null;
 
@@ -25,8 +27,18 @@ function tabElement(root: Document, name: TabName): HTMLElement | null {
  * in the Tab order -- the others are reached with the arrow keys, per the
  * WAI-ARIA tabs pattern.
  */
+let current: TabName = 'extract';
+
+export function getTab(): TabName {
+  return current;
+}
+
 export function showTab(name: TabName): void {
   if (!host) return;
+  // A tab this build's markup does not have (a remembered tab from a newer
+  // version, say) would hide every panel; stay where we are instead.
+  if (!tabElement(host, name)) return;
+  current = name;
   for (const tab of TABS) {
     const selected = tab === name;
     host.getElementById(`${tab}-panel`)?.classList.toggle('hidden', !selected);
@@ -62,6 +74,12 @@ function isTabName(value: string | undefined): value is TabName {
   return (TABS as readonly (string | undefined)[]).includes(value);
 }
 
+/** Moves to a tab and tells whoever listens, e.g. remembered settings. */
+function choose(name: TabName): void {
+  showTab(name);
+  document.dispatchEvent(new CustomEvent('copydesk:settings-changed'));
+}
+
 export function initTabs(root: Document): void {
   host = root;
   // Extract is the tab every session opens on. Reasserting it here rather than
@@ -74,7 +92,7 @@ export function initTabs(root: Document): void {
   root.querySelectorAll<HTMLElement>('.tab').forEach((element) => {
     element.addEventListener('click', () => {
       const name = element.dataset.tab;
-      if (isTabName(name)) showTab(name);
+      if (isTabName(name)) choose(name);
     }, { signal });
     element.addEventListener('keydown', (event) => {
       const current = element.dataset.tab;
@@ -83,7 +101,7 @@ export function initTabs(root: Document): void {
       const next = tabForKey(present, current, event.key);
       if (!next) return;
       event.preventDefault();
-      showTab(next);
+      choose(next);
       tabElement(root, next)?.focus();
     }, { signal });
   });

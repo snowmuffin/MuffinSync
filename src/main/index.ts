@@ -10,6 +10,7 @@ import { runChunked, type TaskControl } from './chunked';
 import { createFontCache, type FontRef } from './fonts';
 import { localizeFrames, mergeRows, type GenerateResult, type SetText } from './generate';
 import { isSnippets, type Snippet } from '../shared/generate';
+import { COMMAND_TABS, parseSettings } from '../shared/settings';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
@@ -126,6 +127,7 @@ function textWriter(): SetText {
 }
 
 const SNIPPETS_KEY = 'snippets';
+const SETTINGS_KEY = 'settings';
 
 async function loadSnippets(): Promise<Snippet[]> {
   const stored: unknown = await figma.clientStorage.getAsync(SNIPPETS_KEY);
@@ -193,8 +195,18 @@ figma.ui.onmessage = async (event: unknown) => {
 
   try {
     switch (message.type) {
-      case 'ui-ready':
+      case 'ui-ready': {
+        // Selection first, so a remembered 'selection' scope is only restored
+        // when something is selected; then settings; then the menu command's
+        // tab, which wins over the remembered one.
         reportSelection();
+        send({ type: 'settings', settings: parseSettings(await figma.clientStorage.getAsync(SETTINGS_KEY)) });
+        const tab = COMMAND_TABS[figma.command];
+        if (tab) send({ type: 'open-tab', tab });
+        break;
+      }
+      case 'save-settings':
+        await figma.clientStorage.setAsync(SETTINGS_KEY, message.settings);
         break;
       case 'extract': {
         try {

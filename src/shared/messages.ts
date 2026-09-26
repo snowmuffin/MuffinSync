@@ -9,6 +9,7 @@ import type {
   TaskKind,
 } from './types';
 import { isSnippets, isStringRecord, type Snippet, type Translations } from './generate';
+import { isTabName, parseSettings, type Settings, type TabName } from './settings';
 
 export type UiToMain =
   // Sent once the iframe's message handler is installed. Anything the sandbox
@@ -53,7 +54,9 @@ export type UiToMain =
   | { type: 'add-snippet-layer'; name: string; text: string }
   // Generate tab (local features spec §6). `rows` are the data file's rows.
   | { type: 'merge'; rows: Array<Record<string, string>> }
-  | { type: 'localize'; locales: string[]; translations: Translations };
+  | { type: 'localize'; locales: string[]; translations: Translations }
+  // Remembered settings (copy tools spec §2).
+  | { type: 'save-settings'; settings: Settings };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
@@ -69,6 +72,9 @@ export type MainToUi =
   | { type: 'task-stopped'; task: TaskKind }
   | { type: 'pdf-exported'; files: ExportedFile[] }
   | { type: 'snippets'; snippets: Snippet[] }
+  | { type: 'settings'; settings: Settings }
+  // A menu command asked for this tab; overrides the remembered one.
+  | { type: 'open-tab'; tab: TabName }
   // A short confirmation that is not the answer to a long task.
   | { type: 'notice'; message: string }
   | {
@@ -320,6 +326,12 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
       return typeof p.name === 'string' && typeof p.text === 'string'
         ? { type: 'add-snippet-layer', name: p.name, text: p.text }
         : null;
+    case 'save-settings':
+      // Parsed rather than strictly validated: settings are a convenience,
+      // and a field this version doesn't know should fall back, not fail.
+      return typeof p.settings === 'object' && p.settings !== null
+        ? { type: 'save-settings', settings: parseSettings(p.settings) }
+        : null;
     case 'merge':
       return Array.isArray(p.rows) && p.rows.every(isStringRecord)
         ? { type: 'merge', rows: p.rows as Array<Record<string, string>> }
@@ -394,6 +406,12 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
         : null;
     case 'snippets':
       return isSnippets(p.snippets) ? { type: 'snippets', snippets: p.snippets } : null;
+    case 'settings':
+      return typeof p.settings === 'object' && p.settings !== null
+        ? { type: 'settings', settings: parseSettings(p.settings) }
+        : null;
+    case 'open-tab':
+      return isTabName(p.tab) ? { type: 'open-tab', tab: p.tab } : null;
     case 'notice':
       return typeof p.message === 'string' ? { type: 'notice', message: p.message } : null;
     case 'generated':

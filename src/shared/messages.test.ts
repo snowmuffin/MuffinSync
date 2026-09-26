@@ -697,3 +697,22 @@ describe('snippet and generate messages', () => {
     expect(unwrapUiMessage({ type: 'apply', changes: [change] })).not.toBeNull();
   });
 });
+
+describe('settings messages', () => {
+  it('parses saved and sent settings, filling gaps with defaults', () => {
+    const msg = unwrapUiMessage({ type: 'save-settings', settings: { tab: 'snippets' } });
+    expect(msg?.type === 'save-settings' && msg.settings.tab).toBe('snippets');
+    const back = unwrapMainMessage({ type: 'settings', settings: {} });
+    expect(back?.type === 'settings' && back.settings.scope).toBe('selection');
+  });
+
+  it('rejects settings that are not an object', () => {
+    expect(unwrapUiMessage({ type: 'save-settings', settings: 'x' })).toBeNull();
+    expect(unwrapMainMessage({ type: 'settings' })).toBeNull();
+  });
+
+  it('accepts open-tab for a known tab only', () => {
+    expect(unwrapMainMessage({ type: 'open-tab', tab: 'generate' })).toEqual({ type: 'open-tab', tab: 'generate' });
+    expect(unwrapMainMessage({ type: 'open-tab', tab: 'settings' })).toBeNull();
+  });
+});

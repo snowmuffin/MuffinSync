@@ -40,8 +40,8 @@ export function initScope(root: Document): void {
   hiddenBoxes(root).forEach((box) => {
     box.checked = true;
     box.addEventListener('change', () => {
-      includeHidden = box.checked;
-      hiddenBoxes(root).forEach((other) => (other.checked = includeHidden));
+      setIncludeHidden(box.checked);
+      settingsChanged();
     }, { signal });
   });
   options(root).forEach((option) => {
@@ -51,6 +51,7 @@ export function initScope(root: Document): void {
       const next = option.dataset.scope;
       if (next === 'selection' || next === 'page' || next === 'document') {
         applySelection(root, next);
+        settingsChanged();
       }
     }, { signal });
   });
@@ -58,6 +59,27 @@ export function initScope(root: Document): void {
 
 export function getScope(): Scope {
   return chosen;
+}
+
+/** Tells remembered settings that the user changed something. */
+function settingsChanged(): void {
+  document.dispatchEvent(new CustomEvent('copydesk:settings-changed'));
+}
+
+/**
+ * Restores a remembered scope. Selection is only restored when it is a real
+ * choice right now -- when its option is enabled -- otherwise the current
+ * fallback (Current page) stands.
+ */
+export function setScope(scope: Scope): void {
+  if (!host) return;
+  if (scope === 'selection' && selectionOptions(host).some((o) => o.classList.contains('disabled'))) return;
+  applySelection(host, scope);
+}
+
+export function setIncludeHidden(value: boolean): void {
+  includeHidden = value;
+  if (host) hiddenBoxes(host).forEach((box) => (box.checked = value));
 }
 
 /**

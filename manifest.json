@@ -16,9 +16,12 @@
   "permissions": ["currentuser"],
   "documentAccess": "dynamic-page",
   "menu": [
-    {
-      "name": "Open Copydesk",
-      "command": "open-plugin"
-    }
+    { "name": "Open Copydesk", "command": "open-plugin" },
+    { "separator": true },
+    { "name": "Extract & import", "command": "extract" },
+    { "name": "Find & replace", "command": "find" },
+    { "name": "Check copy", "command": "check" },
+    { "name": "Generate", "command": "generate" },
+    { "name": "Snippets", "command": "snippets" }
   ]
 }

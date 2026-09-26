@@ -10,6 +10,8 @@ import { initScope, setSelectionPresent } from './features/scope';
 import { initTabs } from './features/tabs';
 import { initGenerate, generatedMessage } from './features/generate';
 import { initSnippets, showSnippets } from './features/snippets';
+import { applySettings, initSettings } from './features/settings';
+import { showTab } from './features/tabs';
 import { endTask, reportProgress, taskStopped } from './features/task';
 
 const statusHost = byId('status-host');
@@ -35,6 +37,7 @@ initFindReplace(document);
 initScope(document);
 initTabs(document);
 initGenerate(document);
+initSettings(document);
 
 // Listen for messages from plugin
 window.onmessage = (event: MessageEvent) => {
@@ -52,7 +55,9 @@ window.onmessage = (event: MessageEvent) => {
     message.type !== 'progress' &&
     message.type !== 'selection' &&
     message.type !== 'snippets' &&
-    message.type !== 'notice'
+    message.type !== 'notice' &&
+    message.type !== 'settings' &&
+    message.type !== 'open-tab'
   ) {
     endTask();
   }
@@ -116,6 +121,14 @@ window.onmessage = (event: MessageEvent) => {
       debugLog(`Exported ${count} frame(s) as PDF`);
       break;
     }
+
+    case 'settings':
+      applySettings(message.settings);
+      break;
+
+    case 'open-tab':
+      showTab(message.tab);
+      break;
 
     case 'snippets':
       showSnippets(message.snippets);
