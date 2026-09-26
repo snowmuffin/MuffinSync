@@ -499,3 +499,48 @@ describe('unwrapMainMessage', () => {
     ).toBeNull();
   });
 });
+
+describe('task messages', () => {
+  it('accepts stop-task, which carries nothing', () => {
+    expect(unwrapUiMessage({ type: 'stop-task' })).toEqual({ type: 'stop-task' });
+  });
+
+  it('accepts a progress report', () => {
+    const msg = { type: 'progress', task: 'search', done: 4200, total: 20000 };
+    expect(unwrapMainMessage(msg)).toEqual(msg);
+  });
+
+  it('accepts progress at zero of zero, which an empty page reports', () => {
+    const msg = { type: 'progress', task: 'extract', done: 0, total: 0 };
+    expect(unwrapMainMessage(msg)).toEqual(msg);
+  });
+
+  // Each breaks exactly one check on an otherwise valid report.
+  const brokenProgress: Array<[string, Record<string, unknown>]> = [
+    ['an unknown task', { task: 'export', done: 1, total: 2 }],
+    ['a non-numeric done', { task: 'search', done: '1', total: 2 }],
+    ['a fractional done', { task: 'search', done: 1.5, total: 2 }],
+    ['a negative done', { task: 'search', done: -1, total: 2 }],
+    ['a non-numeric total', { task: 'search', done: 1, total: null }],
+    ['done beyond total', { task: 'search', done: 3, total: 2 }],
+  ];
+  for (const [label, fields] of brokenProgress) {
+    it(`rejects progress with ${label}`, () => {
+      expect(unwrapMainMessage({ type: 'progress', ...fields })).toBeNull();
+    });
+  }
+
+  it('accepts task-stopped for each task kind', () => {
+    for (const task of ['extract', 'search', 'plan', 'apply']) {
+      expect(unwrapMainMessage({ type: 'task-stopped', task })).toEqual({
+        type: 'task-stopped',
+        task,
+      });
+    }
+  });
+
+  it('rejects task-stopped without a known task', () => {
+    expect(unwrapMainMessage({ type: 'task-stopped' })).toBeNull();
+    expect(unwrapMainMessage({ type: 'task-stopped', task: 'toString' })).toBeNull();
+  });
+});

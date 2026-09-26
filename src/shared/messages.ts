@@ -6,6 +6,7 @@ import type {
   ChangeSet,
   SearchMatch,
   ReplaceTarget,
+  TaskKind,
 } from './types';
 
 export type UiToMain =
@@ -28,7 +29,10 @@ export type UiToMain =
       caseSensitive: boolean;
       wholeWord: boolean;
     }
-  | { type: 'navigate'; nodeId: string };
+  | { type: 'navigate'; nodeId: string }
+  // Ask the running extract, search or plan to stop. Distinct from 'cancel',
+  // which closes the plugin. Apply cannot be stopped (spec 2026-09-26 §6).
+  | { type: 'stop-task' };
 
 export type MainToUi =
   | { type: 'extracted'; rows: TextLayerData[] }
@@ -37,7 +41,11 @@ export type MainToUi =
   | { type: 'import-complete'; updated: number; failed: number; errors: string[] }
   | { type: 'error'; message: string }
   | { type: 'selection'; present: boolean }
-  | { type: 'search-results'; matches: SearchMatch[]; scope: Scope };
+  | { type: 'search-results'; matches: SearchMatch[]; scope: Scope }
+  // Sent at the end of each time slice of a long task, not per layer.
+  | { type: 'progress'; task: TaskKind; done: number; total: number }
+  // The task ended at the user's request and produced nothing.
+  | { type: 'task-stopped'; task: TaskKind };
 
 /**
  * Figma delivers plugin messages under more than one envelope depending on
@@ -133,6 +141,18 @@ function isBlockedChanges(value: unknown): value is BlockedChange[] {
   );
 }
 
+const TASK_KINDS: Record<TaskKind, true> = {
+  extract: true,
+  search: true,
+  plan: true,
+  apply: true,
+};
+
+/** A count a progress report can carry: a whole number, never negative. */
+function isCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
 function isScope(value: unknown): value is Scope {
   return value === 'selection' || value === 'page';
 }
@@ -224,6 +244,8 @@ export function unwrapUiMessage(event: unknown): UiToMain | null {
         : null;
     case 'navigate':
       return typeof p.nodeId === 'string' ? { type: 'navigate', nodeId: p.nodeId } : null;
+    case 'stop-task':
+      return { type: 'stop-task' };
     default:
       return null;
   }
@@ -263,6 +285,17 @@ export function unwrapMainMessage(event: unknown): MainToUi | null {
     case 'search-results':
       return isSearchMatches(p.matches) && isScope(p.scope)
         ? { type: 'search-results', matches: p.matches, scope: p.scope }
+        : null;
+    case 'progress':
+      return isMember(TASK_KINDS, p.task) &&
+        isCount(p.done) &&
+        isCount(p.total) &&
+        p.done <= p.total
+        ? { type: 'progress', task: p.task as TaskKind, done: p.done, total: p.total }
+        : null;
+    case 'task-stopped':
+      return isMember(TASK_KINDS, p.task)
+        ? { type: 'task-stopped', task: p.task as TaskKind }
         : null;
     default:
       return null;

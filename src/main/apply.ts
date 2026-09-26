@@ -1,4 +1,5 @@
 import type { ProposedChange } from '../shared/types';
+import { runChunked, UNSTOPPABLE_SILENT, type TaskControl } from './chunked';
 
 /** The part of a Figma node this module writes to. */
 export interface ApplicableNode {
@@ -11,6 +12,12 @@ export interface ApplicableNode {
 export interface ApplyDeps {
   getNode(id: string): Promise<ApplicableNode | null>;
   loadFonts(node: ApplicableNode): Promise<void>;
+  /**
+   * Slices the work and reports progress. Its stop is never honoured here --
+   * the caller passes a control that cannot stop, since a half-applied batch
+   * would no longer match the review that approved it.
+   */
+  control?: TaskControl;
 }
 
 export interface ApplyResult {
@@ -43,18 +50,17 @@ export async function applyTextChanges(
     if (errors.length < MAX_REPORTED_ERRORS) errors.push(message);
   };
 
-  for (const change of changes) {
-    if (!change.accepted) continue;
-
+  const accepted = changes.filter((change) => change.accepted);
+  await runChunked(accepted, async (change) => {
     try {
       const node = await deps.getNode(change.nodeId);
       if (!node) {
         fail(`No layer found with id ${change.nodeId} (${change.layerName}).`);
-        continue;
+        return;
       }
       if (node.type !== 'TEXT') {
         fail(`Layer ${change.layerName} (${change.nodeId}) is not a text layer.`);
-        continue;
+        return;
       }
       // The canvas stays live while the review panel is open. If the layer no
       // longer holds the text this change was diffed against, the user has
@@ -65,7 +71,7 @@ export async function applyTextChanges(
           `Layer ${change.layerName} (${change.nodeId}) changed since review; ` +
             `it was not updated.`
         );
-        continue;
+        return;
       }
 
       // Every font the layer uses must be loaded before its text is replaced.
@@ -79,7 +85,7 @@ export async function applyTextChanges(
         }`
       );
     }
-  }
+  }, deps.control ?? UNSTOPPABLE_SILENT);
 
   return { updated, failed, errors };
 }

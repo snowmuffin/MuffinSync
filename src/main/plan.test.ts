@@ -165,3 +165,48 @@ describe('buildChangeSet', () => {
     expect(set.blocked.map((b) => b.nodeId)).toEqual(['9:9']);
   });
 });
+
+describe('buildChangeSet under a task control', () => {
+  it('returns stopped, not a partial set, when stopped between slices', async () => {
+    let yields = 0;
+    let clock = 0;
+    const result = await buildChangeSet(
+      [fromFile('1:1', 'A', 'x'), fromFile('1:2', 'B', 'y'), fromFile('1:3', 'C', 'z')],
+      'import',
+      {
+        ...deps([node('1:1', 'A'), node('1:2', 'B'), node('1:3', 'C')]),
+        control: {
+          onProgress: () => {},
+          isStopped: () => yields > 0,
+          yieldToHost: async () => {
+            yields++;
+          },
+          // Every row costs a whole slice.
+          now: () => (clock += 100),
+        },
+      },
+      0
+    );
+    expect(result).toBe('stopped');
+  });
+
+  it('reports progress over every target and still builds the set', async () => {
+    const progress: Array<[number, number]> = [];
+    const result = await buildChangeSet(
+      [fromFile('1:1', 'A', 'x'), fromFile('1:2', 'B', 'y')],
+      'import',
+      {
+        ...deps([node('1:1', 'A'), node('1:2', 'B')]),
+        control: {
+          onProgress: (done, total) => progress.push([done, total]),
+          isStopped: () => false,
+          yieldToHost: async () => {},
+          now: () => 0,
+        },
+      },
+      0
+    );
+    expect(result !== 'stopped' && result.changes).toHaveLength(2);
+    expect(progress[progress.length - 1]).toEqual([2, 2]);
+  });
+});

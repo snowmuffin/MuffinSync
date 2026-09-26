@@ -24,6 +24,12 @@ export interface SearchMatch {
 
 export type ExportFormat = 'csv' | 'json';
 
+/**
+ * A long piece of document work the sandbox reports progress on. Only one runs
+ * at a time. See docs/superpowers/specs/2026-09-26-large-documents-design.md §5.
+ */
+export type TaskKind = 'extract' | 'search' | 'plan' | 'apply';
+
 /** A text change the user may accept. See spec section 3. */
 export interface ProposedChange {
   nodeId: string;

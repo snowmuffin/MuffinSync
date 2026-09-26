@@ -1,41 +1,60 @@
 import type { TextLayerData } from '../shared/types';
+import { runChunked, type TaskControl } from './chunked';
 
-/**
- * The shape traversal actually needs. Figma's SceneNode satisfies it
- * structurally, and a plain object literal does too — which is what lets
- * this be tested without a Figma runtime.
- */
-export interface TraversableNode {
+/** The fields read off a text layer. Figma's TextNode satisfies it structurally. */
+export interface TextNodeLike {
   readonly type: string;
   readonly id: string;
   readonly name: string;
   readonly characters?: string;
-  readonly children?: ReadonlyArray<TraversableNode>;
+  /** True once the node has been deleted; the canvas stays live mid-walk. */
+  readonly removed?: boolean;
 }
 
-export function collectTextLayers(
-  roots: ReadonlyArray<TraversableNode>
-): TextLayerData[] {
-  const found: TextLayerData[] = [];
+/**
+ * A root a walk starts from. Figma's SceneNode and PageNode satisfy it
+ * structurally, and a plain object literal does too -- which is what lets this
+ * be tested without a Figma runtime.
+ */
+export interface TraversableNode extends TextNodeLike {
+  findAllWithCriteria?(criteria: { types: ['TEXT'] }): ReadonlyArray<TextNodeLike>;
+}
+
+/**
+ * Every text layer under the roots, in document order: each root itself if it
+ * is text, then the text layers inside it.
+ *
+ * Finding uses Figma's native `findAllWithCriteria`, one call per root, rather
+ * than recursing over `children` in the sandbox -- every `children` access
+ * crosses into Figma and allocates, once per node. Reading each layer's name
+ * and text is still per-node work, so that part runs in time slices through
+ * `runChunked`. Hidden layers and instance children are included, as they
+ * always have been (spec 2026-09-26 §9.1).
+ */
+export async function collectTextLayers(
+  roots: ReadonlyArray<TraversableNode>,
+  control: TaskControl
+): Promise<TextLayerData[] | 'stopped'> {
+  const nodes: TextNodeLike[] = [];
   for (const root of roots) {
-    visit(root, found);
+    if (root.type === 'TEXT') nodes.push(root);
+    if (!root.findAllWithCriteria) continue;
+    // A loop, not push(...found): spreading tens of thousands of arguments
+    // can exceed the engine's argument limit.
+    for (const node of root.findAllWithCriteria({ types: ['TEXT'] })) nodes.push(node);
   }
-  return found;
-}
 
-function visit(node: TraversableNode, found: TextLayerData[]): void {
-  if (node.type === 'TEXT') {
-    found.push({
-      id: node.id,
-      name: node.name,
-      characters: node.characters ?? '',
-    });
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      visit(child, found);
-    }
-  }
+  const found: TextLayerData[] = [];
+  const outcome = await runChunked(
+    nodes,
+    (node) => {
+      // Deleted on the canvas since it was found: there is nothing to read.
+      if (node.removed) return;
+      found.push({ id: node.id, name: node.name, characters: node.characters ?? '' });
+    },
+    control
+  );
+  return outcome === 'stopped' ? 'stopped' : found;
 }
 
 /**

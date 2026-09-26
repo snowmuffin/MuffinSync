@@ -5,9 +5,12 @@ import type {
   Scope,
 } from '../shared/types';
 import type { ApplicableNode } from './apply';
+import { runChunked, UNSTOPPABLE_SILENT, type TaskControl } from './chunked';
 
 export interface PlanDeps {
   getNode(id: string): Promise<ApplicableNode | null>;
+  /** Slices the work, reports progress, and can stop it. Omitted: runs straight through. */
+  control?: TaskControl;
 }
 
 /**
@@ -34,33 +37,47 @@ export interface ChangeTarget {
  * deterministic under test. `scope` is set only by producers that walked the
  * document -- import's targets come from a file, so it has none (spec 3.1).
  */
+export function buildChangeSet(
+  targets: ReadonlyArray<ChangeTarget>,
+  source: ProposedChange['source'],
+  deps: PlanDeps & { control?: undefined },
+  now?: number,
+  scope?: Scope
+): Promise<ChangeSet>;
+export function buildChangeSet(
+  targets: ReadonlyArray<ChangeTarget>,
+  source: ProposedChange['source'],
+  deps: PlanDeps,
+  now?: number,
+  scope?: Scope
+): Promise<ChangeSet | 'stopped'>;
 export async function buildChangeSet(
   targets: ReadonlyArray<ChangeTarget>,
   source: ProposedChange['source'],
   deps: PlanDeps,
   now: number = Date.now(),
   scope?: Scope
-): Promise<ChangeSet> {
+): Promise<ChangeSet | 'stopped'> {
   const changes: ProposedChange[] = [];
   const blocked: BlockedChange[] = [];
   let unchangedCount = 0;
 
-  for (const target of targets) {
+  const outcome = await runChunked(targets, async (target) => {
     const node = await deps.getNode(target.id);
 
     if (!node) {
       blocked.push({ nodeId: target.id, layerName: target.fallbackName, reason: 'missing' });
-      continue;
+      return;
     }
     if (node.type !== 'TEXT') {
       blocked.push({ nodeId: target.id, layerName: node.name, reason: 'not-text' });
-      continue;
+      return;
     }
 
     const after = target.after(node.characters);
     if (node.characters === after) {
       unchangedCount++;
-      continue;
+      return;
     }
 
     changes.push({
@@ -75,7 +92,11 @@ export async function buildChangeSet(
       // row the user just asked for.
       accepted: true,
     });
-  }
+  }, deps.control ?? UNSTOPPABLE_SILENT);
+
+  // A stopped plan produces nothing: a partial set would review, and could
+  // apply, only the rows that happened to come first.
+  if (outcome === 'stopped') return 'stopped';
 
   return scope === undefined
     ? { changes, blocked, unchangedCount, createdAt: now }

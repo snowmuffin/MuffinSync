@@ -274,3 +274,51 @@ describe('applyTextChanges', () => {
     expect(result).toEqual({ updated: 0, failed: 0, errors: [] });
   });
 });
+
+describe('applyTextChanges under a task control', () => {
+  const change = (id: string) => ({
+    nodeId: id,
+    layerName: id,
+    before: 'old',
+    after: 'new',
+    source: 'import' as const,
+    accepted: true,
+  });
+
+  it('reports progress over the accepted rows only', async () => {
+    const nodes = [node('1:1', 'A'), node('1:2', 'B')];
+    const progress: Array<[number, number]> = [];
+    await applyTextChanges([change('1:1'), { ...change('1:2'), accepted: false }], {
+      getNode: async (id) => nodes.find((n) => n.id === id) ?? null,
+      loadFonts: async () => {},
+      control: {
+        onProgress: (done, total) => progress.push([done, total]),
+        isStopped: () => false,
+        yieldToHost: async () => {},
+        now: () => 0,
+      },
+    });
+    expect(progress[progress.length - 1]).toEqual([1, 1]);
+  });
+
+  it('yields between slices and still writes every row', async () => {
+    const nodes = [node('1:1', 'A'), node('1:2', 'B'), node('1:3', 'C')];
+    let clock = 0;
+    let yields = 0;
+    const result = await applyTextChanges([change('1:1'), change('1:2'), change('1:3')], {
+      getNode: async (id) => nodes.find((n) => n.id === id) ?? null,
+      loadFonts: async () => {},
+      control: {
+        onProgress: () => {},
+        isStopped: () => false,
+        yieldToHost: async () => {
+          yields++;
+        },
+        now: () => (clock += 100),
+      },
+    });
+    expect(yields).toBeGreaterThan(0);
+    expect(result.updated).toBe(3);
+    expect(nodes.every((n) => n.characters === 'new')).toBe(true);
+  });
+});

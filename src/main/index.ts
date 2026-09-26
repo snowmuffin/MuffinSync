@@ -1,4 +1,4 @@
-import type { Scope } from '../shared/types';
+import type { Scope, TaskKind } from '../shared/types';
 import type { MainToUi } from '../shared/messages';
 import { unwrapUiMessage } from '../shared/messages';
 import { collectTextLayers, resolveRoots, type TraversableNode } from './traverse';
@@ -6,6 +6,8 @@ import { applyTextChanges, type ApplicableNode } from './apply';
 import { buildChangeSet, type ChangeTarget } from './plan';
 import { matchingLayers, replaceAll } from './search';
 import { centreOnNode } from './navigate';
+import type { TaskControl } from './chunked';
+import { createFontCache, type FontRef } from './fonts';
 
 figma.showUI(__html__, { width: 400, height: 500 });
 
@@ -48,16 +50,55 @@ function rootsFor(scope: Scope): ReadonlyArray<TraversableNode> {
   return nodes as unknown as ReadonlyArray<TraversableNode>;
 }
 
-/** Load every font a layer uses, including the mixed-font case. */
-async function loadFonts(node: ApplicableNode): Promise<void> {
-  const textNode = node as unknown as TextNode;
-  if (textNode.fontName === figma.mixed) {
-    const fonts = textNode.getRangeAllFontNames(0, textNode.characters.length);
-    await Promise.all(fonts.map((font) => figma.loadFontAsync(font)));
-  } else {
-    await figma.loadFontAsync(textNode.fontName);
+/**
+ * The long task running now, if any. Long tasks yield between time slices, so
+ * without this a second request could interleave with the first. The UI
+ * disables its triggers while a task runs; this is the backstop.
+ */
+let running: TaskKind | null = null;
+let stopRequested = false;
+
+function controlFor(task: TaskKind): TaskControl {
+  return {
+    onProgress: (done, total) => send({ type: 'progress', task, done, total }),
+    // Apply is never stopped halfway: the review that justified the batch
+    // would no longer describe the document (spec 2026-09-26 §6).
+    isStopped: () => task !== 'apply' && stopRequested,
+    yieldToHost: () => new Promise((resolve) => setTimeout(resolve, 0)),
+    now: () => Date.now(),
+  };
+}
+
+/** Runs `body` as the one long task, or refuses if another is running. */
+async function runTask(task: TaskKind, body: (control: TaskControl) => Promise<void>): Promise<void> {
+  if (running) {
+    send({
+      type: 'error',
+      message: 'Another task is still running. Wait for it to finish, or stop it.',
+    });
+    return;
+  }
+  running = task;
+  stopRequested = false;
+  try {
+    await body(controlFor(task));
+  } finally {
+    running = null;
+    stopRequested = false;
   }
 }
+
+/** Every font a layer uses, including the mixed-font case. */
+function fontsOf(node: ApplicableNode): FontRef[] {
+  const textNode = node as unknown as TextNode;
+  return textNode.fontName === figma.mixed
+    ? textNode.getRangeAllFontNames(0, textNode.characters.length)
+    : [textNode.fontName];
+}
+
+/** Reads a node for planning and applying. */
+const getNode = async (id: string) =>
+  (await figma.getNodeByIdAsync(id)) as ApplicableNode | null;
 
 figma.ui.onmessage = async (event: unknown) => {
   const message = unwrapUiMessage(event);
@@ -70,8 +111,14 @@ figma.ui.onmessage = async (event: unknown) => {
         break;
       case 'extract': {
         try {
-          const rows = collectTextLayers(rootsFor(message.scope));
-          send(rows.length === 0 ? { type: 'no-text-found' } : { type: 'extracted', rows });
+          await runTask('extract', async (control) => {
+            const rows = await collectTextLayers(rootsFor(message.scope), control);
+            if (rows === 'stopped') {
+              send({ type: 'task-stopped', task: 'extract' });
+            } else {
+              send(rows.length === 0 ? { type: 'no-text-found' } : { type: 'extracted', rows });
+            }
+          });
         } catch (error) {
           throw new Error(
             `Error occurred during text extraction: ${
@@ -83,19 +130,22 @@ figma.ui.onmessage = async (event: unknown) => {
       }
       case 'plan-import': {
         try {
-          const changeSet = await buildChangeSet(
-            message.rows.map((row) => ({
-              id: row.id,
-              fallbackName: row.name,
-              after: () => row.characters,
-            })),
-            'import',
-            {
-              getNode: async (id) =>
-                (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
-            }
-          );
-          send({ type: 'change-set', changeSet });
+          await runTask('plan', async (control) => {
+            const changeSet = await buildChangeSet(
+              message.rows.map((row) => ({
+                id: row.id,
+                fallbackName: row.name,
+                after: () => row.characters,
+              })),
+              'import',
+              { getNode, control }
+            );
+            send(
+              changeSet === 'stopped'
+                ? { type: 'task-stopped', task: 'plan' }
+                : { type: 'change-set', changeSet }
+            );
+          });
         } catch (error) {
           throw new Error(
             `Error occurred while planning the import: ${
@@ -107,12 +157,16 @@ figma.ui.onmessage = async (event: unknown) => {
       }
       case 'apply': {
         try {
-          const result = await applyTextChanges(message.changes, {
-            getNode: async (id) =>
-              (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
-            loadFonts,
+          await runTask('apply', async (control) => {
+            // One cache per run: a font loaded for one row is loaded for all.
+            const ensureFonts = createFontCache((font) => figma.loadFontAsync(font));
+            const result = await applyTextChanges(message.changes, {
+              getNode,
+              loadFonts: (node) => ensureFonts(fontsOf(node)),
+              control,
+            });
+            send({ type: 'import-complete', ...result });
           });
-          send({ type: 'import-complete', ...result });
         } catch (error) {
           throw new Error(
             `Error occurred during text import: ${
@@ -124,12 +178,18 @@ figma.ui.onmessage = async (event: unknown) => {
       }
       case 'search': {
         try {
-          const rows = collectTextLayers(rootsFor(message.scope));
-          const matches = matchingLayers(rows, message.query, {
-            caseSensitive: message.caseSensitive,
-            wholeWord: message.wholeWord,
+          await runTask('search', async (control) => {
+            const rows = await collectTextLayers(rootsFor(message.scope), control);
+            if (rows === 'stopped') {
+              send({ type: 'task-stopped', task: 'search' });
+              return;
+            }
+            const matches = matchingLayers(rows, message.query, {
+              caseSensitive: message.caseSensitive,
+              wholeWord: message.wholeWord,
+            });
+            send({ type: 'search-results', matches, scope: message.scope });
           });
-          send({ type: 'search-results', matches, scope: message.scope });
         } catch (error) {
           throw new Error(
             `Error occurred during search: ${
@@ -152,17 +212,20 @@ figma.ui.onmessage = async (event: unknown) => {
             fallbackName: target.layerName,
             after: (current) => replaceAll(current, message.query, message.replacement, opts),
           }));
-          const changeSet = await buildChangeSet(
-            targets,
-            'find-replace',
-            {
-              getNode: async (id) =>
-                (await figma.getNodeByIdAsync(id)) as ApplicableNode | null,
-            },
-            Date.now(),
-            message.scope
-          );
-          send({ type: 'change-set', changeSet });
+          await runTask('plan', async (control) => {
+            const changeSet = await buildChangeSet(
+              targets,
+              'find-replace',
+              { getNode, control },
+              Date.now(),
+              message.scope
+            );
+            send(
+              changeSet === 'stopped'
+                ? { type: 'task-stopped', task: 'plan' }
+                : { type: 'change-set', changeSet }
+            );
+          });
         } catch (error) {
           throw new Error(
             `Error occurred while planning the replacement: ${
@@ -189,6 +252,11 @@ figma.ui.onmessage = async (event: unknown) => {
         }
         break;
       }
+      case 'stop-task':
+        // Nothing to stop, or a task that cannot be: ignore rather than error,
+        // since the task may simply have finished as the click arrived.
+        if (running !== null && running !== 'apply') stopRequested = true;
+        break;
       case 'cancel':
         figma.closePlugin();
         break;
